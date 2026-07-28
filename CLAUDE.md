@@ -78,3 +78,7 @@ Primitive components (`Button`, `Card`, `Input`, `ListItem`, `Avatar`, `StackedA
 ### Database
 
 Supabase migrations are in `supabase/migrations/` numbered sequentially. The schema covers: profiles, groups (forums/ministries), discussions + posts + reactions, friendships + friend requests, chats + messages + reactions + folders.
+
+@.claude/rules/coding-standards.md
+@.claude/rules/typescript-react-patterns.md
+@.claude/rules/use-all-capabilities.md
