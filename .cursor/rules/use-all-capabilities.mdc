@@ -1,0 +1,24 @@
+---
+description: Proactively use skills, MCP tools, and available capabilities during implementation
+alwaysApply: true
+---
+
+# Use All Available Capabilities
+
+When implementing features (especially via BMad dev-story or similar workflows):
+
+## Before implementation
+
+1. **Skills**: Check `agent_skills` for domain-relevant skills (e.g. React Native, Supabase). Read and follow the skill file when the task matches its trigger.
+2. **MCP tools**: Browse MCP tool descriptors in `mcps/<server>/tools/`. Identify tools that apply to the task (migrations, SQL, APIs, docs).
+3. **Project rules**: Ensure workspace rules in `.cursor/rules/` are respected.
+
+## During implementation
+
+1. **Migrations**: When creating Supabase migrations, apply them using the Supabase MCP `apply_migration` tool (project_id, name, query). Do not leave migrations unapplied if the MCP is available.
+2. **Other MCP ops**: Use `execute_sql`, `list_tables`, or other MCP tools when they complete the task (e.g. verify schema, run queries).
+3. **Skills**: Apply patterns from loaded skills (e.g. vercel-react-native-skills for list performance, animations, UI).
+
+## Principle
+
+Create-and-leave is not done. If a file or change requires a follow-up action (apply migration, run command, fetch docs) and a tool exists for it, use the tool to finish the job.

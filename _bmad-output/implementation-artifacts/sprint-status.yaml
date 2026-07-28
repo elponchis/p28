@@ -1,0 +1,88 @@
+# generated: 2026-03-24
+# project: p28-v2
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: {project-root}/_bmad-output/implementation-artifacts
+#
+# Brownfield sync: statuses aligned to repo as of 2026-03-24 (see docs/as-built-snapshot.md).
+# Original MVP notes still apply where relevant:
+# - sprint-change-proposal-2026-03-05.md — flat Forums/Ministries, simplified admin
+# Dropped from sprint tracking (not in scope): message preview on Home, message-preview list story,
+# org/ministry multi-level admin hierarchy beyond simplified groups + super admin.
+#
+# Not tracked as separate story files (built outside BMAD story cycle):
+# - Message attachments for 1:1/group chat + discussion posts (migration 00063, ComposeBar, messageAttachments)
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review
+#   - done: Story completed
+
+generated: "2026-03-24"
+project: p28-v2
+project_key: NOKEY
+tracking_system: file-system
+story_location: "{project-root}/_bmad-output/implementation-artifacts"
+
+epic_names:
+  epic-1: App foundation and user identity
+  epic-2: Groups (Forums and Ministries) — simplified
+  epic-4: Home, events, and announcements
+  epic-5: Messaging and discussions
+  epic-6: Push notifications
+  epic-7: Group admin tools
+  epic-8: Faith Assistant (AI-powered Bible verse lookup and discovery)
+
+development_status:
+  epic-1: done
+  1-1-initialize-expo-app-with-tabs-template: done
+  1-2-design-tokens-and-core-primitives: done
+  1-3-backend-contracts-and-supabase-project: done
+  1-4-supabase-auth-adapter-and-sign-in-sign-up: done
+  1-5-profile-and-visibility: done
+  1-6-notification-preferences: done
+  1-7-app-language-i18n: done
+  1-8-in-app-conduct-guidelines: done
+  epic-1-retrospective: done
+
+  epic-2: done
+  2-1-simplified-groups-schema: done
+  2-2-groups-tab-browse-search: done
+  2-3-group-detail-join-leave: done
+  2-4-group-creation-admin: done
+  2-5-discussions-within-groups: done
+  2-6-discussions-as-topics-reddit-style: done
+  epic-2-retrospective: optional
+
+  epic-4: done
+  4-1-home-feed-layout: done
+  4-2-event-detail-and-rsvp: done
+  4-3-group-announcements-events: done
+  epic-4-retrospective: optional
+
+  epic-5: done
+  5-1-one-to-one-messaging: done
+  epic-5-retrospective: optional
+
+  epic-6: done
+  6-1-push-registration: done
+  6-2-backend-trigger-delivery: done
+  epic-6-retrospective: optional
+
+  epic-7: done
+  7-1-group-admin-announcements-events: done
+  epic-7-retrospective: optional
+
+  epic-8: backlog
+  8-1-faith-assistant-verse-lookup: backlog
+  8-2-find-related-verses-llm: backlog
+  epic-8-retrospective: optional

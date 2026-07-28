@@ -1,0 +1,274 @@
+{
+  "$meta": {
+    "format": "design-tokens",
+    "version": "2.0.0",
+    "usageNote": "Import into theme/tokens.ts. Minimal Monochrome aesthetic — warm off-whites, soft blacks, muted lavender-blue accent."
+  },
+
+  "color": {
+    "ink900": { "$value": "#1C1C1C", "$type": "color" },
+    "ink700": { "$value": "#5A5850", "$type": "color" },
+    "ink500": { "$value": "#7A7770", "$type": "color" },
+    "ink300": { "$value": "#B5B3AD", "$type": "color" },
+    "surface0": { "$value": "#FFFFFF", "$type": "color" },
+    "surface50": { "$value": "#F7F6F3", "$type": "color" },
+    "surface100": { "$value": "#E8E7E4", "$type": "color" },
+    "surfaceTint": { "$value": "#EEEDEA", "$type": "color" },
+
+    "brandPrimary": { "$value": "#8B9BB8", "$type": "color" },
+    "brandPrimaryDark": { "$value": "#7889A8", "$type": "color" },
+    "brandLight": { "$value": "#A8B4CC", "$type": "color" },
+    "brandSoft": { "$value": "#E8EBF2", "$type": "color" },
+
+    "success": { "$value": "#6A9A7B", "$type": "color" },
+    "warning": { "$value": "#C09A5A", "$type": "color" },
+    "danger": { "$value": "#BF6060", "$type": "color" },
+    "info": { "$value": "#8B9BB8", "$type": "color" },
+
+    "cardDefault": { "$value": "#FFFFFF", "$type": "color" },
+    "cardAlt": { "$value": "#F7F6F3", "$type": "color" },
+    "cardHighlight": { "$value": "#F2F1EE", "$type": "color" },
+
+    "borderSubtle": { "$value": "rgba(28, 28, 28, 0.06)", "$type": "color" },
+    "focusRing": { "$value": "rgba(139, 155, 184, 0.30)", "$type": "color" }
+  },
+
+  "spacing": {
+    "xxs": { "$value": 4, "$type": "dimension" },
+    "xs": { "$value": 4, "$type": "dimension" },
+    "sm": { "$value": 8, "$type": "dimension" },
+    "md": { "$value": 16, "$type": "dimension" },
+    "lg": { "$value": 24, "$type": "dimension" },
+    "xl": { "$value": 32, "$type": "dimension" }
+  },
+
+  "radius": {
+    "sm": { "$value": 4, "$type": "dimension" },
+    "md": { "$value": 8, "$type": "dimension" },
+    "lg": { "$value": 8, "$type": "dimension" },
+    "xl": { "$value": 16, "$type": "dimension" },
+    "card": { "$value": 12, "$type": "dimension" },
+    "pill": { "$value": 999, "$type": "dimension" }
+  },
+
+  "size": {
+    "iconXs": { "$value": 14, "$type": "dimension" },
+    "iconSm": { "$value": 16, "$type": "dimension" },
+    "iconMd": { "$value": 20, "$type": "dimension" },
+    "iconLg": { "$value": 24, "$type": "dimension" },
+    "avatarSm": { "$value": 28, "$type": "dimension" },
+    "avatarMd": { "$value": 36, "$type": "dimension" },
+    "avatarLg": { "$value": 48, "$type": "dimension" },
+    "avatarXl": { "$value": 72, "$type": "dimension" },
+    "buttonHeight": { "$value": 44, "$type": "dimension" },
+    "buttonHeightLg": { "$value": 48, "$type": "dimension" },
+    "inputHeight": { "$value": 48, "$type": "dimension" },
+    "listItemMin": { "$value": 56, "$type": "dimension" },
+    "iconButtonSize": { "$value": 36, "$type": "dimension" },
+    "outerMargin": { "$value": 20, "$type": "dimension" },
+    "touchTargetMin": { "$value": 44, "$type": "dimension" }
+  },
+
+  "typography": {
+    "fontFamilySystem": { "$value": "System", "$type": "fontFamily" },
+
+    "weightRegular": { "$value": "400", "$type": "fontWeight" },
+    "weightMedium": { "$value": "500", "$type": "fontWeight" },
+
+    "trackingDefault": { "$value": 0, "$type": "number" },
+    "trackingTight": { "$value": -0.3, "$type": "number" },
+    "trackingLabel": { "$value": 0.2, "$type": "number" },
+    "trackingButton": { "$value": 0.3, "$type": "number" },
+
+    "h1": {
+      "$value": { "fontSize": 32, "fontWeight": "500", "letterSpacing": -0.3 },
+      "$type": "typography"
+    },
+    "h2": {
+      "$value": { "fontSize": 24, "fontWeight": "500", "letterSpacing": -0.2 },
+      "$type": "typography"
+    },
+    "h3": {
+      "$value": { "fontSize": 20, "fontWeight": "500", "letterSpacing": -0.1 },
+      "$type": "typography"
+    },
+    "title": {
+      "$value": { "fontSize": 18, "fontWeight": "500", "letterSpacing": 0 },
+      "$type": "typography"
+    },
+    "body": {
+      "$value": { "fontSize": 15, "lineHeight": 24, "fontWeight": "400" },
+      "$type": "typography"
+    },
+    "bodyStrong": {
+      "$value": { "fontSize": 15, "lineHeight": 24, "fontWeight": "500" },
+      "$type": "typography"
+    },
+    "caption": {
+      "$value": { "fontSize": 13, "lineHeight": 18, "fontWeight": "400" },
+      "$type": "typography"
+    },
+    "micro": {
+      "$value": { "fontSize": 11, "lineHeight": 14, "fontWeight": "400" },
+      "$type": "typography"
+    },
+    "label": {
+      "$value": { "fontSize": 13, "fontWeight": "500", "letterSpacing": 0.2 },
+      "$type": "typography"
+    },
+    "buttonLabel": {
+      "$value": { "fontSize": 15, "fontWeight": "500", "letterSpacing": 0.3 },
+      "$type": "typography"
+    }
+  },
+
+  "shadow": {
+    "none": {
+      "$value": {
+        "shadowColor": "transparent",
+        "shadowOpacity": 0,
+        "shadowRadius": 0,
+        "shadowOffset": { "width": 0, "height": 0 },
+        "elevation": 0
+      },
+      "$type": "shadow"
+    },
+    "cardSoft": {
+      "$value": {
+        "shadowColor": "#1C1C1C",
+        "shadowOpacity": 0.03,
+        "shadowRadius": 24,
+        "shadowOffset": { "width": 0, "height": 4 },
+        "elevation": 1
+      },
+      "$type": "shadow"
+    },
+    "floating": {
+      "$value": {
+        "shadowColor": "#1C1C1C",
+        "shadowOpacity": 0.06,
+        "shadowRadius": 20,
+        "shadowOffset": { "width": 0, "height": 8 },
+        "elevation": 4
+      },
+      "$type": "shadow"
+    }
+  },
+
+  "motion": {
+    "durationPress": { "$value": 120, "$type": "duration" },
+    "durationStandard": { "$value": 220, "$type": "duration" },
+    "durationSnappy": { "$value": 160, "$type": "duration" },
+    "easingStandard": { "$value": "ease-out", "$type": "cubicBezier" },
+    "easingSnappy": { "$value": "ease-in-out", "$type": "cubicBezier" },
+    "pressScale": { "$value": 0.97, "$type": "number" },
+    "pressOpacity": { "$value": 0.92, "$type": "number" }
+  },
+
+  "semantic": {
+    "textPrimary": { "$value": "{color.ink900}", "$type": "color" },
+    "textSecondary": { "$value": "{color.ink500}", "$type": "color" },
+    "textTertiary": { "$value": "{color.ink300}", "$type": "color" },
+    "textDisabled": { "$value": "{color.ink300}", "$type": "color" },
+    "textOnBrand": { "$value": "{color.surface0}", "$type": "color" },
+    "textLink": { "$value": "{color.brandPrimary}", "$type": "color" },
+
+    "bgScreen": { "$value": "{color.surface50}", "$type": "color" },
+    "bgCard": { "$value": "{color.surface0}", "$type": "color" },
+    "bgSurface": { "$value": "{color.surface0}", "$type": "color" },
+
+    "iconActive": { "$value": "{color.ink900}", "$type": "color" },
+    "iconDefault": { "$value": "{color.ink300}", "$type": "color" },
+
+    "borderDefault": { "$value": "{color.borderSubtle}", "$type": "color" },
+
+    "pageMargin": { "$value": "{spacing.lg}", "$type": "dimension" },
+    "sectionGap": { "$value": "{spacing.xl}", "$type": "dimension" },
+    "cardPadding": { "$value": "{spacing.md}", "$type": "dimension" },
+    "cardRadius": { "$value": "{radius.card}", "$type": "dimension" },
+    "cardShadow": { "$value": "{shadow.cardSoft}", "$type": "shadow" }
+  },
+
+  "component": {
+    "floatingTabBar": {
+      "radius": { "$value": 999, "$type": "dimension" },
+      "bg": { "$value": "#FFFFFF", "$type": "color" },
+      "shadow": { "$value": "{shadow.floating}", "$type": "shadow" },
+      "iconSize": { "$value": 20, "$type": "dimension" },
+      "labelSize": { "$value": 11, "$type": "dimension" },
+      "activeColor": { "$value": "#1C1C1C", "$type": "color" },
+      "inactiveColor": { "$value": "#B5B3AD", "$type": "color" },
+      "dotSize": { "$value": 5, "$type": "dimension" },
+      "dotColor": { "$value": "#8B9BB8", "$type": "color" }
+    },
+
+    "card": {
+      "radius": { "$value": 12, "$type": "dimension" },
+      "padding": { "$value": 16, "$type": "dimension" },
+      "contentGap": { "$value": 8, "$type": "dimension" },
+      "shadow": { "$value": "{shadow.cardSoft}", "$type": "shadow" },
+      "borderColor": { "$value": "{color.borderSubtle}", "$type": "color" }
+    },
+
+    "primaryButton": {
+      "height": { "$value": 44, "$type": "dimension" },
+      "radius": { "$value": 8, "$type": "dimension" },
+      "bg": { "$value": "#1C1C1C", "$type": "color" },
+      "textColor": { "$value": "#FFFFFF", "$type": "color" }
+    },
+
+    "secondaryButton": {
+      "height": { "$value": 44, "$type": "dimension" },
+      "radius": { "$value": 8, "$type": "dimension" },
+      "bg": { "$value": "transparent", "$type": "color" },
+      "borderColor": { "$value": "{color.borderSubtle}", "$type": "color" },
+      "textColor": { "$value": "#1C1C1C", "$type": "color" }
+    },
+
+    "textButton": {
+      "height": { "$value": 44, "$type": "dimension" },
+      "textColor": { "$value": "#8B9BB8", "$type": "color" }
+    },
+
+    "iconButton": {
+      "size": { "$value": 36, "$type": "dimension" },
+      "bg": { "$value": "transparent", "$type": "color" },
+      "iconColor": { "$value": "#1C1C1C", "$type": "color" }
+    },
+
+    "textInput": {
+      "height": { "$value": 48, "$type": "dimension" },
+      "radius": { "$value": 8, "$type": "dimension" },
+      "bg": { "$value": "#FFFFFF", "$type": "color" },
+      "placeholder": { "$value": "#B5B3AD", "$type": "color" },
+      "paddingHorizontal": { "$value": 14, "$type": "dimension" },
+      "focusBorderColor": { "$value": "rgba(139, 155, 184, 0.30)", "$type": "color" }
+    },
+
+    "modalSheet": {
+      "topRadius": { "$value": 16, "$type": "dimension" },
+      "bg": { "$value": "#FFFFFF", "$type": "color" },
+      "handleWidth": { "$value": 36, "$type": "dimension" },
+      "handleHeight": { "$value": 4, "$type": "dimension" },
+      "handleColor": { "$value": "#EEEDEA", "$type": "color" },
+      "backdropColor": { "$value": "rgba(28, 28, 28, 0.3)", "$type": "color" }
+    },
+
+    "badge": {
+      "height": { "$value": 24, "$type": "dimension" },
+      "paddingHorizontal": { "$value": 10, "$type": "dimension" },
+      "radius": { "$value": 999, "$type": "dimension" },
+      "primaryBg": { "$value": "#E8EBF2", "$type": "color" },
+      "primaryText": { "$value": "#8B9BB8", "$type": "color" },
+      "neutralBg": { "$value": "#EEEDEA", "$type": "color" },
+      "neutralText": { "$value": "#5A5850", "$type": "color" }
+    },
+
+    "avatar": {
+      "ringColor": { "$value": "#FFFFFF", "$type": "color" },
+      "ringWidth": { "$value": 1.5, "$type": "number" },
+      "fallbackBg": { "$value": "#E8EBF2", "$type": "color" },
+      "fallbackText": { "$value": "#8B9BB8", "$type": "color" }
+    }
+  }
+}

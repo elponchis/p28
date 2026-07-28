@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>p28-v2 — Design Directions</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 24px; background: #f5f5f5; }
+    h1 { text-align: center; margin-bottom: 8px; }
+    .subtitle { text-align: center; color: #666; margin-bottom: 32px; }
+    .nav-tabs { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 24px; }
+    .nav-tabs button { padding: 10px 16px; border: 1px solid #ccc; background: #fff; cursor: pointer; border-radius: 8px; font-size: 14px; }
+    .nav-tabs button:hover { background: #eee; }
+    .nav-tabs button.active { background: #2C7CB5; color: #fff; border-color: #2C7CB5; }
+    .direction { display: none; max-width: 420px; margin: 0 auto 48px; }
+    .direction.active { display: block; }
+    .direction h2 { margin-bottom: 16px; font-size: 1.25rem; color: #333; }
+    .phone { width: 375px; margin: 0 auto; border-radius: 32px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.15); background: #111; padding: 12px; }
+    .screen { border-radius: 24px; overflow: hidden; min-height: 667px; }
+    .screen-header { padding: 48px 20px 20px; display: flex; justify-content: space-between; align-items: center; }
+    .screen-title { font-weight: 700; font-size: 22px; }
+    .card { border-radius: 12px; padding: 16px; margin: 0 16px 12px; }
+    .card-title { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+    .card-meta { font-size: 13px; opacity: 0.8; }
+    .bottom-nav { display: flex; justify-content: space-around; padding: 12px 16px 24px; border-top: 1px solid rgba(0,0,0,0.06); }
+    .bottom-nav span { font-size: 11px; opacity: 0.8; }
+    .eval { max-width: 600px; margin: 32px auto; padding: 20px; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .eval h3 { margin-top: 0; }
+    .eval ul { margin: 0; padding-left: 20px; }
+  </style>
+</head>
+<body>
+  <h1>p28-v2 Design Directions</h1>
+  <p class="subtitle">Explore visual directions for Home and core experience. Click a tab to switch.</p>
+  <p class="subtitle" style="margin-top: -16px; font-size: 13px;"><strong>Primary:</strong> #2C7CB5 &nbsp;|&nbsp; <strong>Complementary accent:</strong> #C77B38 (warm amber)</p>
+
+  <div class="nav-tabs">
+    <button class="tab active" data-id="dir1">1. Warm & Soft (primary #2C7CB5)</button>
+    <button class="tab" data-id="dir2">2. Clear & Structured</button>
+    <button class="tab" data-id="dir3">3. Compact & Efficient</button>
+    <button class="tab" data-id="dir4">4. Spacious & Calm</button>
+    <button class="tab" data-id="dir5">5. Muted & Refined</button>
+    <button class="tab" data-id="dir6">6. Primary + Complementary</button>
+  </div>
+
+  <!-- Direction 1: Warm & Soft — primary #2C7CB5 -->
+  <div id="dir1" class="direction active">
+    <h2>1. Warm & Soft</h2>
+    <p style="margin-bottom:16px;color:#555;">Soft neutrals, rounded corners, primary #2C7CB5. Feels welcoming and approachable.</p>
+    <div class="phone">
+      <div class="screen" style="background: #faf8f5;">
+        <div class="screen-header" style="background: #faf8f5; color: #3d2c29;">
+          <span class="screen-title">Home</span>
+          <span>⋮</span>
+        </div>
+        <div class="card" style="background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.06); color: #3d2c29;">
+          <div class="card-title">Sunday Service</div>
+          <div class="card-meta">Sun 10:00 AM · Main Hall</div>
+        </div>
+        <div class="card" style="background: #e8eef5; color: #2C7CB5;">
+          <div class="card-title">Daily verse</div>
+          <div class="card-meta">Psalm 28:7</div>
+        </div>
+        <div class="card" style="background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.06); color: #3d2c29;">
+          <div class="card-title">Young Adult Meetup</div>
+          <div class="card-meta">3 new messages</div>
+        </div>
+        <div class="bottom-nav" style="background: #faf8f5; color: #3d2c29;">
+          <span style="color: #2C7CB5;">Home</span><span>Groups</span><span>Messages</span><span>Profile</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Direction 2: Clear & Structured -->
+  <div id="dir2" class="direction">
+    <h2>2. Clear & Structured</h2>
+    <p style="margin-bottom:16px;color:#555;">Strong hierarchy, clear sections, primary #2C7CB5. Easy to scan.</p>
+    <div class="phone">
+      <div class="screen" style="background: #f0f2f5;">
+        <div class="screen-header" style="background: #fff; border-bottom: 1px solid #e4e6eb; color: #1c1e21;">
+          <span class="screen-title">Home</span>
+          <span>⋮</span>
+        </div>
+        <div style="padding: 16px;">
+          <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #2C7CB5; margin-bottom: 8px;">What's next</div>
+          <div class="card" style="background: #fff; border: 1px solid #e4e6eb; color: #1c1e21;">
+            <div class="card-title">Sunday Service</div>
+            <div class="card-meta">Sun 10:00 AM · Main Hall</div>
+          </div>
+          <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #2C7CB5; margin: 16px 0 8px;">Announcements</div>
+          <div class="card" style="background: #fff; border: 1px solid #e4e6eb; color: #1c1e21;">
+            <div class="card-title">Young Adult Meetup</div>
+            <div class="card-meta">3 new messages</div>
+          </div>
+        </div>
+        <div class="bottom-nav" style="background: #fff; border-top: 1px solid #e4e6eb; color: #1c1e21;">
+          <span style="color: #2C7CB5;">Home</span><span>Groups</span><span>Messages</span><span>Profile</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Direction 3: Compact & Efficient -->
+  <div id="dir3" class="direction">
+    <h2>3. Compact & Efficient</h2>
+    <p style="margin-bottom:16px;color:#555;">Tighter spacing, primary #2C7CB5. For users who want density.</p>
+    <div class="phone">
+      <div class="screen" style="background: #fff;">
+        <div class="screen-header" style="background: #fff; padding: 40px 16px 12px; color: #111;">
+          <span class="screen-title">Home</span>
+          <span>⋮</span>
+        </div>
+        <div class="card" style="margin: 0 12px 8px; padding: 12px; background: #f8f9fa; border-radius: 8px; color: #111;">
+          <div class="card-title">Sunday Service</div>
+          <div class="card-meta">Sun 10:00 AM</div>
+        </div>
+        <div class="card" style="margin: 0 12px 8px; padding: 12px; background: #e8eef5; border-radius: 8px; color: #2C7CB5;">
+          <div class="card-title">Daily verse</div>
+          <div class="card-meta">Psalm 28:7</div>
+        </div>
+        <div class="card" style="margin: 0 12px 8px; padding: 12px; background: #f8f9fa; border-radius: 8px; color: #111;">
+          <div class="card-title">Young Adult · 3 new</div>
+        </div>
+        <div class="bottom-nav" style="padding: 8px 12px 20px; color: #111;">
+          <span style="color: #2C7CB5;">Home</span><span>Groups</span><span>Messages</span><span>Profile</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Direction 4: Spacious & Calm -->
+  <div id="dir4" class="direction">
+    <h2>4. Spacious & Calm</h2>
+    <p style="margin-bottom:16px;color:#555;">Lots of whitespace, primary #2C7CB5. Calm and focused.</p>
+    <div class="phone">
+      <div class="screen" style="background: #fafafa;">
+        <div class="screen-header" style="background: #fafafa; padding: 52px 24px 28px; color: #1a1a1a;">
+          <span class="screen-title">Home</span>
+          <span>⋮</span>
+        </div>
+        <div class="card" style="margin: 0 20px 20px; padding: 24px; background: #fff; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); color: #1a1a1a;">
+          <div class="card-title" style="font-size: 17px;">Sunday Service</div>
+          <div class="card-meta" style="margin-top: 8px;">Sun 10:00 AM · Main Hall</div>
+        </div>
+        <div class="card" style="margin: 0 20px 20px; padding: 24px; background: #e8eef5; border-radius: 16px; color: #2C7CB5;">
+          <div class="card-title" style="font-size: 17px;">Daily verse</div>
+          <div class="card-meta" style="margin-top: 8px;">Psalm 28:7</div>
+        </div>
+        <div class="card" style="margin: 0 20px 20px; padding: 24px; background: #fff; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); color: #1a1a1a;">
+          <div class="card-title" style="font-size: 17px;">Young Adult Meetup</div>
+          <div class="card-meta" style="margin-top: 8px;">3 new messages</div>
+        </div>
+        <div class="bottom-nav" style="background: #fafafa; padding: 20px 24px 32px; color: #1a1a1a;">
+          <span style="color: #2C7CB5;">Home</span><span>Groups</span><span>Messages</span><span>Profile</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Direction 5: Muted & Refined -->
+  <div id="dir5" class="direction">
+    <h2>5. Muted & Refined</h2>
+    <p style="margin-bottom:16px;color:#555;">Muted palette, primary #2C7CB5 accent. Understated and refined.</p>
+    <div class="phone">
+      <div class="screen" style="background: #f7f6f4;">
+        <div class="screen-header" style="background: #f7f6f4; color: #2c2c2c;">
+          <span class="screen-title">Home</span>
+          <span>⋮</span>
+        </div>
+        <div class="card" style="background: #fff; border: 1px solid #e8e6e3; color: #2c2c2c;">
+          <div class="card-title">Sunday Service</div>
+          <div class="card-meta">Sun 10:00 AM · Main Hall</div>
+        </div>
+        <div class="card" style="background: #fff; border: 1px solid #e8e6e3; border-left: 4px solid #2C7CB5; color: #2c2c2c;">
+          <div class="card-title">Daily verse</div>
+          <div class="card-meta">Psalm 28:7</div>
+        </div>
+        <div class="card" style="background: #fff; border: 1px solid #e8e6e3; color: #2c2c2c;">
+          <div class="card-title">Young Adult Meetup</div>
+          <div class="card-meta">3 new messages</div>
+        </div>
+        <div class="bottom-nav" style="background: #f7f6f4; color: #2c2c2c; border-top: 1px solid #e8e6e3;">
+          <span style="color: #2C7CB5;">Home</span><span>Groups</span><span>Messages</span><span>Profile</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Direction 6: Primary + Complementary (Warm Accent) -->
+  <div id="dir6" class="direction">
+    <h2>6. Primary + Complementary</h2>
+    <p style="margin-bottom:16px;color:#555;">Primary #2C7CB5 with complementary accent #C77B38 (warm amber) for highlights.</p>
+    <div class="phone">
+      <div class="screen" style="background: #faf9f7;">
+        <div class="screen-header" style="background: #2C7CB5; color: #fff;">
+          <span class="screen-title">Home</span>
+          <span>⋮</span>
+        </div>
+        <div class="card" style="background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.06); color: #333;">
+          <div class="card-title">Sunday Service</div>
+          <div class="card-meta">Sun 10:00 AM · Main Hall</div>
+        </div>
+        <div class="card" style="background: #fff8f0; border-left: 4px solid #C77B38; color: #333;">
+          <div class="card-title">Daily verse</div>
+          <div class="card-meta">Psalm 28:7</div>
+        </div>
+        <div class="card" style="background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.06); color: #333;">
+          <div class="card-title">Young Adult Meetup</div>
+          <div class="card-meta">3 new messages</div>
+        </div>
+        <div class="bottom-nav" style="background: #faf9f7; color: #333;">
+          <span style="color: #2C7CB5;">Home</span><span>Groups</span><span>Messages</span><span style="color: #C77B38;">Profile</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="eval">
+    <h3>Evaluation criteria</h3>
+    <ul>
+      <li><strong>Layout:</strong> Which hierarchy matches “what’s next” best?</li>
+      <li><strong>Interaction style:</strong> Which fits the core experience?</li>
+      <li><strong>Visual weight:</strong> Which density feels right for your brand?</li>
+      <li><strong>Navigation:</strong> Which pattern matches user expectations?</li>
+      <li><strong>Brand alignment:</strong> Which direction supports belonging and warmth?</li>
+    </ul>
+  </div>
+
+  <script>
+    document.querySelectorAll('.tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.direction').forEach(d => d.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.id).classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

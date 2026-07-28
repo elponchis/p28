@@ -1,0 +1,59 @@
+---
+description: Core coding standards and practices for p28-v2 — all edits must follow these
+alwaysApply: true
+---
+
+# p28-v2 Coding Standards
+
+Apply these practices to every edit in this project.
+
+## TypeScript & imports
+- Use strict types; avoid `any`. Prefer `interface` for object shapes and API contracts.
+- Use the `@/` path alias for project imports (e.g. `@/lib/api`, `@/components/primitives`, `@/theme/tokens`).
+- Order imports: React first, then external packages, then `@/` internal modules.
+
+## Components & UI
+- Use functional components and hooks only.
+- Use theme tokens from `@/theme/tokens` (colors, spacing, typography, radius, shadow) for styling; avoid magic numbers.
+- Use `StyleSheet.create` for local styles; reuse shared styles (e.g. `authScreenStyles`) where they exist.
+- For interactive elements (Button, Input, touchables): always set `accessibilityLabel` and, when helpful, `accessibilityHint`.
+
+## API & errors
+- Server data: use React Query hooks from `@/hooks/useApiQueries` (e.g. `useProfileQuery`, `useUpdateProfileMutation`). Do not call `api.data.*` directly in screens or components. Auth: use `auth.*` from `@/lib/api` or `useAuth`. Use `getUserFacingError()` for user-facing error messages.
+- Never swallow errors: log and/or surface to the user; rethrow when the caller should handle.
+
+## Security & data
+- No secrets or API keys in source; use environment/config.
+- Validate and sanitize user input before sending to API or persisting.
+
+## Formatting & quality
+- Run `npm run format` (Prettier) and `npm run lint` (ESLint) before considering code done; fix any reported issues.
+- Add or update unit tests in `__tests__` when adding or changing behavior under `app/` or `lib/`.
+
+## Examples
+
+```tsx
+// ✅ Imports: React, then external, then @/
+import React, { useState } from 'react';
+import { router } from 'expo-router';
+import { Button } from '@/components/primitives';
+import { useProfileQuery } from '@/hooks/useApiQueries';
+import { colors, spacing } from '@/theme/tokens';
+```
+
+```tsx
+// ✅ Interactive element with a11y
+<Button
+  title="Continue"
+  onPress={handleSubmit}
+  accessibilityLabel="Continue"
+  accessibilityHint="Continues to the next step"
+/>
+```
+
+```tsx
+// ✅ Server data: use React Query hooks from hooks/useApiQueries
+const { data: profile, isError, error, refetch } = useProfileQuery(userId);
+const updateMutation = useUpdateProfileMutation();
+const errorMessage = isError && error && 'message' in error ? getUserFacingError(error) : null;
+```

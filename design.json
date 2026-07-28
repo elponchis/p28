@@ -1,0 +1,514 @@
+{
+  "meta": {
+    "name": "Minimal Monochrome Mobile Design System",
+    "version": "2.0.0",
+    "source": "Redesign — Aesop / Kinfolk aesthetic",
+    "platformTarget": ["iOS", "Android"],
+    "styleArchetype": ["minimal monochrome", "refined editorial", "warm neutrals"],
+    "intent": "A calm, intentional interface. Almost monochromatic — warm off-whites, soft blacks, one accent: muted lavender-blue. Every element feels deliberate and quiet."
+  },
+  "creativeDirection": {
+    "brandPersonality": ["calm", "refined", "intentional", "timeless"],
+    "experienceGoals": [
+      "Make the interface feel like a premium, thoughtfully designed product.",
+      "Use restraint — every element must earn its place on screen.",
+      "Convey hierarchy through typography weight, spacing, and subtle contrast — not color."
+    ],
+    "corePrinciples": [
+      "Whitespace is the primary design tool; generous negative space creates calm.",
+      "Almost monochromatic — warm off-whites and soft blacks with a single muted lavender-blue accent.",
+      "Typography carries the hierarchy; font weight and spacing replace color for emphasis.",
+      "Shadows are barely perceptible — depth should be felt, not seen.",
+      "Motion should be subtle and intentional — felt, not noticed.",
+      "Flat, architectural radius values — no bubbly or playful shapes."
+    ]
+  },
+  "foundations": {
+    "gridAndLayout": {
+      "canvas": {
+        "referenceFrame": "mobile portrait",
+        "contentMaxWidth": 430,
+        "useSafeAreaInsets": true
+      },
+      "outerMargins": {
+        "phoneDefault": 20,
+        "compact": 16
+      },
+      "sectionSpacing": {
+        "tight": 12,
+        "default": 16,
+        "airy": 24,
+        "hero": 32
+      },
+      "componentRhythm": "Prefer vertical stacking with clear section blocks; avoid dense multi-column layouts except small metadata rows."
+    },
+    "spacingScale": {
+      "xxs": 4,
+      "xs": 8,
+      "sm": 12,
+      "md": 16,
+      "lg": 20,
+      "xl": 24,
+      "2xl": 32,
+      "3xl": 40
+    },
+    "sizingScale": {
+      "icon": {
+        "xs": 14,
+        "sm": 16,
+        "md": 20,
+        "lg": 24
+      },
+      "avatar": {
+        "sm": 22,
+        "md": 28,
+        "lg": 34
+      },
+      "controlHeights": {
+        "chip": 28,
+        "button": 44,
+        "input": 48,
+        "listItemMin": 56
+      },
+      "fab": {
+        "diameter": 56
+      }
+    },
+    "radius": {
+      "sm": 10,
+      "md": 14,
+      "lg": 18,
+      "xl": 24,
+      "pill": 999
+    },
+    "borders": {
+      "hairline": 1,
+      "subtleColor": "rgba(30, 27, 45, 0.08)",
+      "usage": "Use borders sparingly for dividers and input outlines; prefer tonal surfaces."
+    },
+    "elevation": {
+      "none": {
+        "shadow": "none"
+      },
+      "cardSoft": {
+        "shadowColor": "#1A1530",
+        "shadowOpacity": 0.06,
+        "shadowRadius": 18,
+        "shadowOffsetY": 6,
+        "elevation": 2
+      },
+      "floating": {
+        "shadowColor": "#1A1530",
+        "shadowOpacity": 0.14,
+        "shadowRadius": 22,
+        "shadowOffsetY": 10,
+        "elevation": 6
+      }
+    },
+    "typography": {
+      "fontFamily": {
+        "primary": "Inter, SF Pro Display, system-ui, sans-serif",
+        "numeric": "Inter, SF Pro Text, system-ui, sans-serif"
+      },
+      "weights": {
+        "regular": 400,
+        "medium": 500,
+        "semibold": 600,
+        "bold": 700
+      },
+      "scale": {
+        "display": {
+          "fontSize": 42,
+          "lineHeight": 48,
+          "weight": 700
+        },
+        "h1": {
+          "fontSize": 40,
+          "lineHeight": 46,
+          "weight": 700
+        },
+        "h2": {
+          "fontSize": 28,
+          "lineHeight": 34,
+          "weight": 600
+        },
+        "h3": {
+          "fontSize": 22,
+          "lineHeight": 28,
+          "weight": 600
+        },
+        "title": {
+          "fontSize": 18,
+          "lineHeight": 24,
+          "weight": 600
+        },
+        "body": {
+          "fontSize": 15,
+          "lineHeight": 22,
+          "weight": 400
+        },
+        "bodyStrong": {
+          "fontSize": 15,
+          "lineHeight": 22,
+          "weight": 600
+        },
+        "caption": {
+          "fontSize": 13,
+          "lineHeight": 18,
+          "weight": 500
+        },
+        "micro": {
+          "fontSize": 11,
+          "lineHeight": 14,
+          "weight": 500
+        }
+      },
+      "tracking": {
+        "default": 0,
+        "tightHeadings": -0.2,
+        "capsLabel": 0.3
+      },
+      "textStyleGuidance": [
+        "Large page titles should be semibold and dark neutral, not pure black.",
+        "Body copy uses medium contrast gray for comfort.",
+        "Use micro/caption styles for metadata and secondary indicators."
+      ]
+    },
+    "colorSystem": {
+      "neutrals": {
+        "ink900": "#1F2130",
+        "ink700": "#4D5060",
+        "ink500": "#7D8193",
+        "ink300": "#B8BDCB",
+        "surface0": "#FFFFFF",
+        "surface50": "#F8F9FC",
+        "surface100": "#F1F3F8",
+        "surfaceTint": "#EEF1F8"
+      },
+      "brand": {
+        "primary": "#4B3A8A",
+        "primaryLight": "#8F7CD8",
+        "primarySoft": "#E9E2FF"
+      },
+      "accents": {
+        "blue": "#6AAEE6",
+        "blueSoft": "#DCEEFF",
+        "coral": "#EA8E78",
+        "coralSoft": "#FBE3DC",
+        "lavender": "#A286F3",
+        "lavenderSoft": "#EDE6FF",
+        "peach": "#F2B5A1",
+        "greenSoft": "#DDF4E8",
+        "amberSoft": "#FFF2CF"
+      },
+      "semantic": {
+        "success": "#3AA76D",
+        "warning": "#D08B34",
+        "danger": "#D95858",
+        "info": "#4D8FD9"
+      },
+      "backgroundRecipes": {
+        "screenGradient": {
+          "type": "linear",
+          "angle": 145,
+          "stops": ["#F1ECFF", "#EFF3FA"]
+        },
+        "cardDefault": "#F4F7FD",
+        "cardAlt": "#FCE9E6",
+        "cardHighlight": "#E9F1FF"
+      },
+      "colorUsageRules": [
+        "Keep saturation moderate; avoid neon tones.",
+        "Prioritize pastel backgrounds with darker text for readability.",
+        "Only one dominant accent per component; supporting accents should be desaturated.",
+        "Progress indicators may use multi-color segments but maintain soft values."
+      ]
+    },
+    "iconography": {
+      "style": "rounded stroke icons with occasional filled active states",
+      "strokeWidth": 1.75,
+      "cornerPersonality": "soft and friendly, no sharp geometric spikes",
+      "activeColor": "#4B3A8A",
+      "inactiveColor": "#A2A7B8"
+    },
+    "imageryAndAvatars": {
+      "avatarShape": "circle",
+      "avatarStacking": {
+        "overlapPx": 8,
+        "ring": "1.5px solid white"
+      },
+      "imageTone": "warm, human, candid portrait style",
+      "useCase": "team presence and collaborative context"
+    }
+  },
+  "interactionAndMotion": {
+    "touchTargets": {
+      "minimum": 44,
+      "preferred": 48
+    },
+    "feedback": {
+      "pressScale": 0.98,
+      "opacityPressed": 0.92,
+      "durationMs": 120
+    },
+    "transitions": {
+      "standard": {
+        "durationMs": 220,
+        "easing": "ease-out"
+      },
+      "snappy": {
+        "durationMs": 160,
+        "easing": "ease-in-out"
+      }
+    },
+    "motionPrinciples": [
+      "Use subtle fades and tiny position shifts (2-8px).",
+      "Avoid bouncy or high-amplitude animations.",
+      "Floating button and selected tab states can animate scale and color softly."
+    ]
+  },
+  "componentSystem": {
+    "appShell": {
+      "screenBackground": "Use a light lavender-to-cool-gray gradient.",
+      "topArea": "Sparse with simple icon buttons and a strong page title.",
+      "bottomArea": "Persistent navigation bar with central floating action emphasis."
+    },
+    "navigation": {
+      "header": {
+        "leftAction": "Back arrow in a circular soft surface button",
+        "rightAction": "Icon button or overflow menu in matching style",
+        "titleBehavior": "Large title anchored left with generous top spacing"
+      },
+      "bottomTabBar": {
+        "container": {
+          "height": 74,
+          "radius": 22,
+          "background": "#FFFFFF",
+          "elevationToken": "floating"
+        },
+        "tabItem": {
+          "iconSize": 20,
+          "labelSize": 11,
+          "activeColor": "#4B3A8A",
+          "inactiveColor": "#A2A7B8"
+        },
+        "fabCenter": {
+          "diameter": 56,
+          "background": "#3F2E80",
+          "iconColor": "#FFFFFF",
+          "offsetY": -18
+        }
+      }
+    },
+    "cards": {
+      "baseCard": {
+        "radius": 20,
+        "padding": 16,
+        "background": "pastel tonal surface",
+        "elevationToken": "cardSoft",
+        "contentGap": 10
+      },
+      "taskCard": {
+        "priorityChip": "top-left chip with semantic tint",
+        "title": "2-3 lines max, semibold",
+        "meta": "avatar stack + progress value",
+        "progress": "thin rounded bar with 2-tone fill"
+      },
+      "descriptionCard": {
+        "surface": "white on tinted screen",
+        "cornerRadius": 16,
+        "bodyTextColor": "#6E7285"
+      },
+      "scheduleRowCard": {
+        "layout": "time column + title + right avatar group",
+        "variants": ["blueSoft", "coralSoft"],
+        "radius": 14
+      }
+    },
+    "dataVisualization": {
+      "donutProgress": {
+        "type": "multi-segment circular ring",
+        "trackColor": "#E9ECF4",
+        "segmentPalette": ["#A286F3", "#EA8E78", "#6AAEE6"],
+        "strokeCap": "round",
+        "holeRatio": 0.58
+      },
+      "linearProgress": {
+        "height": 6,
+        "radius": 999,
+        "trackColor": "#D9DFEA",
+        "fillColor": "#D97C69",
+        "label": "right-aligned bold fraction"
+      }
+    },
+    "calendar": {
+      "container": {
+        "background": "#FFFFFF",
+        "radius": 18,
+        "padding": 14
+      },
+      "weekdayLabel": {
+        "textStyle": "micro",
+        "color": "#A0A6B6"
+      },
+      "dateCell": {
+        "size": 30,
+        "shape": "circle",
+        "selectedBackground": "#D8E8FF",
+        "selectedTextColor": "#405070",
+        "defaultTextColor": "#353A49"
+      }
+    },
+    "chipsAndBadges": {
+      "priorityChip": {
+        "height": 26,
+        "horizontalPadding": 10,
+        "radius": 13,
+        "fontStyle": "caption",
+        "lowPriority": {
+          "background": "#FDEFEA",
+          "text": "#AC6A57"
+        },
+        "highPriority": {
+          "background": "#EEF3FF",
+          "text": "#4C6294"
+        }
+      },
+      "countBadge": {
+        "shape": "pill",
+        "background": "#EEF1F8",
+        "textStyle": "caption"
+      }
+    },
+    "tabsAndSegmentedControls": {
+      "sectionTabs": {
+        "container": "inline row with generous horizontal spacing",
+        "inactive": {
+          "textColor": "#8A90A3"
+        },
+        "active": {
+          "textColor": "#2E3344",
+          "weight": 600,
+          "indicator": "2px underline or subtle filled capsule"
+        }
+      }
+    },
+    "lists": {
+      "taskListItem": {
+        "layout": "title/subtitle left + control right",
+        "titleStyle": "bodyStrong",
+        "subtitleStyle": "body with subdued color",
+        "divider": "optional 1px neutral line at low opacity",
+        "checkboxStyle": "thin circular outline"
+      },
+      "metaList": {
+        "lineHeight": "airy, not compact",
+        "preferredVerticalGap": 14
+      }
+    },
+    "buttons": {
+      "iconButton": {
+        "size": 36,
+        "shape": "circle",
+        "background": "#FFFFFF",
+        "iconColor": "#2E3344",
+        "elevationToken": "cardSoft"
+      },
+      "primaryButton": {
+        "height": 46,
+        "radius": 14,
+        "background": "#4B3A8A",
+        "textColor": "#FFFFFF",
+        "textStyle": "bodyStrong"
+      },
+      "ghostButton": {
+        "height": 44,
+        "radius": 14,
+        "background": "transparent",
+        "textColor": "#4B3A8A"
+      }
+    },
+    "inputsAndSelection": {
+      "textInput": {
+        "height": 48,
+        "radius": 14,
+        "background": "#FFFFFF",
+        "placeholderColor": "#9DA3B3",
+        "paddingHorizontal": 14,
+        "focusRing": "1px solid rgba(75, 58, 138, 0.35)"
+      },
+      "checkbox": {
+        "size": 20,
+        "shape": "rounded square or circle",
+        "uncheckedBorder": "1.5px solid #C2C7D5",
+        "checkedFill": "#4B3A8A",
+        "checkColor": "#FFFFFF"
+      }
+    },
+    "surfacesAndContainers": {
+      "modalSheet": {
+        "topRadius": 24,
+        "background": "#FFFFFF",
+        "handle": "36x4 neutral capsule"
+      },
+      "panel": {
+        "radius": 20,
+        "padding": 18,
+        "background": "#FFFFFF"
+      }
+    }
+  },
+  "contentAndHierarchyGuidelines": {
+    "titlePatterns": [
+      "One dominant title per screen.",
+      "Secondary section titles should stay compact and semibold.",
+      "Use concise action-oriented task names."
+    ],
+    "textDensity": [
+      "Prefer short text blocks and line breaks for scanability.",
+      "Descriptions should remain in medium contrast to reduce visual noise.",
+      "Keep metadata compact and aligned on shared baselines."
+    ],
+    "priorityEncoding": {
+      "method": "chip color + subtle background tint",
+      "avoid": "aggressive warning reds unless critical"
+    }
+  },
+  "accessibilityGuidelines": {
+    "contrast": {
+      "minimumBodyText": "4.5:1",
+      "minimumLargeText": "3:1",
+      "note": "Pastel surfaces require careful text contrast checks."
+    },
+    "typeScaling": {
+      "supportDynamicType": true,
+      "maxLinesForCriticalLabels": 2
+    },
+    "interaction": {
+      "minimumTouchTarget": 44,
+      "focusVisibility": "Use subtle but visible focus outlines on interactive components."
+    }
+  },
+  "implementationHintsForAI": {
+    "do": [
+      "Start each new screen from a soft gradient or very light tinted background.",
+      "Compose content mostly from rounded cards and chips.",
+      "Use semibold headings, regular body text, and small caption metadata.",
+      "Apply one dominant accent color with 1-2 complementary pastels.",
+      "Keep spacing generous and consistent with the defined scale."
+    ],
+    "dont": [
+      "Do not use pure black text on bright white across the full screen.",
+      "Do not use sharp corners, hard shadows, or high-saturation neon colors.",
+      "Do not place too many components on a single vertical section without breathing room.",
+      "Do not rely on heavy outlines; prefer tonal separation."
+    ],
+    "replicationChecklist": [
+      "Background uses subtle cool/lavender gradient.",
+      "Primary title is large, left-aligned, and dark neutral.",
+      "Cards have 16-20px radius and soft shadow.",
+      "Metadata uses chips, tiny labels, and avatar clusters.",
+      "Bottom navigation includes a center-emphasis floating action."
+    ]
+  }
+}

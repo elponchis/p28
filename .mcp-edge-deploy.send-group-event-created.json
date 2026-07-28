@@ -1,0 +1,8 @@
+{
+  "project_id": "ckdplbrfngytwiyttzxz",
+  "name": "send-group-event-created",
+  "entrypoint_path": "index.ts",
+  "verify_jwt": false,
+  "source_repo_path": "supabase/functions/send-group-event-created/index.ts",
+  "note": "Redeploy with Supabase CLI or MCP deploy_edge_function; verify_jwt false matches manual auth/v1/user check in function body."
+}

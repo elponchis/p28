@@ -1,0 +1,8 @@
+node_modules
+.expo
+dist
+_bmad
+_bmad-output
+.cursor
+*.min.js
+package-lock.json
