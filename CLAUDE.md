@@ -79,6 +79,65 @@ Primitive components (`Button`, `Card`, `Input`, `ListItem`, `Avatar`, `StackedA
 
 Supabase migrations are in `supabase/migrations/` numbered sequentially. The schema covers: profiles, groups (forums/ministries), discussions + posts + reactions, friendships + friend requests, chats + messages + reactions + folders.
 
-@.claude/rules/coding-standards.md
-@.claude/rules/typescript-react-patterns.md
-@.claude/rules/use-all-capabilities.md
+## Coding Standards
+
+Apply these practices to every edit in this project.
+
+### TypeScript & imports
+- Use strict types; avoid `any`. Prefer `interface` for object shapes and API contracts.
+- Use the `@/` path alias for project imports (e.g. `@/lib/api`, `@/components/primitives`, `@/theme/tokens`).
+- Order imports: React first, then external packages, then `@/` internal modules.
+
+### Components & UI
+- Use functional components and hooks only.
+- Use theme tokens from `@/theme/tokens` (colors, spacing, typography, radius, shadow) for styling; avoid magic numbers.
+- Use `StyleSheet.create` for local styles; reuse shared styles (e.g. `authScreenStyles`) where they exist.
+- For interactive elements (Button, Input, touchables): always set `accessibilityLabel` and, when helpful, `accessibilityHint`.
+
+### API & errors
+- Server data: use React Query hooks from `@/hooks/useApiQueries` (e.g. `useProfileQuery`, `useUpdateProfileMutation`). Do not call `api.data.*` directly in screens or components. Auth: use `auth.*` from `@/lib/api` or `useAuth`. Use `getUserFacingError()` for user-facing error messages.
+- Never swallow errors: log and/or surface to the user; rethrow when the caller should handle.
+
+### Security & data
+- No secrets or API keys in source; use environment/config.
+- Validate and sanitize user input before sending to API or persisting.
+
+### Formatting & quality
+- Run `npm run format` (Prettier) and `npm run lint` (ESLint) before considering code done; fix any reported issues.
+- Add or update unit tests in `__tests__` when adding or changing behavior under `app/` or `lib/`.
+
+### Examples
+
+```tsx
+// ✅ Imports: React, then external, then @/
+import React, { useState } from 'react';
+import { router } from 'expo-router';
+import { Button } from '@/components/primitives';
+import { useProfileQuery } from '@/hooks/useApiQueries';
+import { colors, spacing } from '@/theme/tokens';
+```
+
+```tsx
+// ✅ Interactive element with a11y
+<Button
+  title="Continue"
+  onPress={handleSubmit}
+  accessibilityLabel="Continue"
+  accessibilityHint="Continues to the next step"
+/>
+```
+
+```tsx
+// ✅ Server data: use React Query hooks from hooks/useApiQueries
+const { data: profile, isError, error, refetch } = useProfileQuery(userId);
+const updateMutation = useUpdateProfileMutation();
+const errorMessage = isError && error && 'message' in error ? getUserFacingError(error) : null;
+```
+
+## TypeScript & React Patterns
+
+- **Default export** for screen components (expo-router); **named exports** for reusable components and utilities.
+- **State**: Prefer `useState` for local UI state; keep async data in state and load in `useEffect` or handlers. Use `useMemo` for derived values that depend on props/state.
+- **Navigation**: Use `router` from `expo-router` for imperative navigation (`router.push`, `router.replace`, `router.back`); use `useRouter()` when you need the router inside hooks or callbacks.
+- **Styles**: Co-locate `StyleSheet.create` with the component; use tokens from `@/theme/tokens`. Pass style overrides via `style` or `containerStyle`/`inputStyle` props when using shared primitives.
+- **Async / server state**: Use React Query hooks from `hooks/useApiQueries` for reads and mutations. Use `data`, `isLoading`, `isError`, `refetch` from queries; `mutate`, `isPending` from mutations. Handle errors with `getUserFacingError()`.

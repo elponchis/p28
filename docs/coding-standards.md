@@ -1,6 +1,6 @@
 # Coding Standards — p28-v2
 
-Practices for the React Native (Expo) app and Supabase backend. Aligns with `.cursor/rules/coding-standards.mdc` and `CLAUDE.md`. For **what the app implements today**, see [`as-built-snapshot.md`](./as-built-snapshot.md).
+Practices for the React Native (Expo) app and Supabase backend. Aligns with `CLAUDE.md`. For **what the app implements today**, see [`as-built-snapshot.md`](./as-built-snapshot.md).
 
 ---
 
@@ -165,7 +165,6 @@ Do not add a `components/screens/` folder or large reusable components inside `a
 ## References
 
 - [`as-built-snapshot.md`](./as-built-snapshot.md) — implemented features and routes.
-- [`../_bmad-output/project-context.md`](../_bmad-output/project-context.md) — condensed rules for AI agents.
 - [Expo ESLint](https://docs.expo.dev/guides/using-eslint/)
 - [React Native performance](https://reactnative.dev/docs/performance)
 - [Supabase JS reference](https://supabase.com/docs/reference/javascript/introduction)

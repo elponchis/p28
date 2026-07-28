@@ -1,6 +1,6 @@
 # p28-v2 — As-built snapshot
 
-_Generated to align BMAD / agent context with the codebase. Last reviewed: 2026-03-24._
+_Generated to align agent context with the codebase. Last reviewed: 2026-03-24._
 
 ## Product shape (MVP)
 
@@ -28,7 +28,7 @@ _Generated to align BMAD / agent context with the codebase. Last reviewed: 2026-
 - Contracts: `lib/api/contracts/*`; DTOs camelCase; DB snake_case in adapter only.
 - Server state: React Query hooks in `hooks/useApiQueries.ts`; **do not** call `api.data.*` from screens.
 - i18n: `t()` — `en`, `ko`, `km`.
-- Theming: `@/theme/tokens`; design direction evolved toward “Calm & Glass” / spacious layout (see `CLAUDE.md` and tech specs in `_bmad-output/implementation-artifacts/`).
+- Theming: `@/theme/tokens`; design direction evolved toward “Calm & Glass” / spacious layout (see `CLAUDE.md`).
 
 ## Migrations
 
@@ -41,5 +41,4 @@ _Generated to align BMAD / agent context with the codebase. Last reviewed: 2026-
 
 ## How to use this doc
 
-- **BMAD:** Treat this as brownfield truth; pair with `_bmad-output/planning-artifacts/as-built-delta-2026-03-24.md` for traceability to frozen PRD/architecture.
-- **Agents:** Read `_bmad-output/project-context.md` first for rules; use this file for **what exists** in the repo.
+- **Agents:** Treat this as brownfield truth for **what exists** in the repo.

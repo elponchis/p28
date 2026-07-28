@@ -25,6 +25,6 @@ module.exports = defineConfig([
     },
   },
   {
-    ignores: ['dist/*', '.expo/*', 'node_modules/**', '**/*.d.ts', '_bmad/**', '_bmad-output/**'],
+    ignores: ['dist/*', '.expo/*', 'node_modules/**', '**/*.d.ts'],
   },
 ]);
