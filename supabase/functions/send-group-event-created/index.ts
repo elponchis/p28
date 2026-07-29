@@ -14,7 +14,7 @@ import {
   optionsResponse,
   sendExpoPushInChunks,
   verifyUserFromAuthorizationHeader,
-} from './_shared/push-gateway.ts';
+} from '../_shared/push-gateway.ts';
 
 type GroupEventRow = {
   id: string;
