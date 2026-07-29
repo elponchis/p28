@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "_expo-temp",
-    "slug": "_expo-temp",
+    "slug": "p28",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -15,12 +15,13 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.blueocean.p28",
+      "bundleIdentifier": "com.elponchis.p28",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
+      "package": "com.elponchis.p28",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#327db6"
@@ -56,7 +57,10 @@
           "savePhotosPermission": "Allow $(PRODUCT_NAME) to save photos to your library."
         }
       ],
-      "expo-video"
+      "expo-video",
+      "@react-native-community/datetimepicker",
+      "expo-font",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
@@ -64,9 +68,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "aa91f1de-7f00-4128-8acb-2a246d09396e"
+        "projectId": "f8b53cf8-a1b7-4a79-9e92-d2a85e7018a8"
       }
     },
-    "owner": "billyhdev"
+    "owner": "tls03jisoo"
   }
 }
