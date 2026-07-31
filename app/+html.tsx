@@ -12,7 +12,12 @@ export default function Root({ children }: { children: React.ReactNode }) {
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
 
-        {/* 
+        <title>P28</title>
+        <meta property="og:title" content="P28" />
+        <meta property="og:description" content="여기를 눌러 링크를 확인하세요." />
+        <meta property="og:type" content="website" />
+
+        {/*
           Disable body scrolling on web. This makes ScrollView components work closer to how they do on native. 
           However, body scrolling is often nice to have for mobile web. If you want to enable it, remove this line.
         */}
