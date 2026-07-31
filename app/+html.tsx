@@ -45,15 +45,18 @@ body {
 
 /* This app is designed for phone-width screens. Past a tablet/desktop breakpoint,
    cap the app to a phone-like column instead of stretching the layout full-bleed
-   (which otherwise blows out spacing between elements designed for ~400px wide). */
+   (which otherwise blows out spacing between elements designed for ~400px wide).
+   The backdrop uses the brand gradient (see DESIGN.md's "Glass & Gradient" rule)
+   so the surrounding space reads as a deliberate frame, not leftover void. */
 @media (min-width: 640px) {
   body {
-    background-color: ${colors.surfaceContainerHigh};
+    background: linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryContainer} 100%);
+    background-attachment: fixed;
   }
   #root {
-    max-width: 480px;
+    max-width: 560px;
     margin: 0 auto;
     min-height: 100vh;
-    box-shadow: 0 0 40px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 0 60px rgba(0, 0, 0, 0.3);
   }
 }`;
