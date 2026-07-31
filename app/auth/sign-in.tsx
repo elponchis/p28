@@ -167,6 +167,15 @@ export default function SignInScreen() {
         accessibilityLabel={t('auth.signIn')}
         accessibilityHint={t('auth.signInHint')}
       />
+      <Button
+        title={t('auth.forgotPassword')}
+        onPress={() => router.push('/auth/forgot-password')}
+        variant="text"
+        disabled={isSubmitting}
+        style={authScreenStyles.secondaryCtaButton}
+        accessibilityLabel={t('auth.forgotPassword')}
+        accessibilityHint={t('auth.forgotPasswordHint')}
+      />
     </AuthFormLayout>
   );
 }

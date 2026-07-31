@@ -54,6 +54,17 @@ export type OnboardingProfileData = {
   preferredLanguage?: string;
 };
 
+/** Profile fields sent as auth signUp metadata; consumed by the on_auth_user_created DB trigger. */
+export type SignUpProfileMetadata = {
+  firstName: string;
+  lastName: string;
+  displayName?: string;
+  /** ISO-8601 date string (YYYY-MM-DD) */
+  birthDate?: string;
+  country?: string;
+  preferredLanguage?: string;
+};
+
 /** Notification preference settings per user. Stored in notification_preferences table. */
 export interface NotificationPreferences {
   userId: string;

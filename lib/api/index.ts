@@ -27,6 +27,7 @@ export type {
   Profile,
   ProfileUpdates,
   OnboardingProfileData,
+  SignUpProfileMetadata,
   Announcement,
   AnnouncementStatus,
   NotificationPreferences,

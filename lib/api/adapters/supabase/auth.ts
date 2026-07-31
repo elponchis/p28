@@ -6,7 +6,7 @@ import type {
 } from '@supabase/supabase-js';
 import type { AuthContract, AuthStateListener } from '../../contracts';
 import type { ApiError } from '../../contracts/errors';
-import type { Session, User } from '../../contracts/dto';
+import type { Session, User, SignUpProfileMetadata } from '../../contracts/dto';
 
 function toApiError(err: AuthError | Error): ApiError {
   const message = err?.message ?? 'An error occurred';
@@ -69,9 +69,24 @@ export function createSupabaseAuthAdapter(getClient: () => SupabaseClient): Auth
       }
     },
 
-    async signUp(email: string, password: string) {
+    async signUp(email: string, password: string, metadata?: SignUpProfileMetadata) {
       try {
-        const { data, error } = await getClient().auth.signUp({ email, password });
+        const { data, error } = await getClient().auth.signUp({
+          email,
+          password,
+          options: metadata
+            ? {
+                data: {
+                  first_name: metadata.firstName,
+                  last_name: metadata.lastName,
+                  display_name: metadata.displayName,
+                  birth_date: metadata.birthDate,
+                  country: metadata.country,
+                  preferred_language: metadata.preferredLanguage,
+                },
+              }
+            : undefined,
+        });
         if (error) return { error: toApiError(error) };
         // Empty identities = email already exists (Supabase returns success but no new identity)
         const identities = (data.user as { identities?: unknown[] } | undefined)?.identities;
@@ -144,6 +159,44 @@ export function createSupabaseAuthAdapter(getClient: () => SupabaseClient): Auth
         listener(mapSession(session));
       });
       return () => subscription.unsubscribe();
+    },
+
+    async requestPasswordReset(email: string, redirectTo?: string) {
+      try {
+        const { error } = await getClient().auth.resetPasswordForEmail(
+          email,
+          redirectTo ? { redirectTo } : undefined
+        );
+        if (error) return { error: toApiError(error) };
+        return {};
+      } catch (e) {
+        return { error: toApiError(e instanceof Error ? e : new Error(String(e))) };
+      }
+    },
+
+    async setSessionFromRecoveryTokens(accessToken: string, refreshToken: string) {
+      try {
+        const { data, error } = await getClient().auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        if (error) return { error: toApiError(error) };
+        const session = mapSession(data.session);
+        if (!session) return { error: { message: 'No session returned', code: 'NO_SESSION' } };
+        return { session };
+      } catch (e) {
+        return { error: toApiError(e instanceof Error ? e : new Error(String(e))) };
+      }
+    },
+
+    async updatePassword(newPassword: string) {
+      try {
+        const { error } = await getClient().auth.updateUser({ password: newPassword });
+        if (error) return { error: toApiError(error) };
+        return {};
+      } catch (e) {
+        return { error: toApiError(e instanceof Error ? e : new Error(String(e))) };
+      }
     },
   };
 }

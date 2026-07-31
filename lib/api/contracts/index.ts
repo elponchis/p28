@@ -46,6 +46,7 @@ export type {
   NotificationPreferences,
   NotificationPreferencesUpdates,
   OnboardingProfileData,
+  SignUpProfileMetadata,
   PushToken,
   InAppNotification,
   InAppNotificationKind,
