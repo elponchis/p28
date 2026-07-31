@@ -1,4 +1,5 @@
 import { ScrollViewStyleReset } from 'expo-router/html';
+import { colors } from '@/theme/tokens';
 
 // This file is web-only and used to configure the root HTML for every
 // web page during static rendering.
@@ -39,5 +40,20 @@ body {
 @media (prefers-color-scheme: dark) {
   body {
     background-color: #000;
+  }
+}
+
+/* This app is designed for phone-width screens. Past a tablet/desktop breakpoint,
+   cap the app to a phone-like column instead of stretching the layout full-bleed
+   (which otherwise blows out spacing between elements designed for ~400px wide). */
+@media (min-width: 640px) {
+  body {
+    background-color: ${colors.surfaceContainerHigh};
+  }
+  #root {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.08);
   }
 }`;
