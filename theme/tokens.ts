@@ -350,6 +350,15 @@ export const authScreen = {
 } as const;
 
 // ---------------------------------------------------------------------------
+// Breakpoints (web only — the app is otherwise a single phone-width layout)
+// ---------------------------------------------------------------------------
+
+/** Viewport width (px) above which web treats the layout as desktop, not phone-in-browser. Keep in sync with app/+html.tsx. */
+export const breakpoints = {
+  desktop: 640,
+} as const;
+
+// ---------------------------------------------------------------------------
 // Aggregate export
 // ---------------------------------------------------------------------------
 
@@ -362,6 +371,7 @@ export const tokens = {
   fontFamily,
   minTouchTarget,
   avatarSizes,
+  breakpoints,
 } as const;
 
 export default tokens;

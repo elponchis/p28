@@ -1,5 +1,5 @@
 import { ScrollViewStyleReset } from 'expo-router/html';
-import { colors } from '@/theme/tokens';
+import { breakpoints, colors } from '@/theme/tokens';
 
 // This file is web-only and used to configure the root HTML for every
 // web page during static rendering.
@@ -48,7 +48,7 @@ body {
    (which otherwise blows out spacing between elements designed for ~400px wide).
    The backdrop uses the brand gradient (see DESIGN.md's "Glass & Gradient" rule)
    so the surrounding space reads as a deliberate frame, not leftover void. */
-@media (min-width: 640px) {
+@media (min-width: ${breakpoints.desktop}px) {
   body {
     background: linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryContainer} 100%);
     background-attachment: fixed;

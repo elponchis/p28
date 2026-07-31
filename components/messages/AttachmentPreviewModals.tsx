@@ -2,10 +2,20 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { useVideoPlayer, VideoView, type VideoSource } from 'expo-video';
 import * as Sharing from 'expo-sharing';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
+import { getMediaViewerSize } from '@/lib/mediaViewerBounds';
 import { t } from '@/lib/i18n';
 import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
@@ -30,6 +40,8 @@ function VideoModalInner({
 }) {
   const insets = useSafeAreaInsets();
   const [busy, setBusy] = useState(false);
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const videoSize = getMediaViewerSize(windowWidth, windowHeight);
   const player = useVideoPlayer(videoSourceFromUrl(videoUrl), (p) => {
     p.loop = false;
     p.play();
@@ -95,7 +107,12 @@ function VideoModalInner({
           <Ionicons name="download-outline" size={26} color={colors.onPrimary} />
         )}
       </Pressable>
-      <VideoView player={player} style={videoStyles.video} nativeControls contentFit="contain" />
+      <VideoView
+        player={player}
+        style={[videoStyles.video, videoSize]}
+        nativeControls
+        contentFit="contain"
+      />
     </View>
   );
 }
@@ -105,10 +122,10 @@ const videoStyles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000',
     justifyContent: 'center',
+    alignItems: 'center',
   },
   video: {
-    width: '100%',
-    flex: 1,
+    backgroundColor: '#000',
   },
   closeBtn: {
     position: 'absolute',
@@ -257,12 +274,15 @@ const fileStyles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: spacing.lg,
   },
   sheet: {
     backgroundColor: colors.surface,
     borderRadius: radius.card,
     padding: spacing.lg,
+    width: '100%',
+    maxWidth: 480,
   },
   header: {
     flexDirection: 'row',

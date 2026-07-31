@@ -8,7 +8,6 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import {
   ActivityIndicator,
   Alert,
-  Dimensions,
   Keyboard,
   KeyboardAvoidingView,
   Modal,
@@ -17,6 +16,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -60,6 +60,7 @@ import {
   storedMessageToPendingAttachments,
 } from '@/lib/composeAttachments';
 import { tryGetVideoPosterUri } from '@/lib/videoPoster';
+import { getMediaViewerSize } from '@/lib/mediaViewerBounds';
 import {
   isAllowedMessageAttachmentMimeType,
   MAX_MESSAGE_ATTACHMENT_BYTES,
@@ -350,6 +351,7 @@ export default function DiscussionDetailScreen() {
   const userId = session?.user?.id;
   const qc = useQueryClient();
   const insets = useSafeAreaInsets();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const { iosKeyboardVerticalOffset, parentContainerProps } = useIosKeyboardAvoidingParentOffset();
 
   const [keyboardOpen, setKeyboardOpen] = useState(false);
@@ -1112,13 +1114,7 @@ export default function DiscussionDetailScreen() {
             <>
               <Image
                 source={{ uri: previewImageUrl }}
-                style={[
-                  styles.imagePreviewImage,
-                  {
-                    width: Dimensions.get('window').width,
-                    height: Dimensions.get('window').height,
-                  },
-                ]}
+                style={[styles.imagePreviewImage, getMediaViewerSize(windowWidth, windowHeight)]}
                 contentFit="contain"
               />
               <Pressable
