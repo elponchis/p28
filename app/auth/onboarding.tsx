@@ -22,7 +22,6 @@ import { useLocale } from '@/contexts/LocaleContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useFadeSheetAnimation } from '@/hooks/useFadeSheetAnimation';
 import { usePendingSignUp } from '@/contexts/PendingSignUpContext';
-import { useCreateProfileMutation } from '@/hooks/useApiQueries';
 import { auth } from '@/lib/api';
 import { getUserFacingError } from '@/lib/errors';
 import type { ApiError } from '@/lib/api/contracts/errors';
@@ -216,6 +215,41 @@ function BirthDateField({
     setShowPicker(true);
   };
 
+  // @react-native-community/datetimepicker has no web implementation (it renders null there),
+  // so the native Pressable + picker flow below silently does nothing on web. Use a real
+  // HTML date input instead.
+  if (Platform.OS === 'web') {
+    const handleWebChange = (event: { target: { value: string } }) => {
+      onChange(event.target.value);
+    };
+
+    return (
+      <View>
+        <Text style={styles.fieldLabel}>{t('profile.birthDate')}</Text>
+        <View style={[styles.select, disabled ? styles.selectDisabled : null]}>
+          {React.createElement('input', {
+            type: 'date',
+            value: value && isIsoDate(value) ? value : '',
+            onChange: handleWebChange,
+            disabled,
+            max: formatDateToYYYYMMDD(new Date()),
+            'aria-label': t('profile.birthDate'),
+            style: {
+              flex: 1,
+              border: 'none',
+              outline: 'none',
+              background: 'transparent',
+              fontFamily: fontFamily.sans,
+              fontSize: 15,
+              color: colors.onSurface,
+              cursor: disabled ? 'default' : 'pointer',
+            },
+          })}
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View>
       <Text style={styles.fieldLabel}>{t('profile.birthDate')}</Text>
@@ -386,8 +420,7 @@ export default function OnboardingScreen() {
 
   const [error, setError] = useState<string | null>(null);
   const [isSubmittingSignUp, setIsSubmittingSignUp] = useState(false);
-  const createProfileMutation = useCreateProfileMutation();
-  const isSubmitting = isSubmittingSignUp || createProfileMutation.isPending;
+  const isSubmitting = isSubmittingSignUp;
 
   useEffect(() => {
     if (!pendingSignUp && !session?.user?.id) {
@@ -416,7 +449,14 @@ export default function OnboardingScreen() {
 
     if (pendingSignUp && !userId) {
       setIsSubmittingSignUp(true);
-      const signUpResult = await auth.signUp(pendingSignUp.email, pendingSignUp.password);
+      const signUpResult = await auth.signUp(pendingSignUp.email, pendingSignUp.password, {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        displayName: `${firstName.trim()} ${lastName.trim()}`.trim(),
+        birthDate: birthDate.trim() ? birthDate.trim() : undefined,
+        country: country ?? undefined,
+        preferredLanguage: preferredLanguage ?? undefined,
+      });
       if ('error' in signUpResult) {
         const err = signUpResult.error as ApiError;
         if (err.code === 'EMAIL_CONFIRMATION_REQUIRED') {
@@ -441,29 +481,10 @@ export default function OnboardingScreen() {
       return;
     }
 
-    createProfileMutation.mutate(
-      {
-        userId,
-        data: {
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
-          birthDate: birthDate.trim() ? birthDate.trim() : undefined,
-          country: country ?? undefined,
-          preferredLanguage: preferredLanguage ?? undefined,
-        },
-      },
-      {
-        onSuccess: (result) => {
-          setIsSubmittingSignUp(false);
-          if (result.preferredLanguage) setLocale(result.preferredLanguage);
-          router.replace('/(tabs)');
-        },
-        onError: (err) => {
-          setIsSubmittingSignUp(false);
-          setError(getUserFacingError(err));
-        },
-      }
-    );
+    // profiles row is created by the on_auth_user_created DB trigger from signUp() metadata above.
+    setIsSubmittingSignUp(false);
+    if (preferredLanguage) setLocale(preferredLanguage);
+    router.replace('/(tabs)');
   }
 
   function handleBackToSignIn() {
