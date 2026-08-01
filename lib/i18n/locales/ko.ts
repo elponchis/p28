@@ -182,6 +182,7 @@ export const ko: TranslationShape = {
     loadingLabel: '알림 설정 로딩 중',
     friendRequests: '친구 요청',
     friendRequestsHint: '친구 요청을 보고 관리합니다',
+    openNotificationsHint: '알림 화면을 엽니다',
     noRequests: '친구 요청 없음',
     noRequestsSubtitle: '누군가가 친구 요청을 보내면 여기에 표시됩니다.',
     userProfile: '사용자 프로필',

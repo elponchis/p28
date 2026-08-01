@@ -5,7 +5,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { Avatar } from '@/components/primitives';
+import { useAuth } from '@/hooks/useAuth';
+import { t } from '@/lib/i18n';
 import { breakpoints, colors, fontFamily, spacing } from '@/theme/tokens';
+
+/** Routes that never get a nav icon — surfaced elsewhere (notifications: header bell). */
+const HIDDEN_FROM_NAV = new Set(['notifications']);
 
 /** Width of the sidebar when acting as a desktop-web left nav instead of a bottom bar. */
 export const SIDEBAR_WIDTH = 240;
@@ -134,11 +140,54 @@ function SidebarTabItem({
   );
 }
 
+function SidebarProfileFooter({
+  isFocused,
+  onPress,
+  onLongPress,
+  accessibilityLabel,
+}: {
+  isFocused: boolean;
+  onPress: () => void;
+  onLongPress: () => void;
+  accessibilityLabel?: string;
+}) {
+  const { session } = useAuth();
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onLongPress={onLongPress}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: isFocused }}
+      accessibilityLabel={accessibilityLabel ?? t('tabs.profile')}
+      style={({ pressed }) => [
+        styles.sidebarItem,
+        isFocused && styles.sidebarItemFocused,
+        pressed && styles.sidebarItemPressed,
+      ]}
+    >
+      <Avatar
+        size="sm"
+        fallbackText={session?.user?.email}
+        accessibilityLabel={t('tabs.profile')}
+      />
+      <Text
+        style={[
+          styles.sidebarLabel,
+          { color: isFocused ? colors.primary : colors.onSurfaceVariant },
+        ]}
+        numberOfLines={1}
+      >
+        {t('tabs.profile')}
+      </Text>
+    </Pressable>
+  );
+}
+
 const ICON_MAP: Record<string, { focused: IoniconsName; default: IoniconsName }> = {
   index: { focused: 'home', default: 'home-outline' },
   groups: { focused: 'people', default: 'people-outline' },
   messages: { focused: 'chatbubbles', default: 'chatbubbles-outline' },
-  notifications: { focused: 'notifications', default: 'notifications-outline' },
   profile: { focused: 'person', default: 'person-outline' },
 };
 
@@ -147,7 +196,10 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
   const { width } = useWindowDimensions();
   const isSidebar = Platform.OS === 'web' && width >= breakpoints.sidebar;
 
-  const items = state.routes.map((route, index) => {
+  const visibleRoutes = state.routes.filter((route) => !HIDDEN_FROM_NAV.has(route.name));
+
+  const items = visibleRoutes.map((route) => {
+    const index = state.routes.indexOf(route);
     const { options } = descriptors[route.key];
     const label =
       typeof options.tabBarLabel === 'string'
@@ -185,6 +237,7 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
 
     return {
       routeKey: route.key,
+      routeName: route.name,
       label,
       iconFocused: icons.focused,
       iconDefault: icons.default,
@@ -197,13 +250,28 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
   });
 
   if (isSidebar) {
+    const mainItems = items.filter((item) => item.routeName !== 'profile');
+    const profileItem = items.find((item) => item.routeName === 'profile');
+
     return (
       <View
         style={[styles.sidebarOuter, { paddingTop: insets.top + spacing.lg, width: SIDEBAR_WIDTH }]}
       >
-        {items.map(({ routeKey, ...item }) => (
-          <SidebarTabItem key={routeKey} {...item} />
-        ))}
+        <View style={styles.sidebarMain}>
+          {mainItems.map(({ routeKey, routeName, ...item }) => (
+            <SidebarTabItem key={routeKey} {...item} />
+          ))}
+        </View>
+        {profileItem && (
+          <View style={[styles.sidebarFooter, { paddingBottom: insets.bottom + spacing.sm }]}>
+            <SidebarProfileFooter
+              isFocused={profileItem.isFocused}
+              onPress={profileItem.onPress}
+              onLongPress={profileItem.onLongPress}
+              accessibilityLabel={profileItem.accessibilityLabel}
+            />
+          </View>
+        )}
       </View>
     );
   }
@@ -219,7 +287,7 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
     >
       <BlurView intensity={20} tint="light" style={styles.bar}>
         <View style={styles.barContent}>
-          {items.map(({ routeKey, ...item }) => (
+          {items.map(({ routeKey, routeName, ...item }) => (
             <TabItem key={routeKey} {...item} />
           ))}
         </View>
@@ -288,7 +356,15 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderRightColor: colors.ghostBorder,
     paddingHorizontal: spacing.sm,
+    justifyContent: 'space-between',
+  },
+  sidebarMain: {
     gap: spacing.xxs,
+  },
+  sidebarFooter: {
+    borderTopWidth: 1,
+    borderTopColor: colors.ghostBorder,
+    paddingTop: spacing.sm,
   },
   sidebarItem: {
     flexDirection: 'row',

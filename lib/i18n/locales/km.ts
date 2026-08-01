@@ -129,7 +129,8 @@ export const km: TranslationShape = {
     sendResetLink: 'ផ្ញើតំណកំណត់ឡើងវិញ',
     sendingResetLink: 'កំពុងផ្ញើ…',
     resetLinkSentTitle: 'សូមពិនិត្យអ៉ីមែលរបស់អ្នក',
-    resetLinkSentSubtitle: 'ប្រសិនបើមានគណនីសម្រាប់អ៉ីមែលនោះ យើងបានផ្ញើតំណដើម្បីកំណត់ពាក្យសម្ងាត់ឡើងវិញ។',
+    resetLinkSentSubtitle:
+      'ប្រសិនបើមានគណនីសម្រាប់អ៉ីមែលនោះ យើងបានផ្ញើតំណដើម្បីកំណត់ពាក្យសម្ងាត់ឡើងវិញ។',
     resetPasswordTitle: 'កំណត់ពាក្យសម្ងាត់ថ្មី',
     resetPasswordSubtitle: 'បញ្ចូលពាក្យសម្ងាត់ថ្មីសម្រាប់គណនីរបស់អ្នក។',
     newPassword: 'ពាក្យសម្ងាត់ថ្មី',
@@ -184,6 +185,7 @@ export const km: TranslationShape = {
     loadingLabel: 'កំពុងផ្ទុកចំណង់ចំណូលចិត្តការជូនដំណឹង',
     friendRequests: 'សំណើមិត្តភក្តិ',
     friendRequestsHint: 'មើល និងគ្រប់គ្រងសំណើមិត្តភក្តិរបស់អ្នក',
+    openNotificationsHint: 'បើកទំព័រការជូនដំណឹងរបស់អ្នក',
     noRequests: 'គ្មានសំណើមិត្តភក្តិ',
     noRequestsSubtitle: 'នៅពេលដែលនរណាម្នាក់ផ្ញើសំណើមិត្តភក្តិមកអ្នក វានឹងបង្ហាញនៅទីនេះ។',
     userProfile: 'ប្រវត្តិរូបអ្នកប្រើប្រាស់',

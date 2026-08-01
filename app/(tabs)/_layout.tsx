@@ -4,6 +4,7 @@ import { Tabs, useSegments } from 'expo-router';
 
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 import { FloatingTabBar } from '@/components/navigation/FloatingTabBar';
+import { NotificationsBellButton } from '@/components/navigation/NotificationsBellButton';
 import { useLocale } from '@/contexts/LocaleContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useInAppBadgeClearTimestamp } from '@/hooks/useInAppBadgeClearTimestamp';
@@ -60,6 +61,7 @@ export default function TabLayout() {
           tabBarInactiveTintColor: colors.ink300,
           tabBarStyle: {},
           headerShown: useClientOnlyValue(false, true),
+          headerRight: () => <NotificationsBellButton badge={notificationsBadge} />,
           headerStyle: {
             backgroundColor: colors.surface,
             elevation: 0,
@@ -107,8 +109,10 @@ export default function TabLayout() {
           }}
           options={{
             title: t('tabs.notifications'),
-            tabBarAccessibilityLabel: t('tabs.notifications'),
-            tabBarBadge: notificationsBadge,
+            // No nav icon (sidebar or bottom bar) — reached via the header bell instead.
+            href: null,
+            // Don't show a bell that just re-opens the screen you're already on.
+            headerRight: undefined,
           }}
         />
         <Tabs.Screen

@@ -185,6 +185,7 @@ export const en = {
     loadingLabel: 'Loading notification preferences',
     friendRequests: 'Friend Requests',
     friendRequestsHint: 'View and manage your friend requests',
+    openNotificationsHint: 'Opens your notifications',
     noRequests: 'No friend requests',
     noRequestsSubtitle: 'When someone sends you a friend request, it will appear here.',
     userProfile: 'User profile',
