@@ -786,6 +786,9 @@ function mapRow(row: {
   preferred_language?: string | null;
   avatar_url?: string | null;
   bio?: string | null;
+  title?: string | null;
+  organization?: string | null;
+  tags?: string[] | null;
   updated_at?: string | null;
   notifications_badge_cleared_at?: string | null;
 }): Profile {
@@ -802,6 +805,9 @@ function mapRow(row: {
     preferredLanguage: row.preferred_language ?? undefined,
     avatarUrl: row.avatar_url ?? undefined,
     bio: row.bio ?? undefined,
+    title: row.title ?? undefined,
+    organization: row.organization ?? undefined,
+    tags: row.tags ?? undefined,
     updatedAt: row.updated_at ?? undefined,
     notificationsBadgeClearedAt: row.notifications_badge_cleared_at ?? undefined,
   };
@@ -866,7 +872,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
         const { data, error } = await getClient()
           .from('profiles')
           .select(
-            'user_id, email, display_name, first_name, last_name, birth_date, country, preferred_language, avatar_url, bio, updated_at, notifications_badge_cleared_at'
+            'user_id, email, display_name, first_name, last_name, birth_date, country, preferred_language, avatar_url, bio, title, organization, tags, updated_at, notifications_badge_cleared_at'
           )
           .eq('user_id', userId)
           .maybeSingle();
@@ -900,7 +906,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
           .from('profiles')
           .upsert(payload, { onConflict: 'user_id' })
           .select(
-            'user_id, email, display_name, first_name, last_name, birth_date, country, preferred_language, avatar_url, bio, updated_at, notifications_badge_cleared_at'
+            'user_id, email, display_name, first_name, last_name, birth_date, country, preferred_language, avatar_url, bio, title, organization, tags, updated_at, notifications_badge_cleared_at'
           )
           .single();
         if (error) return toApiError(error);
@@ -921,6 +927,9 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
           avatarUrl: updates.avatarUrl ?? current?.avatarUrl,
           bio: updates.bio ?? current?.bio,
           preferredLanguage: updates.preferredLanguage ?? current?.preferredLanguage,
+          title: updates.title ?? current?.title,
+          organization: updates.organization ?? current?.organization,
+          tags: updates.tags ?? current?.tags,
         };
 
         const payload = {
@@ -929,6 +938,9 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
           avatar_url: merged.avatarUrl ?? null,
           bio: merged.bio ?? null,
           preferred_language: merged.preferredLanguage ?? null,
+          title: merged.title ?? null,
+          organization: merged.organization ?? null,
+          tags: merged.tags ?? null,
           updated_at: new Date().toISOString(),
         };
 
@@ -936,7 +948,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
           .from('profiles')
           .upsert(payload, { onConflict: 'user_id' })
           .select(
-            'user_id, email, display_name, first_name, last_name, birth_date, country, preferred_language, avatar_url, bio, updated_at, notifications_badge_cleared_at'
+            'user_id, email, display_name, first_name, last_name, birth_date, country, preferred_language, avatar_url, bio, title, organization, tags, updated_at, notifications_badge_cleared_at'
           )
           .single();
         if (error) return toApiError(error);

@@ -31,6 +31,12 @@ export interface Profile {
   preferredLanguage?: string;
   avatarUrl?: string;
   bio?: string;
+  /** Business-card role label, e.g. "Pastor". Visible regardless of friendship (unlike bio). */
+  title?: string;
+  /** Business-card affiliation, e.g. "Blue Ocean". Visible regardless of friendship (unlike bio). */
+  organization?: string;
+  /** Free-form business-card labels, e.g. ["Pastor", "Blue Ocean"]. Visible regardless of friendship. */
+  tags?: string[];
   updatedAt?: string;
   /**
    * ISO timestamp: last time the user focused the Notifications tab (server-synced for badge/push).
@@ -43,6 +49,9 @@ export interface ProfileUpdates {
   avatarUrl?: string;
   bio?: string;
   preferredLanguage?: string;
+  title?: string;
+  organization?: string;
+  tags?: string[];
 }
 
 export type OnboardingProfileData = {
