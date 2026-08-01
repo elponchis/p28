@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 import { Avatar, Badge } from '@/components/primitives';
 import { AddFriendButton } from '@/components/patterns/AddFriendButton';
@@ -47,6 +47,7 @@ export default function UserProfileScreen() {
   const createChatMutation = useCreateChatMutation();
 
   const [friendsSheetVisible, setFriendsSheetVisible] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const handleOpenFriendsSheet = useCallback(() => {
     setFriendsSheetVisible(true);
@@ -147,18 +148,38 @@ export default function UserProfileScreen() {
           />
           <View style={styles.headerText}>
             <Text style={styles.title}>{profile?.displayName ?? t('profile.title')}</Text>
-            {profile?.title || profile?.organization ? (
-              <Text style={styles.roleLine} numberOfLines={1}>
-                {[profile.title, profile.organization].filter(Boolean).join(' · ')}
-              </Text>
-            ) : null}
-            {profile?.tags && profile.tags.length > 0 ? (
-              <View style={styles.tagsRow}>
-                {profile.tags.map((tag) => (
-                  <Badge key={tag} label={tag} variant="neutral" />
-                ))}
+            <Pressable
+              onPress={() => setExpanded((v) => !v)}
+              style={({ pressed }) => [styles.summaryRow, pressed && styles.summaryRowPressed]}
+              accessibilityRole="button"
+              accessibilityState={{ expanded }}
+              accessibilityLabel={t('profile.about')}
+              accessibilityHint={
+                expanded ? t('profile.collapseDetailsHint') : t('profile.expandDetailsHint')
+              }
+            >
+              <View style={styles.summaryTextWrap}>
+                {profile?.title || profile?.organization ? (
+                  <Text style={styles.roleLine} numberOfLines={1}>
+                    {[profile.title, profile.organization].filter(Boolean).join(' · ')}
+                  </Text>
+                ) : (
+                  <Text style={styles.roleLine}>{t('profile.about')}</Text>
+                )}
+                {profile?.tags && profile.tags.length > 0 ? (
+                  <View style={styles.tagsRow}>
+                    {profile.tags.map((tag) => (
+                      <Badge key={tag} label={tag} variant="neutral" />
+                    ))}
+                  </View>
+                ) : null}
               </View>
-            ) : null}
+              <Ionicons
+                name={expanded ? 'chevron-up' : 'chevron-down'}
+                size={18}
+                color={colors.onSurfaceVariant}
+              />
+            </Pressable>
             {currentUserId && userId ? (
               areFriends ? (
                 <View style={styles.friendActionsRow}>
@@ -213,29 +234,40 @@ export default function UserProfileScreen() {
           </View>
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>{t('profile.about')}</Text>
-          <View style={styles.aboutFields}>
-            <View style={styles.row}>
-              <Text style={styles.rowLabel}>{t('profile.displayName')}</Text>
-              <Text style={styles.rowValue}>{profile?.displayName ?? '—'}</Text>
+        {expanded && (
+          <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(150)}>
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>{t('profile.about')}</Text>
+              <View style={styles.aboutFields}>
+                <View style={styles.row}>
+                  <Text style={styles.rowLabel}>{t('profile.displayName')}</Text>
+                  <Text style={styles.rowValue}>{profile?.displayName ?? '—'}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.rowLabel}>{t('profile.email')}</Text>
+                  <Text style={styles.rowValue}>{profile?.email ?? '—'}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.rowLabel}>{t('profile.country')}</Text>
+                  <Text style={styles.rowValue}>{profile?.country ?? '—'}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.rowLabel}>{t('profile.preferredLanguage')}</Text>
+                  <Text style={styles.rowValue}>
+                    {preferredLanguageDisplayLabel(profile?.preferredLanguage)}
+                  </Text>
+                </View>
+              </View>
             </View>
-            <View style={styles.row}>
-              <Text style={styles.rowLabel}>{t('profile.email')}</Text>
-              <Text style={styles.rowValue}>{profile?.email ?? '—'}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={styles.rowLabel}>{t('profile.country')}</Text>
-              <Text style={styles.rowValue}>{profile?.country ?? '—'}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={styles.rowLabel}>{t('profile.preferredLanguage')}</Text>
-              <Text style={styles.rowValue}>
-                {preferredLanguageDisplayLabel(profile?.preferredLanguage)}
-              </Text>
-            </View>
-          </View>
-        </View>
+
+            {showBio && (
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>{t('profile.bio')}</Text>
+                <Text style={styles.bio}>{profile?.bio ?? ''}</Text>
+              </View>
+            )}
+          </Animated.View>
+        )}
 
         <FadeActionSheet
           visible={friendsSheetVisible}
@@ -250,13 +282,6 @@ export default function UserProfileScreen() {
             },
           ]}
         />
-
-        {showBio && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>{t('profile.bio')}</Text>
-            <Text style={styles.bio}>{profile?.bio ?? ''}</Text>
-          </View>
-        )}
       </Animated.View>
     </ScrollView>
   );
@@ -282,16 +307,27 @@ const styles = StyleSheet.create({
   },
   headerText: { flex: 1, minHeight: avatarSizes.xl },
   title: { ...typography.h3, color: colors.textPrimary, marginBottom: spacing.xs },
+  summaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  summaryRowPressed: {
+    opacity: 0.7,
+  },
+  summaryTextWrap: {
+    flex: 1,
+  },
   roleLine: {
     ...typography.body,
     color: colors.textSecondary,
-    marginBottom: spacing.xs,
   },
   tagsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.xs,
-    marginBottom: spacing.sm,
+    marginTop: spacing.xs,
   },
   friendActionsRow: {
     flexDirection: 'row',

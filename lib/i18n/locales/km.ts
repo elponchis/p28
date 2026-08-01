@@ -84,6 +84,8 @@ export const km: TranslationShape = {
     tags: 'ស្លាក',
     tagsPlaceholder: 'បំបែកដោយសញ្ញាក្បៀស ឧ. គ្រូគង្វាល, Blue Ocean',
     tagsHint: 'បំបែកស្លាកច្រើនដោយសញ្ញាក្បៀស',
+    expandDetailsHint: 'ពង្រីកដើម្បីមើលព័ត៌មានលម្អិតបន្ថែម',
+    collapseDetailsHint: 'បង្រួមព័ត៌មានលម្អិតប្រវត្តិរូប',
   },
   onboarding: {
     title: 'សូមស្វាគមន៍។\nប្រាប់យើងពីអ្នក។',

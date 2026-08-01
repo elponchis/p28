@@ -83,6 +83,8 @@ export const ko: TranslationShape = {
     tags: '태그',
     tagsPlaceholder: '쉼표로 구분, 예: 목사, Blue Ocean',
     tagsHint: '여러 개는 쉼표로 구분해서 입력하세요',
+    expandDetailsHint: '펼쳐서 프로필 상세정보를 봅니다',
+    collapseDetailsHint: '프로필 상세정보를 접습니다',
   },
   onboarding: {
     title: '환영합니다.\n자신을 소개해 주세요.',

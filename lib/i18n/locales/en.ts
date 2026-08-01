@@ -84,6 +84,8 @@ export const en = {
     tags: 'Tags',
     tagsPlaceholder: 'Comma-separated, e.g. Pastor, Blue Ocean',
     tagsHint: 'Separate multiple tags with commas',
+    expandDetailsHint: 'Expands to show more profile details',
+    collapseDetailsHint: 'Collapses profile details',
   },
   onboarding: {
     title: 'Welcome home.\nTell us about yourself.',

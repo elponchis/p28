@@ -1,5 +1,5 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -11,7 +11,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -62,6 +62,7 @@ export default function ProfileScreen() {
   }, [profile?.birthDate]);
 
   const isLegacyProfile = !!profile && (!profile.firstName || !profile.lastName);
+  const [expanded, setExpanded] = useState(false);
 
   const handleSignOutPress = useCallback(() => {
     Alert.alert(t('auth.signOut'), t('auth.signOutConfirm'), [
@@ -116,11 +117,29 @@ export default function ProfileScreen() {
               @{profile.displayName.replace(/\s+/g, '_').toLowerCase()}
             </Text>
           ) : null}
-          {profile?.title || profile?.organization ? (
-            <Text style={styles.roleLine}>
-              {[profile.title, profile.organization].filter(Boolean).join(' · ')}
-            </Text>
-          ) : null}
+          <Pressable
+            onPress={() => setExpanded((v) => !v)}
+            style={({ pressed }) => [styles.summaryRow, pressed && styles.summaryRowPressed]}
+            accessibilityRole="button"
+            accessibilityState={{ expanded }}
+            accessibilityLabel={t('profile.about')}
+            accessibilityHint={
+              expanded ? t('profile.collapseDetailsHint') : t('profile.expandDetailsHint')
+            }
+          >
+            {profile?.title || profile?.organization ? (
+              <Text style={styles.roleLine}>
+                {[profile.title, profile.organization].filter(Boolean).join(' · ')}
+              </Text>
+            ) : (
+              <Text style={styles.roleLine}>{t('profile.about')}</Text>
+            )}
+            <Ionicons
+              name={expanded ? 'chevron-up' : 'chevron-down'}
+              size={16}
+              color={colors.onSurfaceVariant}
+            />
+          </Pressable>
           {profile?.tags && profile.tags.length > 0 ? (
             <View style={styles.tagsRow}>
               {profile.tags.map((tag) => (
@@ -159,61 +178,69 @@ export default function ProfileScreen() {
           </View>
         ) : null}
 
-        {/* Info fields with icons */}
-        <View style={styles.infoSection}>
-          <View style={styles.infoRow}>
-            <View style={styles.infoIconContainer}>
-              <Ionicons name="mail-outline" size={18} color={colors.primary} />
+        {expanded && (
+          <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(150)}>
+            {/* Info fields with icons */}
+            <View style={styles.infoSection}>
+              <View style={styles.infoRow}>
+                <View style={styles.infoIconContainer}>
+                  <Ionicons name="mail-outline" size={18} color={colors.primary} />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>{t('profile.email').toUpperCase()}</Text>
+                  <Text style={styles.infoValue}>
+                    {profile?.email ?? session?.user?.email ?? '—'}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.infoRow}>
+                <View style={styles.infoIconContainer}>
+                  <MaterialIcons name="cake" size={18} color={colors.primary} />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>{t('profile.birthDate').toUpperCase()}</Text>
+                  <Text style={styles.infoValue}>{birthDateLabel ?? '—'}</Text>
+                </View>
+              </View>
+              <View style={styles.infoRow}>
+                <View style={styles.infoIconContainer}>
+                  <Ionicons name="globe-outline" size={18} color={colors.primary} />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>{t('profile.country').toUpperCase()}</Text>
+                  <Text style={styles.infoValue}>{profile?.country ?? '—'}</Text>
+                </View>
+              </View>
+              <View style={styles.infoRow}>
+                <View style={styles.infoIconContainer}>
+                  <Ionicons name="language-outline" size={18} color={colors.primary} />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>
+                    {t('profile.preferredLanguage').toUpperCase()}
+                  </Text>
+                  <Text style={styles.infoValue}>
+                    {preferredLanguageDisplayLabel(profile?.preferredLanguage)}
+                  </Text>
+                </View>
+              </View>
             </View>
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>{t('profile.email').toUpperCase()}</Text>
-              <Text style={styles.infoValue}>{profile?.email ?? session?.user?.email ?? '—'}</Text>
-            </View>
-          </View>
-          <View style={styles.infoRow}>
-            <View style={styles.infoIconContainer}>
-              <MaterialIcons name="cake" size={18} color={colors.primary} />
-            </View>
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>{t('profile.birthDate').toUpperCase()}</Text>
-              <Text style={styles.infoValue}>{birthDateLabel ?? '—'}</Text>
-            </View>
-          </View>
-          <View style={styles.infoRow}>
-            <View style={styles.infoIconContainer}>
-              <Ionicons name="globe-outline" size={18} color={colors.primary} />
-            </View>
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>{t('profile.country').toUpperCase()}</Text>
-              <Text style={styles.infoValue}>{profile?.country ?? '—'}</Text>
-            </View>
-          </View>
-          <View style={styles.infoRow}>
-            <View style={styles.infoIconContainer}>
-              <Ionicons name="language-outline" size={18} color={colors.primary} />
-            </View>
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>{t('profile.preferredLanguage').toUpperCase()}</Text>
-              <Text style={styles.infoValue}>
-                {preferredLanguageDisplayLabel(profile?.preferredLanguage)}
-              </Text>
-            </View>
-          </View>
-        </View>
 
-        {/* Bio — Reflection Plate: white card with secondary left accent */}
-        <View style={styles.bioPlate}>
-          <View style={styles.bioAccent} />
-          <View style={styles.bioInner}>
-            <View style={styles.bioHeader}>
-              <Text style={styles.quoteIcon}>{'\u201C'}</Text>
-              <Text style={styles.bioTitle}>{t('profile.bio')}</Text>
+            {/* Bio — Reflection Plate: white card with secondary left accent */}
+            <View style={styles.bioPlate}>
+              <View style={styles.bioAccent} />
+              <View style={styles.bioInner}>
+                <View style={styles.bioHeader}>
+                  <Text style={styles.quoteIcon}>{'\u201C'}</Text>
+                  <Text style={styles.bioTitle}>{t('profile.bio')}</Text>
+                </View>
+                <Text style={styles.bioText}>
+                  {profile?.bio ? `\u201C${profile.bio}\u201D` : t('profile.bioPlaceholder')}
+                </Text>
+              </View>
             </View>
-            <Text style={styles.bioText}>
-              {profile?.bio ? `\u201C${profile.bio}\u201D` : t('profile.bioPlaceholder')}
-            </Text>
-          </View>
-        </View>
+          </Animated.View>
+        )}
 
         {/* Account & Community section */}
         <View style={styles.accountSection}>
@@ -277,10 +304,18 @@ const styles = StyleSheet.create({
     marginTop: spacing.xxs,
     textAlign: 'center',
   },
+  summaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xxs,
+    marginTop: spacing.xs,
+  },
+  summaryRowPressed: {
+    opacity: 0.7,
+  },
   roleLine: {
     ...typography.bodyMd,
     color: colors.onSurfaceVariant,
-    marginTop: spacing.xs,
     textAlign: 'center',
   },
   tagsRow: {
