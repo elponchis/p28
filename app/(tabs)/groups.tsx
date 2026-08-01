@@ -21,7 +21,7 @@ import { useGroupsQuery, useGroupsForUserQuery, useIsAdminQuery } from '@/hooks/
 import { getUserFacingError } from '@/lib/errors';
 import { t } from '@/lib/i18n';
 import type { GroupType } from '@/lib/api';
-import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, radius, spacing, typography, tabScreenContent } from '@/theme/tokens';
 
 type FilterType = 'all' | 'joined' | GroupType;
 
@@ -84,7 +84,7 @@ export default function GroupsScreen() {
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
-      <Animated.View entering={FadeIn.duration(300)} style={styles.content}>
+      <Animated.View entering={FadeIn.duration(300)} style={[styles.content, tabScreenContent]}>
         {/* Hero Header */}
         <View style={styles.header}>
           <Text style={styles.heroTitle}>

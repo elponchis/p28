@@ -12,7 +12,7 @@ import {
 import type { InAppNotification } from '@/lib/api';
 import { formatRelativeTime } from '@/lib/dates';
 import { t } from '@/lib/i18n';
-import { colors, radius, shadow, spacing, typography } from '@/theme/tokens';
+import { colors, radius, shadow, spacing, typography, tabScreenContent } from '@/theme/tokens';
 
 export default function NotificationsScreen() {
   const { session } = useAuth();
@@ -51,7 +51,11 @@ export default function NotificationsScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={[styles.scrollContent, showEmpty && styles.scrollContentEmpty]}
+      contentContainerStyle={[
+        styles.scrollContent,
+        showEmpty && styles.scrollContentEmpty,
+        tabScreenContent,
+      ]}
       showsVerticalScrollIndicator={false}
     >
       {hasFriendNotifications ? (

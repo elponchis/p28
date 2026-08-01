@@ -22,7 +22,15 @@ import { getUserFacingError } from '@/lib/api';
 import { preferredLanguageDisplayLabel, t } from '@/lib/i18n';
 import { Avatar } from '@/components/primitives';
 import { TAB_BAR_HEIGHT } from '@/components/navigation/FloatingTabBar';
-import { breakpoints, colors, spacing, typography, radius, fontFamily } from '@/theme/tokens';
+import {
+  breakpoints,
+  colors,
+  spacing,
+  typography,
+  radius,
+  fontFamily,
+  tabScreenContent,
+} from '@/theme/tokens';
 
 export default function ProfileScreen() {
   const { session, signOut } = useAuth();
@@ -84,7 +92,10 @@ export default function ProfileScreen() {
       contentInsetAdjustmentBehavior="automatic"
       showsVerticalScrollIndicator={false}
     >
-      <Animated.View entering={FadeIn.duration(250)} style={styles.animatedContent}>
+      <Animated.View
+        entering={FadeIn.duration(250)}
+        style={[styles.animatedContent, tabScreenContent]}
+      >
         {errorMessage ? (
           <View style={styles.errorBanner}>
             <Text style={styles.errorText}>{errorMessage}</Text>

@@ -360,6 +360,18 @@ export const breakpoints = {
   sidebar: 900,
 } as const;
 
+/**
+ * Caps + centers (tabs) screen content so it stays readable next to the desktop sidebar
+ * instead of stretching full-width. A no-op below this width (phones, narrow web), since
+ * `width: '100%'` never exceeds `maxWidth` there. Merge into a screen's existing content
+ * wrapper style (e.g. `style={[styles.content, tabScreenContent]}`).
+ */
+export const tabScreenContent = {
+  width: '100%',
+  maxWidth: 720,
+  alignSelf: 'center',
+} as const;
+
 // ---------------------------------------------------------------------------
 // Aggregate export
 // ---------------------------------------------------------------------------
@@ -374,6 +386,7 @@ export const tokens = {
   minTouchTarget,
   avatarSizes,
   breakpoints,
+  tabScreenContent,
 } as const;
 
 export default tokens;

@@ -280,7 +280,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   sidebarOuter: {
-    flex: 1,
+    // Row-direction sidebar: fixed width, never grows/shrinks — `flex: 1` here would compete
+    // with the scene container for the row's main-axis space (roughly 50/50 instead of fixed).
+    flexGrow: 0,
+    flexShrink: 0,
     backgroundColor: colors.surfaceContainerLowest,
     borderRightWidth: 1,
     borderRightColor: colors.ghostBorder,

@@ -35,7 +35,15 @@ import { t } from '@/lib/i18n';
 import { isApiError, type Group } from '@/lib/api';
 import { getUserFacingError } from '@/lib/errors';
 import type { JoinedGroupUpcomingEventRow } from '@/lib/upcomingJoinedGroupEvents';
-import { colors, fontFamily, radius, spacing, typography, shadow } from '@/theme/tokens';
+import {
+  colors,
+  fontFamily,
+  radius,
+  spacing,
+  typography,
+  shadow,
+  tabScreenContent,
+} from '@/theme/tokens';
 
 const GROUP_CARD_WIDTH = 200;
 const GROUP_CARD_IMAGE_HEIGHT = 120;
@@ -162,7 +170,7 @@ export default function HomeScreen() {
       contentInsetAdjustmentBehavior="automatic"
       showsVerticalScrollIndicator={false}
     >
-      <Animated.View entering={FadeIn.duration(300)}>
+      <Animated.View entering={FadeIn.duration(300)} style={tabScreenContent}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.welcomeText}>

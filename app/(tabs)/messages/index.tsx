@@ -29,7 +29,15 @@ import {
 import { api, getUserFacingError, type ApiError, type Chat, type ChatFolder } from '@/lib/api';
 import { formatRelativeTime } from '@/lib/dates';
 import { t } from '@/lib/i18n';
-import { colors, fontFamily, radius, shadow, spacing, typography } from '@/theme/tokens';
+import {
+  colors,
+  fontFamily,
+  radius,
+  shadow,
+  spacing,
+  typography,
+  tabScreenContent,
+} from '@/theme/tokens';
 
 const CHAT_AVATAR_SIZE = 56;
 
@@ -345,40 +353,42 @@ export default function MessagesIndexScreen() {
 
   return (
     <View style={styles.container}>
-      {isLoading ? (
-        <>
-          {renderHeader()}
-          <View style={styles.centered}>
-            <ActivityIndicator size="large" color={colors.primary} />
-          </View>
-        </>
-      ) : filteredChats.length === 0 ? (
-        <>
-          {renderHeader()}
-          <View style={styles.emptyWrap}>
-            <EmptyState
-              iconName="chatbubbles-outline"
-              title={t('messages.noChats')}
-              subtitle={t('messages.noChatsSubtitle')}
-            />
-          </View>
-        </>
-      ) : (
-        <FlatList
-          data={filteredChats}
-          keyExtractor={(c) => c.id}
-          ListHeaderComponent={renderHeader}
-          renderItem={({ item }) => (
-            <ChatRow
-              chat={item}
-              currentUserId={userId}
-              onPress={() => router.push(`/messages/chat/${item.id}`)}
-            />
-          )}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+      <View style={[styles.contentMaxWidth, tabScreenContent]}>
+        {isLoading ? (
+          <>
+            {renderHeader()}
+            <View style={styles.centered}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          </>
+        ) : filteredChats.length === 0 ? (
+          <>
+            {renderHeader()}
+            <View style={styles.emptyWrap}>
+              <EmptyState
+                iconName="chatbubbles-outline"
+                title={t('messages.noChats')}
+                subtitle={t('messages.noChatsSubtitle')}
+              />
+            </View>
+          </>
+        ) : (
+          <FlatList
+            data={filteredChats}
+            keyExtractor={(c) => c.id}
+            ListHeaderComponent={renderHeader}
+            renderItem={({ item }) => (
+              <ChatRow
+                chat={item}
+                currentUserId={userId}
+                onPress={() => router.push(`/messages/chat/${item.id}`)}
+              />
+            )}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+      </View>
 
       {/* FAB — New message */}
       <Pressable
@@ -462,6 +472,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  contentMaxWidth: {
+    flex: 1,
   },
 
   // ── List header (heading + search + pills) ──
