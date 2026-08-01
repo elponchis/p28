@@ -356,6 +356,8 @@ export const authScreen = {
 /** Viewport width (px) above which web treats the layout as desktop, not phone-in-browser. Keep in sync with app/+html.tsx. */
 export const breakpoints = {
   desktop: 640,
+  /** Viewport width (px) above which the (tabs) branch swaps the bottom tab bar for a left sidebar. */
+  sidebar: 900,
 } as const;
 
 // ---------------------------------------------------------------------------

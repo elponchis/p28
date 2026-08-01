@@ -3,10 +3,12 @@ import { useCallback, useMemo } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
@@ -20,12 +22,14 @@ import { getUserFacingError } from '@/lib/api';
 import { preferredLanguageDisplayLabel, t } from '@/lib/i18n';
 import { Avatar } from '@/components/primitives';
 import { TAB_BAR_HEIGHT } from '@/components/navigation/FloatingTabBar';
-import { colors, spacing, typography, radius, fontFamily } from '@/theme/tokens';
+import { breakpoints, colors, spacing, typography, radius, fontFamily } from '@/theme/tokens';
 
 export default function ProfileScreen() {
   const { session, signOut } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isSidebar = Platform.OS === 'web' && width >= breakpoints.sidebar;
   const userId = session?.user?.id;
   const { data: profile, isLoading: loading, isError, error, refetch } = useProfileQuery(userId);
 
@@ -75,7 +79,7 @@ export default function ProfileScreen() {
       style={styles.container}
       contentContainerStyle={[
         styles.scrollContent,
-        { paddingBottom: TAB_BAR_HEIGHT + insets.bottom + spacing.lg },
+        { paddingBottom: (isSidebar ? 0 : TAB_BAR_HEIGHT) + insets.bottom + spacing.lg },
       ]}
       contentInsetAdjustmentBehavior="automatic"
       showsVerticalScrollIndicator={false}

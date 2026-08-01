@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { Platform, useWindowDimensions, View, type ViewStyle } from 'react-native';
 import { Tabs, useSegments } from 'expo-router';
 
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
@@ -12,10 +13,23 @@ import {
   usePendingFriendRequestCountQuery,
 } from '@/hooks/useApiQueries';
 import { t } from '@/lib/i18n';
-import { colors, fontFamily } from '@/theme/tokens';
+import { breakpoints, colors, fontFamily } from '@/theme/tokens';
+
+// react-native-web supports CSS position:fixed; core RN's ViewStyle type doesn't model it.
+const DESKTOP_SIDEBAR_LAYOUT_STYLE = {
+  flex: 1,
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+} as unknown as ViewStyle;
+const MOBILE_LAYOUT_STYLE: ViewStyle = { flex: 1 };
 
 export default function TabLayout() {
   useLocale();
+  const { width } = useWindowDimensions();
+  const isSidebar = Platform.OS === 'web' && width >= breakpoints.sidebar;
   const segments = useSegments() as readonly string[];
   const messagesIdx = segments.indexOf('messages');
   const hideMessagesTabHeader = messagesIdx >= 0 && segments[messagesIdx + 1] === 'chat';
@@ -37,71 +51,74 @@ export default function TabLayout() {
   const notificationsBadge =
     notificationsTabBadgeTotal > 0 ? notificationsTabBadgeTotal : undefined;
   return (
-    <Tabs
-      tabBar={(props) => <FloatingTabBar {...props} />}
-      screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.ink300,
-        tabBarStyle: {},
-        headerShown: useClientOnlyValue(false, true),
-        headerStyle: {
-          backgroundColor: colors.surface,
-          elevation: 0,
-          shadowOpacity: 0,
-        },
-        headerTitleStyle: {
-          fontFamily: fontFamily.serif,
-          fontSize: 18,
-          fontWeight: '400',
-          color: colors.onSurface,
-        },
-        headerShadowVisible: false,
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: t('tabs.home'),
-          tabBarAccessibilityLabel: t('tabs.home'),
-        }}
-      />
-      <Tabs.Screen
-        name="groups"
-        options={{
-          title: t('tabs.groups'),
-          tabBarAccessibilityLabel: t('tabs.groups'),
-        }}
-      />
-      <Tabs.Screen
-        name="messages"
-        options={{
-          title: t('tabs.messages'),
-          tabBarAccessibilityLabel: t('tabs.messages'),
-          tabBarBadge: messagesTabBadge,
-          lazy: false,
-          headerShown: !hideMessagesTabHeader,
-        }}
-      />
-      <Tabs.Screen
-        name="notifications"
-        listeners={{
-          focus: () => {
-            void recordNotificationsTabVisited();
+    <View style={isSidebar ? DESKTOP_SIDEBAR_LAYOUT_STYLE : MOBILE_LAYOUT_STYLE}>
+      <Tabs
+        tabBar={(props) => <FloatingTabBar {...props} />}
+        screenOptions={{
+          tabBarPosition: isSidebar ? 'left' : 'bottom',
+          tabBarActiveTintColor: colors.primary,
+          tabBarInactiveTintColor: colors.ink300,
+          tabBarStyle: {},
+          headerShown: useClientOnlyValue(false, true),
+          headerStyle: {
+            backgroundColor: colors.surface,
+            elevation: 0,
+            shadowOpacity: 0,
           },
+          headerTitleStyle: {
+            fontFamily: fontFamily.serif,
+            fontSize: 18,
+            fontWeight: '400',
+            color: colors.onSurface,
+          },
+          headerShadowVisible: false,
         }}
-        options={{
-          title: t('tabs.notifications'),
-          tabBarAccessibilityLabel: t('tabs.notifications'),
-          tabBarBadge: notificationsBadge,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: t('tabs.profile'),
-          tabBarAccessibilityLabel: t('tabs.profile'),
-        }}
-      />
-    </Tabs>
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: t('tabs.home'),
+            tabBarAccessibilityLabel: t('tabs.home'),
+          }}
+        />
+        <Tabs.Screen
+          name="groups"
+          options={{
+            title: t('tabs.groups'),
+            tabBarAccessibilityLabel: t('tabs.groups'),
+          }}
+        />
+        <Tabs.Screen
+          name="messages"
+          options={{
+            title: t('tabs.messages'),
+            tabBarAccessibilityLabel: t('tabs.messages'),
+            tabBarBadge: messagesTabBadge,
+            lazy: false,
+            headerShown: !hideMessagesTabHeader,
+          }}
+        />
+        <Tabs.Screen
+          name="notifications"
+          listeners={{
+            focus: () => {
+              void recordNotificationsTabVisited();
+            },
+          }}
+          options={{
+            title: t('tabs.notifications'),
+            tabBarAccessibilityLabel: t('tabs.notifications'),
+            tabBarBadge: notificationsBadge,
+          }}
+        />
+        <Tabs.Screen
+          name="profile"
+          options={{
+            title: t('tabs.profile'),
+            tabBarAccessibilityLabel: t('tabs.profile'),
+          }}
+        />
+      </Tabs>
+    </View>
   );
 }

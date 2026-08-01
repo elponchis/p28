@@ -1,11 +1,14 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { colors, fontFamily, spacing } from '@/theme/tokens';
+import { breakpoints, colors, fontFamily, spacing } from '@/theme/tokens';
+
+/** Width of the sidebar when acting as a desktop-web left nav instead of a bottom bar. */
+export const SIDEBAR_WIDTH = 240;
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -76,6 +79,61 @@ function TabItem({
   );
 }
 
+function SidebarTabItem({
+  label,
+  iconFocused,
+  iconDefault,
+  isFocused,
+  badge,
+  onPress,
+  onLongPress,
+  accessibilityLabel,
+}: {
+  label: string;
+  iconFocused: IoniconsName;
+  iconDefault: IoniconsName;
+  isFocused: boolean;
+  badge?: number;
+  onPress: () => void;
+  onLongPress: () => void;
+  accessibilityLabel?: string;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      onLongPress={onLongPress}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: isFocused }}
+      accessibilityLabel={accessibilityLabel ?? label}
+      style={({ pressed }) => [
+        styles.sidebarItem,
+        isFocused && styles.sidebarItemFocused,
+        pressed && styles.sidebarItemPressed,
+      ]}
+    >
+      <Ionicons
+        name={isFocused ? iconFocused : iconDefault}
+        size={20}
+        color={isFocused ? colors.primary : colors.onSurfaceVariant}
+      />
+      <Text
+        style={[
+          styles.sidebarLabel,
+          { color: isFocused ? colors.primary : colors.onSurfaceVariant },
+        ]}
+        numberOfLines={1}
+      >
+        {label}
+      </Text>
+      {badge != null && badge > 0 && (
+        <View style={styles.sidebarBadge}>
+          <Text style={styles.badgeText}>{badge > 99 ? '99+' : badge}</Text>
+        </View>
+      )}
+    </Pressable>
+  );
+}
+
 const ICON_MAP: Record<string, { focused: IoniconsName; default: IoniconsName }> = {
   index: { focused: 'home', default: 'home-outline' },
   groups: { focused: 'people', default: 'people-outline' },
@@ -86,6 +144,69 @@ const ICON_MAP: Record<string, { focused: IoniconsName; default: IoniconsName }>
 
 export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isSidebar = Platform.OS === 'web' && width >= breakpoints.sidebar;
+
+  const items = state.routes.map((route, index) => {
+    const { options } = descriptors[route.key];
+    const label =
+      typeof options.tabBarLabel === 'string'
+        ? options.tabBarLabel
+        : typeof options.title === 'string'
+          ? options.title
+          : route.name;
+
+    const isFocused = state.index === index;
+    const icons = ICON_MAP[route.name] ?? {
+      focused: 'ellipse' as IoniconsName,
+      default: 'ellipse-outline' as IoniconsName,
+    };
+
+    const onPress = () => {
+      const event = navigation.emit({
+        type: 'tabPress',
+        target: route.key,
+        canPreventDefault: true,
+      });
+      if (event.defaultPrevented) return;
+      if (isFocused) {
+        navigation.navigate(route.name);
+      } else {
+        navigation.navigate(route.name, route.params);
+      }
+    };
+
+    const onLongPress = () => {
+      navigation.emit({ type: 'tabLongPress', target: route.key });
+    };
+
+    const rawBadge = typeof options.tabBarBadge === 'number' ? options.tabBarBadge : undefined;
+    const badge = route.name === 'messages' && isFocused ? undefined : rawBadge;
+
+    return {
+      routeKey: route.key,
+      label,
+      iconFocused: icons.focused,
+      iconDefault: icons.default,
+      isFocused,
+      badge,
+      onPress,
+      onLongPress,
+      accessibilityLabel: options.tabBarAccessibilityLabel,
+    };
+  });
+
+  if (isSidebar) {
+    return (
+      <View
+        style={[styles.sidebarOuter, { paddingTop: insets.top + spacing.lg, width: SIDEBAR_WIDTH }]}
+      >
+        {items.map(({ routeKey, ...item }) => (
+          <SidebarTabItem key={routeKey} {...item} />
+        ))}
+      </View>
+    );
+  }
 
   return (
     <View
@@ -98,57 +219,9 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
     >
       <BlurView intensity={20} tint="light" style={styles.bar}>
         <View style={styles.barContent}>
-          {state.routes.map((route, index) => {
-            const { options } = descriptors[route.key];
-            const label =
-              typeof options.tabBarLabel === 'string'
-                ? options.tabBarLabel
-                : typeof options.title === 'string'
-                  ? options.title
-                  : route.name;
-
-            const isFocused = state.index === index;
-            const icons = ICON_MAP[route.name] ?? {
-              focused: 'ellipse' as IoniconsName,
-              default: 'ellipse-outline' as IoniconsName,
-            };
-
-            const onPress = () => {
-              const event = navigation.emit({
-                type: 'tabPress',
-                target: route.key,
-                canPreventDefault: true,
-              });
-              if (event.defaultPrevented) return;
-              if (isFocused) {
-                navigation.navigate(route.name);
-              } else {
-                navigation.navigate(route.name, route.params);
-              }
-            };
-
-            const onLongPress = () => {
-              navigation.emit({ type: 'tabLongPress', target: route.key });
-            };
-
-            const rawBadge =
-              typeof options.tabBarBadge === 'number' ? options.tabBarBadge : undefined;
-            const badge = route.name === 'messages' && isFocused ? undefined : rawBadge;
-
-            return (
-              <TabItem
-                key={route.key}
-                label={label}
-                iconFocused={icons.focused}
-                iconDefault={icons.default}
-                isFocused={isFocused}
-                badge={badge}
-                onPress={onPress}
-                onLongPress={onLongPress}
-                accessibilityLabel={options.tabBarAccessibilityLabel}
-              />
-            );
-          })}
+          {items.map(({ routeKey, ...item }) => (
+            <TabItem key={routeKey} {...item} />
+          ))}
         </View>
       </BlurView>
     </View>
@@ -205,5 +278,42 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '500',
     letterSpacing: 0.2,
+  },
+  sidebarOuter: {
+    flex: 1,
+    backgroundColor: colors.surfaceContainerLowest,
+    borderRightWidth: 1,
+    borderRightColor: colors.ghostBorder,
+    paddingHorizontal: spacing.sm,
+    gap: spacing.xxs,
+  },
+  sidebarItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: 12,
+  },
+  sidebarItemFocused: {
+    backgroundColor: colors.secondaryContainer,
+  },
+  sidebarItemPressed: {
+    opacity: 0.7,
+  },
+  sidebarLabel: {
+    flex: 1,
+    fontFamily: fontFamily.sansMedium,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  sidebarBadge: {
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: colors.error,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
   },
 });
