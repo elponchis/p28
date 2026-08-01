@@ -12,7 +12,7 @@ import {
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
-import { Avatar } from '@/components/primitives';
+import { Avatar, Badge } from '@/components/primitives';
 import { AddFriendButton } from '@/components/patterns/AddFriendButton';
 import { FadeActionSheet } from '@/components/patterns/FadeActionSheet';
 import { useAuth } from '@/hooks/useAuth';
@@ -147,6 +147,18 @@ export default function UserProfileScreen() {
           />
           <View style={styles.headerText}>
             <Text style={styles.title}>{profile?.displayName ?? t('profile.title')}</Text>
+            {profile?.title || profile?.organization ? (
+              <Text style={styles.roleLine} numberOfLines={1}>
+                {[profile.title, profile.organization].filter(Boolean).join(' · ')}
+              </Text>
+            ) : null}
+            {profile?.tags && profile.tags.length > 0 ? (
+              <View style={styles.tagsRow}>
+                {profile.tags.map((tag) => (
+                  <Badge key={tag} label={tag} variant="neutral" />
+                ))}
+              </View>
+            ) : null}
             {currentUserId && userId ? (
               areFriends ? (
                 <View style={styles.friendActionsRow}>
@@ -270,6 +282,17 @@ const styles = StyleSheet.create({
   },
   headerText: { flex: 1, minHeight: avatarSizes.xl },
   title: { ...typography.h3, color: colors.textPrimary, marginBottom: spacing.xs },
+  roleLine: {
+    ...typography.body,
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
+  },
+  tagsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
+  },
   friendActionsRow: {
     flexDirection: 'row',
     alignItems: 'center',

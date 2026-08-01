@@ -20,7 +20,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProfileQuery } from '@/hooks/useApiQueries';
 import { getUserFacingError } from '@/lib/api';
 import { preferredLanguageDisplayLabel, t } from '@/lib/i18n';
-import { Avatar } from '@/components/primitives';
+import { Avatar, Badge } from '@/components/primitives';
 import { TAB_BAR_HEIGHT } from '@/components/navigation/FloatingTabBar';
 import {
   breakpoints,
@@ -115,6 +115,18 @@ export default function ProfileScreen() {
             <Text style={styles.handle}>
               @{profile.displayName.replace(/\s+/g, '_').toLowerCase()}
             </Text>
+          ) : null}
+          {profile?.title || profile?.organization ? (
+            <Text style={styles.roleLine}>
+              {[profile.title, profile.organization].filter(Boolean).join(' · ')}
+            </Text>
+          ) : null}
+          {profile?.tags && profile.tags.length > 0 ? (
+            <View style={styles.tagsRow}>
+              {profile.tags.map((tag) => (
+                <Badge key={tag} label={tag} variant="neutral" />
+              ))}
+            </View>
           ) : null}
         </View>
 
@@ -264,6 +276,19 @@ const styles = StyleSheet.create({
     color: colors.onSurfaceVariant,
     marginTop: spacing.xxs,
     textAlign: 'center',
+  },
+  roleLine: {
+    ...typography.bodyMd,
+    color: colors.onSurfaceVariant,
+    marginTop: spacing.xs,
+    textAlign: 'center',
+  },
+  tagsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
   },
 
   /* Edit profile + gear row */

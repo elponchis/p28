@@ -114,6 +114,9 @@ export default function ProfileEditScreen() {
   const uploadMutation = useUploadProfileImageMutation();
 
   const [displayName, setDisplayName] = useState('');
+  const [roleTitle, setRoleTitle] = useState('');
+  const [organization, setOrganization] = useState('');
+  const [tagsInput, setTagsInput] = useState('');
   const [bio, setBio] = useState('');
   const [preferredLanguage, setPreferredLanguage] = useState<string | undefined>(undefined);
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>();
@@ -125,11 +128,19 @@ export default function ProfileEditScreen() {
     if (profile && syncedRef.current !== profile.userId) {
       syncedRef.current = profile.userId;
       setDisplayName(profile.displayName ?? '');
+      setRoleTitle(profile.title ?? '');
+      setOrganization(profile.organization ?? '');
+      setTagsInput((profile.tags ?? []).join(', '));
       setBio(profile.bio ?? '');
       setPreferredLanguage(profile.preferredLanguage);
       setAvatarUrl(profile.avatarUrl);
     }
   }, [profile]);
+
+  const parsedTags = tagsInput
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean);
 
   const isSubmitting = updateMutation.isPending || uploadMutation.isPending;
   const mutationError = updateMutation.error ?? uploadMutation.error;
@@ -166,6 +177,9 @@ export default function ProfileEditScreen() {
 
   const hasChanges =
     (displayName.trim() || undefined) !== (profile?.displayName?.trim() || undefined) ||
+    (roleTitle.trim() || undefined) !== (profile?.title?.trim() || undefined) ||
+    (organization.trim() || undefined) !== (profile?.organization?.trim() || undefined) ||
+    parsedTags.join(',') !== (profile?.tags ?? []).join(',') ||
     (bio || undefined) !== (profile?.bio ?? undefined) ||
     (preferredLanguage ?? undefined) !== (profile?.preferredLanguage ?? undefined) ||
     (avatarUrl ?? undefined) !== (profile?.avatarUrl ?? undefined);
@@ -175,6 +189,9 @@ export default function ProfileEditScreen() {
     setError(null);
     const updates: ProfileUpdates = {
       displayName: displayName.trim() || undefined,
+      title: roleTitle.trim() || undefined,
+      organization: organization.trim() || undefined,
+      tags: parsedTags.length > 0 ? parsedTags : undefined,
       bio: bio || undefined,
       preferredLanguage: preferredLanguage || undefined,
     };
@@ -233,6 +250,38 @@ export default function ProfileEditScreen() {
           onChangeText={setDisplayName}
           placeholder={t('profile.displayNamePlaceholder')}
           accessibilityLabel={t('profile.displayName')}
+        />
+      </View>
+
+      <View style={styles.section}>
+        <Input
+          label={t('profile.roleTitle')}
+          value={roleTitle}
+          onChangeText={setRoleTitle}
+          placeholder={t('profile.roleTitlePlaceholder')}
+          accessibilityLabel={t('profile.roleTitle')}
+        />
+      </View>
+
+      <View style={styles.section}>
+        <Input
+          label={t('profile.organization')}
+          value={organization}
+          onChangeText={setOrganization}
+          placeholder={t('profile.organizationPlaceholder')}
+          accessibilityLabel={t('profile.organization')}
+        />
+      </View>
+
+      <View style={styles.section}>
+        <Input
+          label={t('profile.tags')}
+          value={tagsInput}
+          onChangeText={setTagsInput}
+          placeholder={t('profile.tagsPlaceholder')}
+          autoCapitalize="none"
+          accessibilityLabel={t('profile.tags')}
+          accessibilityHint={t('profile.tagsHint')}
         />
       </View>
 

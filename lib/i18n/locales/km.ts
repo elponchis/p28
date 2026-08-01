@@ -77,6 +77,13 @@ export const km: TranslationShape = {
     selectCountryOptional: 'ជ្រើសរើសប្រទេស (ស្រេចចិត្ត)',
     datePickerHint: 'បើកកម្មវិធីជ្រើសរើសថ្ងៃ',
     optionsListHint: 'បើកបញ្ជីជម្រើស',
+    roleTitle: 'តួនាទី',
+    roleTitlePlaceholder: 'ឧ. គ្រូគង្វាល',
+    organization: 'អង្គភាព',
+    organizationPlaceholder: 'ឧ. Blue Ocean',
+    tags: 'ស្លាក',
+    tagsPlaceholder: 'បំបែកដោយសញ្ញាក្បៀស ឧ. គ្រូគង្វាល, Blue Ocean',
+    tagsHint: 'បំបែកស្លាកច្រើនដោយសញ្ញាក្បៀស',
   },
   onboarding: {
     title: 'សូមស្វាគមន៍។\nប្រាប់យើងពីអ្នក។',

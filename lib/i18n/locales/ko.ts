@@ -76,6 +76,13 @@ export const ko: TranslationShape = {
     selectCountryOptional: '국가 선택 (선택 사항)',
     datePickerHint: '날짜 선택기를 엽니다',
     optionsListHint: '옵션 목록을 엽니다',
+    roleTitle: '직함',
+    roleTitlePlaceholder: '예: 목사',
+    organization: '소속',
+    organizationPlaceholder: '예: Blue Ocean',
+    tags: '태그',
+    tagsPlaceholder: '쉼표로 구분, 예: 목사, Blue Ocean',
+    tagsHint: '여러 개는 쉼표로 구분해서 입력하세요',
   },
   onboarding: {
     title: '환영합니다.\n자신을 소개해 주세요.',

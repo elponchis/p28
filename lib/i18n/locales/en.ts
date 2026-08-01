@@ -77,6 +77,13 @@ export const en = {
     selectCountryOptional: 'Select country (optional)',
     datePickerHint: 'Opens date picker',
     optionsListHint: 'Opens a list of options',
+    roleTitle: 'Title',
+    roleTitlePlaceholder: 'e.g. Pastor',
+    organization: 'Organization',
+    organizationPlaceholder: 'e.g. Blue Ocean',
+    tags: 'Tags',
+    tagsPlaceholder: 'Comma-separated, e.g. Pastor, Blue Ocean',
+    tagsHint: 'Separate multiple tags with commas',
   },
   onboarding: {
     title: 'Welcome home.\nTell us about yourself.',
