@@ -8,8 +8,10 @@ import type {
   ChatSharedContentMessage,
   CreateChatInput,
   CreateChatMessageInput,
+  CreateCourseInput,
   CreateDiscussionInput,
   CreateDiscussionPostInput,
+  CreateLessonInput,
   Announcement,
   CreateAnnouncementInput,
   CreateGlobalAnnouncementInput,
@@ -18,8 +20,10 @@ import type {
   CreateGroupEventInput,
   CreateGroupRecurringMeetingInput,
   CreateGroupInput,
+  Course,
   Discussion,
   DiscussionPost,
+  Lesson,
   EventRsvpAttendee,
   EventRsvpResponse,
   FriendRequest,
@@ -40,11 +44,13 @@ import type {
   ProfileUpdates,
   UpdateChatInput,
   UpdateChatMessageInput,
+  UpdateCourseInput,
   UpdateDiscussionInput,
   UpdateDiscussionPostInput,
   UpdateGroupEventInput,
   UpdateGroupRecurringMeetingInput,
   UpdateGroupInput,
+  UpdateLessonInput,
   PushToken,
   InAppNotification,
   MarkInAppNotificationsReadInput,
@@ -248,6 +254,18 @@ export interface DataContract {
     input: UpdateGroupRecurringMeetingInput
   ): Promise<GroupRecurringMeeting | ApiError>;
   deleteGroupRecurringMeeting(meetingId: string): Promise<void | ApiError>;
+
+  // LMS: courses + lessons (2-level; video is an embedded URL, no file upload)
+  getCoursesByGroup(groupId: string): Promise<Course[] | ApiError>;
+  getCourse(courseId: string): Promise<Course | ApiError>;
+  createCourse(groupId: string, input: CreateCourseInput): Promise<Course | ApiError>;
+  updateCourse(courseId: string, input: UpdateCourseInput): Promise<Course | ApiError>;
+  deleteCourse(courseId: string): Promise<void | ApiError>;
+  getLessonsByCourse(courseId: string): Promise<Lesson[] | ApiError>;
+  getLesson(lessonId: string): Promise<Lesson | ApiError>;
+  createLesson(courseId: string, input: CreateLessonInput): Promise<Lesson | ApiError>;
+  updateLesson(lessonId: string, input: UpdateLessonInput): Promise<Lesson | ApiError>;
+  deleteLesson(lessonId: string): Promise<void | ApiError>;
 
   getGroupMemberSettings(groupId: string, userId: string): Promise<GroupMemberSettings | ApiError>;
   updateGroupMemberSettings(

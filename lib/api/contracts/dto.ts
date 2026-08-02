@@ -231,6 +231,58 @@ export interface UpdateGroupRecurringMeetingInput {
   monthWeekOrdinal?: number;
 }
 
+/** LMS course belonging to a group; access follows group membership/admin RLS. */
+export interface Course {
+  id: string;
+  groupId: string;
+  title: string;
+  description?: string;
+  coverImageUrl?: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCourseInput {
+  title: string;
+  description?: string;
+  coverImageUrl?: string;
+  sortOrder: number;
+}
+
+export interface UpdateCourseInput {
+  title: string;
+  description?: string;
+  coverImageUrl?: string;
+  sortOrder: number;
+}
+
+/** Lesson within a course. Video is an embedded YouTube/Vimeo URL, not a file upload. */
+export interface Lesson {
+  id: string;
+  courseId: string;
+  title: string;
+  description?: string;
+  videoUrl: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateLessonInput {
+  title: string;
+  description?: string;
+  videoUrl: string;
+  sortOrder: number;
+}
+
+export interface UpdateLessonInput {
+  title: string;
+  description?: string;
+  videoUrl: string;
+  sortOrder: number;
+}
+
 /** One member's RSVP row (for lists and detail). */
 export interface EventRsvpAttendee {
   userId: string;

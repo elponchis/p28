@@ -24,8 +24,10 @@ import type {
   ChatSharedContentMessage,
   CreateChatInput,
   CreateChatMessageInput,
+  CreateCourseInput,
   CreateDiscussionInput,
   CreateDiscussionPostInput,
+  CreateLessonInput,
   Announcement,
   CreateAnnouncementInput,
   CreateGlobalAnnouncementInput,
@@ -34,6 +36,7 @@ import type {
   CreateGroupEventInput,
   CreateGroupRecurringMeetingInput,
   CreateGroupInput,
+  Course,
   Discussion,
   DiscussionPost,
   EventRsvpAttendee,
@@ -42,6 +45,7 @@ import type {
   Group,
   GroupEvent,
   GroupRecurringMeeting,
+  Lesson,
   PostReactionDetail,
   RecurringMeetingFrequency,
   GroupAdmin,
@@ -60,11 +64,13 @@ import type {
   PushToken,
   UpdateChatInput,
   UpdateChatMessageInput,
+  UpdateCourseInput,
   UpdateDiscussionInput,
   UpdateDiscussionPostInput,
   UpdateGroupEventInput,
   UpdateGroupRecurringMeetingInput,
   UpdateGroupInput,
+  UpdateLessonInput,
 } from '../../contracts/dto';
 
 function toApiError(err: unknown): ApiError {
@@ -571,6 +577,54 @@ function mapGroupRecurringMeetingRow(row: GroupRecurringMeetingRow): GroupRecurr
     timeLocal: tl,
     timezone: row.timezone,
     monthWeekOrdinal: row.month_week_ordinal ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+type CourseRow = {
+  id: string;
+  group_id: string;
+  title: string;
+  description: string | null;
+  cover_image_url: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+function mapCourseRow(row: CourseRow): Course {
+  return {
+    id: row.id,
+    groupId: row.group_id,
+    title: row.title,
+    description: row.description ?? undefined,
+    coverImageUrl: row.cover_image_url ?? undefined,
+    sortOrder: row.sort_order,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+type LessonRow = {
+  id: string;
+  course_id: string;
+  title: string;
+  description: string | null;
+  video_url: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+function mapLessonRow(row: LessonRow): Lesson {
+  return {
+    id: row.id,
+    courseId: row.course_id,
+    title: row.title,
+    description: row.description ?? undefined,
+    videoUrl: row.video_url,
+    sortOrder: row.sort_order,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -2120,6 +2174,196 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
           .from('group_recurring_meetings')
           .delete()
           .eq('id', meetingId);
+        if (error) return toApiError(error);
+        return;
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async getCoursesByGroup(groupId: string): Promise<Course[] | ApiError> {
+      try {
+        const { data: rows, error } = await getClient()
+          .from('courses')
+          .select(
+            'id, group_id, title, description, cover_image_url, sort_order, created_at, updated_at'
+          )
+          .eq('group_id', groupId)
+          .order('sort_order', { ascending: true });
+        if (error) return toApiError(error);
+        return ((rows ?? []) as CourseRow[]).map(mapCourseRow);
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async getCourse(courseId: string): Promise<Course | ApiError> {
+      try {
+        const { data, error } = await getClient()
+          .from('courses')
+          .select(
+            'id, group_id, title, description, cover_image_url, sort_order, created_at, updated_at'
+          )
+          .eq('id', courseId)
+          .single();
+        if (error) return toApiError(error);
+        if (!data) return { message: 'Course not found', code: 'NOT_FOUND' };
+        return mapCourseRow(data as CourseRow);
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async createCourse(groupId: string, input: CreateCourseInput): Promise<Course | ApiError> {
+      try {
+        const title = input.title?.trim();
+        if (!title) {
+          return { message: 'Title is required', code: 'VALIDATION_ERROR' };
+        }
+        const { data: row, error } = await getClient()
+          .from('courses')
+          .insert({
+            group_id: groupId,
+            title,
+            description: input.description?.trim() || null,
+            cover_image_url: input.coverImageUrl || null,
+            sort_order: input.sortOrder,
+          })
+          .select(
+            'id, group_id, title, description, cover_image_url, sort_order, created_at, updated_at'
+          )
+          .single();
+        if (error) return toApiError(error);
+        return mapCourseRow(row as CourseRow);
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async updateCourse(courseId: string, input: UpdateCourseInput): Promise<Course | ApiError> {
+      try {
+        const title = input.title?.trim();
+        if (!title) {
+          return { message: 'Title is required', code: 'VALIDATION_ERROR' };
+        }
+        const { data: row, error } = await getClient()
+          .from('courses')
+          .update({
+            title,
+            description: input.description?.trim() || null,
+            cover_image_url: input.coverImageUrl || null,
+            sort_order: input.sortOrder,
+          })
+          .eq('id', courseId)
+          .select(
+            'id, group_id, title, description, cover_image_url, sort_order, created_at, updated_at'
+          )
+          .single();
+        if (error) return toApiError(error);
+        return mapCourseRow(row as CourseRow);
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async deleteCourse(courseId: string): Promise<void | ApiError> {
+      try {
+        const { error } = await getClient().from('courses').delete().eq('id', courseId);
+        if (error) return toApiError(error);
+        return;
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async getLessonsByCourse(courseId: string): Promise<Lesson[] | ApiError> {
+      try {
+        const { data: rows, error } = await getClient()
+          .from('lessons')
+          .select('id, course_id, title, description, video_url, sort_order, created_at, updated_at')
+          .eq('course_id', courseId)
+          .order('sort_order', { ascending: true });
+        if (error) return toApiError(error);
+        return ((rows ?? []) as LessonRow[]).map(mapLessonRow);
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async getLesson(lessonId: string): Promise<Lesson | ApiError> {
+      try {
+        const { data, error } = await getClient()
+          .from('lessons')
+          .select('id, course_id, title, description, video_url, sort_order, created_at, updated_at')
+          .eq('id', lessonId)
+          .single();
+        if (error) return toApiError(error);
+        if (!data) return { message: 'Lesson not found', code: 'NOT_FOUND' };
+        return mapLessonRow(data as LessonRow);
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async createLesson(courseId: string, input: CreateLessonInput): Promise<Lesson | ApiError> {
+      try {
+        const title = input.title?.trim();
+        if (!title) {
+          return { message: 'Title is required', code: 'VALIDATION_ERROR' };
+        }
+        const videoUrl = input.videoUrl?.trim();
+        if (!videoUrl) {
+          return { message: 'Video URL is required', code: 'VALIDATION_ERROR' };
+        }
+        const { data: row, error } = await getClient()
+          .from('lessons')
+          .insert({
+            course_id: courseId,
+            title,
+            description: input.description?.trim() || null,
+            video_url: videoUrl,
+            sort_order: input.sortOrder,
+          })
+          .select('id, course_id, title, description, video_url, sort_order, created_at, updated_at')
+          .single();
+        if (error) return toApiError(error);
+        return mapLessonRow(row as LessonRow);
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async updateLesson(lessonId: string, input: UpdateLessonInput): Promise<Lesson | ApiError> {
+      try {
+        const title = input.title?.trim();
+        if (!title) {
+          return { message: 'Title is required', code: 'VALIDATION_ERROR' };
+        }
+        const videoUrl = input.videoUrl?.trim();
+        if (!videoUrl) {
+          return { message: 'Video URL is required', code: 'VALIDATION_ERROR' };
+        }
+        const { data: row, error } = await getClient()
+          .from('lessons')
+          .update({
+            title,
+            description: input.description?.trim() || null,
+            video_url: videoUrl,
+            sort_order: input.sortOrder,
+          })
+          .eq('id', lessonId)
+          .select('id, course_id, title, description, video_url, sort_order, created_at, updated_at')
+          .single();
+        if (error) return toApiError(error);
+        return mapLessonRow(row as LessonRow);
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async deleteLesson(lessonId: string): Promise<void | ApiError> {
+      try {
+        const { error } = await getClient().from('lessons').delete().eq('id', lessonId);
         if (error) return toApiError(error);
         return;
       } catch (e) {

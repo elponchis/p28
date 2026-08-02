@@ -816,6 +816,137 @@ export function useDeleteGroupRecurringMeetingMutation() {
   });
 }
 
+// LMS: courses + lessons
+
+export function useCoursesByGroupQuery(groupId: string | undefined, options?: { enabled?: boolean }) {
+  const enabled = options?.enabled ?? true;
+  return useQuery({
+    queryKey: queryKeys.coursesByGroup(groupId ?? ''),
+    queryFn: () =>
+      queryFn(api.data.getCoursesByGroup(groupId!)) as Promise<import('@/lib/api').Course[]>,
+    enabled: !!groupId && enabled,
+  });
+}
+
+export function useCourseQuery(courseId: string | undefined, options?: { enabled?: boolean }) {
+  const enabled = options?.enabled ?? true;
+  return useQuery({
+    queryKey: queryKeys.course(courseId ?? ''),
+    queryFn: () => queryFn(api.data.getCourse(courseId!)) as Promise<import('@/lib/api').Course>,
+    enabled: !!courseId && enabled,
+  });
+}
+
+export function useCreateCourseMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      groupId,
+      input,
+    }: {
+      groupId: string;
+      input: import('@/lib/api').CreateCourseInput;
+    }) => queryFn(api.data.createCourse(groupId, input)),
+    onSuccess: (course) => {
+      qc.invalidateQueries({ queryKey: queryKeys.coursesByGroup(course.groupId) });
+    },
+  });
+}
+
+export function useUpdateCourseMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      courseId,
+      input,
+    }: {
+      courseId: string;
+      input: import('@/lib/api').UpdateCourseInput;
+    }) => queryFn(api.data.updateCourse(courseId, input)),
+    onSuccess: (course) => {
+      qc.invalidateQueries({ queryKey: queryKeys.course(course.id) });
+      qc.invalidateQueries({ queryKey: queryKeys.coursesByGroup(course.groupId) });
+    },
+  });
+}
+
+export function useDeleteCourseMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ courseId }: { courseId: string; groupId: string }) =>
+      queryFn(api.data.deleteCourse(courseId)),
+    onSuccess: (_void, { groupId }) => {
+      qc.invalidateQueries({ queryKey: queryKeys.coursesByGroup(groupId) });
+    },
+  });
+}
+
+export function useLessonsByCourseQuery(
+  courseId: string | undefined,
+  options?: { enabled?: boolean }
+) {
+  const enabled = options?.enabled ?? true;
+  return useQuery({
+    queryKey: queryKeys.lessonsByCourse(courseId ?? ''),
+    queryFn: () =>
+      queryFn(api.data.getLessonsByCourse(courseId!)) as Promise<import('@/lib/api').Lesson[]>,
+    enabled: !!courseId && enabled,
+  });
+}
+
+export function useLessonQuery(lessonId: string | undefined, options?: { enabled?: boolean }) {
+  const enabled = options?.enabled ?? true;
+  return useQuery({
+    queryKey: queryKeys.lesson(lessonId ?? ''),
+    queryFn: () => queryFn(api.data.getLesson(lessonId!)) as Promise<import('@/lib/api').Lesson>,
+    enabled: !!lessonId && enabled,
+  });
+}
+
+export function useCreateLessonMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      courseId,
+      input,
+    }: {
+      courseId: string;
+      input: import('@/lib/api').CreateLessonInput;
+    }) => queryFn(api.data.createLesson(courseId, input)),
+    onSuccess: (lesson) => {
+      qc.invalidateQueries({ queryKey: queryKeys.lessonsByCourse(lesson.courseId) });
+    },
+  });
+}
+
+export function useUpdateLessonMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      lessonId,
+      input,
+    }: {
+      lessonId: string;
+      input: import('@/lib/api').UpdateLessonInput;
+    }) => queryFn(api.data.updateLesson(lessonId, input)),
+    onSuccess: (lesson) => {
+      qc.invalidateQueries({ queryKey: queryKeys.lesson(lesson.id) });
+      qc.invalidateQueries({ queryKey: queryKeys.lessonsByCourse(lesson.courseId) });
+    },
+  });
+}
+
+export function useDeleteLessonMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ lessonId }: { lessonId: string; courseId: string }) =>
+      queryFn(api.data.deleteLesson(lessonId)),
+    onSuccess: (_void, { courseId }) => {
+      qc.invalidateQueries({ queryKey: queryKeys.lessonsByCourse(courseId) });
+    },
+  });
+}
+
 export function useCreateGroupEventMutation() {
   const qc = useQueryClient();
   return useMutation({

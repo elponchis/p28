@@ -67,4 +67,8 @@ export const queryKeys = {
   myEventRsvp: (eventId: string, userId: string) => ['myEventRsvp', eventId, userId] as const,
   groupMemberSettings: (groupId: string, userId: string) =>
     ['groupMemberSettings', groupId, userId] as const,
+  coursesByGroup: (groupId: string) => ['coursesByGroup', groupId] as const,
+  course: (id: string) => ['course', id] as const,
+  lessonsByCourse: (courseId: string) => ['lessonsByCourse', courseId] as const,
+  lesson: (id: string) => ['lesson', id] as const,
 };
