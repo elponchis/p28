@@ -40,15 +40,43 @@ export default function GroupDetailStackLayout() {
         }}
       />
       <Stack.Screen
+        name="course/create"
+        options={{
+          title: t('courses.addCourse'),
+          presentation: 'modal',
+        }}
+      />
+      <Stack.Screen
         name="course/[courseId]"
         options={{
           title: '',
         }}
       />
       <Stack.Screen
+        name="course/[courseId]/edit"
+        options={{
+          title: t('courses.editCourse'),
+          presentation: 'modal',
+        }}
+      />
+      <Stack.Screen
+        name="course/[courseId]/lesson/create"
+        options={{
+          title: t('lessons.addLesson'),
+          presentation: 'modal',
+        }}
+      />
+      <Stack.Screen
         name="course/[courseId]/lesson/[lessonId]"
         options={{
           title: '',
+        }}
+      />
+      <Stack.Screen
+        name="course/[courseId]/lesson/[lessonId]/edit"
+        options={{
+          title: t('lessons.editLesson'),
+          presentation: 'modal',
         }}
       />
     </Stack>

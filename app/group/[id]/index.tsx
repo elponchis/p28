@@ -15,7 +15,12 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Avatar, StackedAvatars, type StackedAvatarMember } from '@/components/primitives';
+import {
+  Avatar,
+  IconButton,
+  StackedAvatars,
+  type StackedAvatarMember,
+} from '@/components/primitives';
 import { EmptyState } from '@/components/patterns/EmptyState';
 import { LatestAnnouncementRow } from '@/components/patterns/LatestAnnouncementRow';
 import { GroupLeaderRows } from '@/components/patterns/GroupLeaderRows';
@@ -28,6 +33,7 @@ import {
   useCoursesByGroupQuery,
   useCreateGroupEventMutation,
   useCreateGroupRecurringMeetingMutation,
+  useDeleteCourseMutation,
   useDeleteGroupRecurringMeetingMutation,
   useDiscussionsQuery,
   useGroupAdminsQuery,
@@ -109,6 +115,7 @@ export default function GroupDetailScreen() {
   const createRecurringMutation = useCreateGroupRecurringMeetingMutation();
   const updateRecurringMutation = useUpdateGroupRecurringMeetingMutation();
   const deleteRecurringMutation = useDeleteGroupRecurringMeetingMutation();
+  const deleteCourseMutation = useDeleteCourseMutation();
   const isGroupAdmin = isCurrentUserGroupAdmin;
   /** Group admins are usually members; platform super_admins may moderate without joining. */
   const canModerateAsAdmin = useMemo(
@@ -222,6 +229,41 @@ export default function GroupDetailScreen() {
   const handleSeeAllAnnouncements = useCallback(() => {
     if (id) router.push(`/group/announcement/list?groupId=${id}`);
   }, [router, id]);
+
+  const handleAddCourse = useCallback(() => {
+    if (id) router.push(`/group/${id}/course/create`);
+  }, [router, id]);
+
+  const handleEditCourse = useCallback(
+    (courseId: string) => {
+      if (id) router.push(`/group/${id}/course/${courseId}/edit`);
+    },
+    [router, id]
+  );
+
+  const handleDeleteCourse = useCallback(
+    (courseId: string, courseTitle: string) => {
+      if (!id) return;
+      Alert.alert(
+        t('courses.deleteCourse'),
+        `${courseTitle}\n\n${t('courses.deleteCourseConfirm')}`,
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: t('courses.deleteCourse'),
+            style: 'destructive',
+            onPress: () => {
+              deleteCourseMutation.mutate(
+                { courseId, groupId: id },
+                { onSuccess: () => refetchCourses() }
+              );
+            },
+          },
+        ]
+      );
+    },
+    [id, deleteCourseMutation, refetchCourses]
+  );
 
   const [eventSheetOpen, setEventSheetOpen] = useState(false);
   const [eventFormError, setEventFormError] = useState<string | null>(null);
@@ -813,48 +855,94 @@ export default function GroupDetailScreen() {
           })()}
         </View>
 
-        {/* ── Courses (LMS) — hidden entirely when the group has none ── */}
-        {courses.length > 0 ? (
+        {/* ── Courses (LMS) — hidden entirely for non-admins when the group has none ── */}
+        {courses.length > 0 || canModerateAsAdmin ? (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>{t('courses.sectionTitle')}</Text>
-            </View>
-            <View style={styles.courseList}>
-              {courses.map((course) => (
+              {canModerateAsAdmin && courses.length > 0 ? (
                 <Pressable
-                  key={course.id}
-                  onPress={() => router.push(`/group/${id}/course/${course.id}`)}
-                  style={({ pressed }) => [styles.courseCard, pressed && { opacity: 0.92 }]}
-                  accessibilityLabel={course.title}
-                  accessibilityHint={t('courses.openCourseHint')}
-                  accessibilityRole="button"
+                  onPress={handleAddCourse}
+                  style={styles.addTopicButton}
+                  accessibilityLabel={t('courses.addCourse')}
+                  accessibilityHint={t('courses.addCourseHint')}
                 >
-                  {course.coverImageUrl ? (
-                    <Image
-                      source={{ uri: course.coverImageUrl }}
-                      style={styles.courseCover}
-                      contentFit="cover"
-                      accessibilityIgnoresInvertColors
-                    />
-                  ) : (
-                    <View style={[styles.courseCover, styles.courseCoverPlaceholder]}>
-                      <Ionicons name="school-outline" size={28} color={colors.primary} />
-                    </View>
-                  )}
-                  <View style={styles.courseCardBody}>
-                    <Text style={styles.courseCardTitle} numberOfLines={2}>
-                      {course.title}
-                    </Text>
-                    {course.description ? (
-                      <Text style={styles.courseCardDescription} numberOfLines={2}>
-                        {course.description}
-                      </Text>
+                  <Ionicons name="add-circle" size={16} color={colors.secondary} />
+                  <Text style={styles.addTopicText}>{t('courses.addCourse')}</Text>
+                </Pressable>
+              ) : null}
+            </View>
+            {courses.length === 0 ? (
+              <EmptyState
+                iconName="school-outline"
+                title={t('courses.noCourses')}
+                subtitle={t('courses.noCoursesHint')}
+                actionLabel={canModerateAsAdmin ? t('courses.addCourse') : undefined}
+                onAction={canModerateAsAdmin ? handleAddCourse : undefined}
+                actionVariant="link"
+                actionAccessibilityHint={t('courses.addCourseHint')}
+              />
+            ) : (
+              <View style={styles.courseList}>
+                {courses.map((course) => (
+                  <View key={course.id} style={styles.courseCard}>
+                    <Pressable
+                      onPress={() => router.push(`/group/${id}/course/${course.id}`)}
+                      style={({ pressed }) => [
+                        styles.courseCardMain,
+                        pressed && { opacity: 0.92 },
+                      ]}
+                      accessibilityLabel={course.title}
+                      accessibilityHint={t('courses.openCourseHint')}
+                      accessibilityRole="button"
+                    >
+                      {course.coverImageUrl ? (
+                        <Image
+                          source={{ uri: course.coverImageUrl }}
+                          style={styles.courseCover}
+                          contentFit="cover"
+                          accessibilityIgnoresInvertColors
+                        />
+                      ) : (
+                        <View style={[styles.courseCover, styles.courseCoverPlaceholder]}>
+                          <Ionicons name="school-outline" size={28} color={colors.primary} />
+                        </View>
+                      )}
+                      <View style={styles.courseCardBody}>
+                        <Text style={styles.courseCardTitle} numberOfLines={2}>
+                          {course.title}
+                        </Text>
+                        {course.description ? (
+                          <Text style={styles.courseCardDescription} numberOfLines={2}>
+                            {course.description}
+                          </Text>
+                        ) : null}
+                      </View>
+                      <Ionicons name="chevron-forward" size={20} color={colors.onSurfaceVariant} />
+                    </Pressable>
+                    {canModerateAsAdmin ? (
+                      <View style={styles.courseCardActions}>
+                        <IconButton
+                          name="pencil-outline"
+                          size={18}
+                          onPress={() => handleEditCourse(course.id)}
+                          accessibilityLabel={t('courses.editCourse')}
+                          accessibilityHint={t('courses.editCourseHint')}
+                        />
+                        <IconButton
+                          name="trash-outline"
+                          size={18}
+                          color={colors.error}
+                          onPress={() => handleDeleteCourse(course.id, course.title)}
+                          accessibilityLabel={t('courses.deleteCourse')}
+                          accessibilityHint={t('courses.deleteCourseConfirm')}
+                        />
+                      </View>
                     ) : null}
                   </View>
-                  <Ionicons name="chevron-forward" size={20} color={colors.onSurfaceVariant} />
-                </Pressable>
-              ))}
-            </View>
+                ))}
+              </View>
+            )}
           </View>
         ) : null}
 
@@ -1552,11 +1640,23 @@ const styles = StyleSheet.create({
   courseCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
     backgroundColor: colors.surfaceContainerLowest,
     borderRadius: radius.card,
-    padding: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
     ...editorialShadow,
+  },
+  courseCardMain: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  courseCardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: spacing.xs,
   },
   courseCover: {
     width: 64,
