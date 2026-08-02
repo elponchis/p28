@@ -660,4 +660,17 @@ export const ko: TranslationShape = {
     onboardingHint:
       '시작하는 과정에서, 나중에 프로필에서 행동 지침을 읽어 안전하고 건강한 공동체를 함께 만들어 주세요.',
   },
+  courses: {
+    sectionTitle: '강의',
+    noCourses: '아직 강의가 없어요',
+    noCoursesHint: '그룹 리더가 추가한 강의가 여기에 표시돼요.',
+    openCourseHint: '이 강의의 레슨 목록을 엽니다',
+  },
+  lessons: {
+    noLessons: '아직 레슨이 없어요',
+    noLessonsHint: '이 강의에 추가된 레슨이 여기에 표시돼요.',
+    lessonLabel: '레슨 {{number}}',
+    openLessonHint: '이 레슨의 영상을 재생합니다',
+    unsupportedVideoUrl: '아직 지원하지 않는 영상 링크예요. YouTube와 Vimeo 링크만 재생할 수 있어요.',
+  },
 };

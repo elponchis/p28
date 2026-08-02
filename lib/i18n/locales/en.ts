@@ -758,6 +758,20 @@ export const en = {
     onboardingHint:
       'As you get started, please take a moment later to read the conduct guidelines in your Profile so everyone can participate safely.',
   },
+  courses: {
+    sectionTitle: 'Courses',
+    noCourses: 'No courses yet',
+    noCoursesHint: 'Courses added by group leaders will appear here.',
+    openCourseHint: 'Opens this course’s lessons',
+  },
+  lessons: {
+    noLessons: 'No lessons yet',
+    noLessonsHint: 'Lessons added to this course will appear here.',
+    lessonLabel: 'Lesson {{number}}',
+    openLessonHint: 'Plays this lesson’s video',
+    unsupportedVideoUrl:
+      "This video link isn't supported yet. Only YouTube and Vimeo links can be played.",
+  },
 } as const;
 
 /** Shape of translation object (all values string). Use for ko/km typing. */

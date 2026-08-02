@@ -39,6 +39,18 @@ export default function GroupDetailStackLayout() {
           title: t('groups.superAdminAssignTitle'),
         }}
       />
+      <Stack.Screen
+        name="course/[courseId]"
+        options={{
+          title: '',
+        }}
+      />
+      <Stack.Screen
+        name="course/[courseId]/lesson/[lessonId]"
+        options={{
+          title: '',
+        }}
+      />
     </Stack>
   );
 }

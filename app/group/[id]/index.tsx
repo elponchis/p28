@@ -25,6 +25,7 @@ import { GroupRecurringMeetingFormSheet } from '@/components/patterns/GroupRecur
 import { useAuth } from '@/hooks/useAuth';
 import {
   useAnnouncementsQuery,
+  useCoursesByGroupQuery,
   useCreateGroupEventMutation,
   useCreateGroupRecurringMeetingMutation,
   useDeleteGroupRecurringMeetingMutation,
@@ -96,6 +97,9 @@ export default function GroupDetailScreen() {
       enabled: !!id && group?.type === 'ministry',
       discover: !isMember,
     });
+  const { data: courses = [], refetch: refetchCourses } = useCoursesByGroupQuery(id, {
+    enabled: !!id,
+  });
   const { data: groupAdmins = [] } = useGroupAdminsQuery(id, { enabled: !!id });
   const { data: isCurrentUserGroupAdmin = false } = useUserIsGroupAdminQuery(id, userId, {
     enabled: !!id && !!userId,
@@ -149,6 +153,7 @@ export default function GroupDetailScreen() {
       refetchAnnouncements();
       refetchGroupEvents();
       refetchRecurringMeetings();
+      refetchCourses();
     }, [
       refetchGroup,
       refetchMembership,
@@ -157,6 +162,7 @@ export default function GroupDetailScreen() {
       refetchAnnouncements,
       refetchGroupEvents,
       refetchRecurringMeetings,
+      refetchCourses,
     ])
   );
 
@@ -806,6 +812,51 @@ export default function GroupDetailScreen() {
             );
           })()}
         </View>
+
+        {/* ── Courses (LMS) — hidden entirely when the group has none ── */}
+        {courses.length > 0 ? (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>{t('courses.sectionTitle')}</Text>
+            </View>
+            <View style={styles.courseList}>
+              {courses.map((course) => (
+                <Pressable
+                  key={course.id}
+                  onPress={() => router.push(`/group/${id}/course/${course.id}`)}
+                  style={({ pressed }) => [styles.courseCard, pressed && { opacity: 0.92 }]}
+                  accessibilityLabel={course.title}
+                  accessibilityHint={t('courses.openCourseHint')}
+                  accessibilityRole="button"
+                >
+                  {course.coverImageUrl ? (
+                    <Image
+                      source={{ uri: course.coverImageUrl }}
+                      style={styles.courseCover}
+                      contentFit="cover"
+                      accessibilityIgnoresInvertColors
+                    />
+                  ) : (
+                    <View style={[styles.courseCover, styles.courseCoverPlaceholder]}>
+                      <Ionicons name="school-outline" size={28} color={colors.primary} />
+                    </View>
+                  )}
+                  <View style={styles.courseCardBody}>
+                    <Text style={styles.courseCardTitle} numberOfLines={2}>
+                      {course.title}
+                    </Text>
+                    {course.description ? (
+                      <Text style={styles.courseCardDescription} numberOfLines={2}>
+                        {course.description}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={colors.onSurfaceVariant} />
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        ) : null}
 
         {/* ── Announcements (Stitch “Latest Updates” layout) ── */}
         <View style={styles.section}>
@@ -1494,6 +1545,41 @@ const styles = StyleSheet.create({
   loadingWrap: {
     paddingVertical: spacing.xl,
     alignItems: 'center',
+  },
+  courseList: {
+    gap: spacing.md,
+  },
+  courseCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.surfaceContainerLowest,
+    borderRadius: radius.card,
+    padding: spacing.sm,
+    ...editorialShadow,
+  },
+  courseCover: {
+    width: 64,
+    height: 64,
+    borderRadius: radius.md,
+  },
+  courseCoverPlaceholder: {
+    backgroundColor: colors.surfaceContainerHigh,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  courseCardBody: {
+    flex: 1,
+    minWidth: 0,
+  },
+  courseCardTitle: {
+    ...typography.bodyStrong,
+    color: colors.textPrimary,
+    marginBottom: 2,
+  },
+  courseCardDescription: {
+    ...typography.caption,
+    color: colors.onSurfaceVariant,
   },
   discussionList: {
     gap: spacing.md,
