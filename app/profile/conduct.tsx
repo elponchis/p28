@@ -1,4 +1,5 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { DesktopContentContainer } from '@/components/layout/DesktopContentContainer';
 import { useLocale } from '@/contexts/LocaleContext';
 import { t } from '@/lib/i18n';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
@@ -14,6 +15,7 @@ export default function ConductScreen() {
       accessibilityLabel={t('conduct.title')}
       accessibilityHint={t('conduct.openHint')}
     >
+      <DesktopContentContainer maxWidth={600}>
       <View style={styles.card}>
         <Text
           style={styles.title}
@@ -52,6 +54,7 @@ export default function ConductScreen() {
           <Text style={styles.body}>{t('conduct.boundariesBody')}</Text>
         </View>
       </View>
+      </DesktopContentContainer>
     </ScrollView>
   );
 }

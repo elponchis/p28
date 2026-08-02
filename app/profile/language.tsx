@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { DesktopContentContainer } from '@/components/layout/DesktopContentContainer';
 import { useAuth } from '@/hooks/useAuth';
 import { useUpdateProfileMutation } from '@/hooks/useApiQueries';
 import { getUserFacingError } from '@/lib/api';
@@ -52,6 +53,7 @@ export default function LanguageScreen() {
       contentInsetAdjustmentBehavior="automatic"
       showsVerticalScrollIndicator={false}
     >
+      <DesktopContentContainer maxWidth={600}>
       <Text style={styles.subtitle}>{t('language.subtitle')}</Text>
       {error || (updateMutation.error && 'message' in updateMutation.error) ? (
         <View style={styles.errorBanner}>
@@ -94,6 +96,7 @@ export default function LanguageScreen() {
           />
         </View>
       ) : null}
+      </DesktopContentContainer>
     </ScrollView>
   );
 }

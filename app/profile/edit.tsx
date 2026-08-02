@@ -13,6 +13,7 @@ import {
 import { useLocale } from '@/contexts/LocaleContext';
 import { t } from '@/lib/i18n';
 import { Avatar, Button, Input, ListItem } from '@/components/primitives';
+import { DesktopContentContainer } from '@/components/layout/DesktopContentContainer';
 import { colors, radius, spacing, typography, shadow } from '@/theme/tokens';
 import type { ProfileUpdates } from '@/lib/api';
 
@@ -217,6 +218,7 @@ export default function ProfileEditScreen() {
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
+      <DesktopContentContainer maxWidth={600}>
       {/* Avatar card */}
       <View style={styles.avatarCard}>
         <View style={styles.avatarInner}>
@@ -327,6 +329,7 @@ export default function ProfileEditScreen() {
         accessibilityLabel={t('common.save')}
         accessibilityHint={hasChanges ? t('profile.saveHint') : t('profile.saveHintDisabled')}
       />
+      </DesktopContentContainer>
     </ScrollView>
   );
 }

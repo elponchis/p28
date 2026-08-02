@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 
 import { LabeledSwitchRow } from '@/components/patterns';
+import { DesktopContentContainer } from '@/components/layout/DesktopContentContainer';
 import { useAuth } from '@/hooks/useAuth';
 import {
   useNotificationPreferencesQuery,
@@ -124,6 +125,7 @@ export default function SettingsScreen() {
         <RefreshControl refreshing={loading} onRefresh={fetchPrefs} tintColor={colors.primary} />
       }
     >
+      <DesktopContentContainer maxWidth={600}>
       {error ? (
         <View style={styles.errorBanner}>
           <Text style={styles.errorText}>{error}</Text>
@@ -213,6 +215,7 @@ export default function SettingsScreen() {
           />
         </View>
       ) : null}
+      </DesktopContentContainer>
     </ScrollView>
   );
 }
