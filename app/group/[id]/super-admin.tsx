@@ -13,6 +13,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { Avatar, Button } from '@/components/primitives';
 import { EmptyState } from '@/components/patterns/EmptyState';
+import { DesktopContentContainer } from '@/components/layout/DesktopContentContainer';
 import { useAuth } from '@/hooks/useAuth';
 import {
   useAddGroupAdminMutation,
@@ -299,16 +300,20 @@ export default function SuperAdminAssignGroupAdminScreen() {
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={listData}
-        keyExtractor={(p) => p.userId}
-        renderItem={renderItem}
-        ListHeaderComponent={listHeader}
-        ListEmptyComponent={listEmpty}
-        contentContainerStyle={styles.listContent}
-        keyboardShouldPersistTaps="handled"
-        ListFooterComponent={listData.length > 0 ? <View style={styles.footerSpacer} /> : undefined}
-      />
+      <DesktopContentContainer maxWidth={600} style={styles.desktopContent}>
+        <FlatList
+          data={listData}
+          keyExtractor={(p) => p.userId}
+          renderItem={renderItem}
+          ListHeaderComponent={listHeader}
+          ListEmptyComponent={listEmpty}
+          contentContainerStyle={styles.listContent}
+          keyboardShouldPersistTaps="handled"
+          ListFooterComponent={
+            listData.length > 0 ? <View style={styles.footerSpacer} /> : undefined
+          }
+        />
+      </DesktopContentContainer>
     </View>
   );
 }
@@ -319,6 +324,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
+  },
+  desktopContent: {
+    flex: 1,
   },
   centered: {
     flex: 1,

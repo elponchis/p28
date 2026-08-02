@@ -15,6 +15,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { Button } from '@/components/primitives';
 import { Input } from '@/components/primitives/Input';
+import { DesktopContentContainer } from '@/components/layout/DesktopContentContainer';
 import { useAuth } from '@/hooks/useAuth';
 import {
   useDeleteDiscussionMutation,
@@ -120,6 +121,7 @@ export default function EditDiscussionScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        <DesktopContentContainer maxWidth={600}>
         <Input
           label={t('discussions.topicPlaceholder')}
           value={title}
@@ -189,6 +191,7 @@ export default function EditDiscussionScreen() {
             <Text style={styles.deleteButtonText}>{t('discussions.deleteDiscussion')}</Text>
           </Pressable>
         </View>
+        </DesktopContentContainer>
       </ScrollView>
     </KeyboardAvoidingView>
   );

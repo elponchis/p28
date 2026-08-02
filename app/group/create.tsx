@@ -17,6 +17,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { Button } from '@/components/primitives/Button';
 import { Input } from '@/components/primitives/Input';
+import { DesktopContentContainer } from '@/components/layout/DesktopContentContainer';
 import { COUNTRIES } from '@/constants/countries';
 import { useAuth } from '@/hooks/useAuth';
 import { useCreateGroupMutation, useUploadGroupBannerImageMutation } from '@/hooks/useApiQueries';
@@ -127,6 +128,7 @@ export default function CreateGroupScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        <DesktopContentContainer maxWidth={600}>
         <Text style={styles.label}>{t('groups.bannerImage')}</Text>
         <Pressable
           onPress={pickBannerImage}
@@ -315,6 +317,7 @@ export default function CreateGroupScreen() {
             accessibilityHint={t('groups.createGroupSaveHint')}
           />
         </View>
+        </DesktopContentContainer>
       </ScrollView>
     </KeyboardAvoidingView>
   );

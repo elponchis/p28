@@ -14,6 +14,7 @@ import {
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { Button, Input } from '@/components/primitives';
+import { DesktopContentContainer } from '@/components/layout/DesktopContentContainer';
 import { useAuth } from '@/hooks/useAuth';
 import {
   useCreateDiscussionMutation,
@@ -79,6 +80,7 @@ export default function CreateDiscussionScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        <DesktopContentContainer maxWidth={600}>
         {!paramGroupId ? (
           <View style={styles.groupField}>
             <Text style={styles.fieldLabel}>{t('groups.title')}</Text>
@@ -150,6 +152,7 @@ export default function CreateDiscussionScreen() {
             accessibilityHint={t('discussions.createDiscussionHint')}
           />
         </View>
+        </DesktopContentContainer>
       </ScrollView>
 
       <Modal

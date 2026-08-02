@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { DesktopContentContainer } from '@/components/layout/DesktopContentContainer';
 import {
   useGroupMemberSettingsQuery,
   useGroupQuery,
@@ -67,6 +68,7 @@ export default function GroupSettingsScreen() {
       contentInsetAdjustmentBehavior="automatic"
       showsVerticalScrollIndicator={false}
     >
+      <DesktopContentContainer maxWidth={600}>
       {group ? <Text style={styles.groupName}>{group.name}</Text> : null}
 
       {isMember ? (
@@ -139,6 +141,7 @@ export default function GroupSettingsScreen() {
           </View>
         </>
       ) : null}
+      </DesktopContentContainer>
     </ScrollView>
   );
 }

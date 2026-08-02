@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Platform, useWindowDimensions, View, type ViewStyle } from 'react-native';
+import { View } from 'react-native';
 import { Tabs, useSegments } from 'expo-router';
 
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
@@ -7,6 +7,7 @@ import { FloatingTabBar } from '@/components/navigation/FloatingTabBar';
 import { NotificationsBellButton } from '@/components/navigation/NotificationsBellButton';
 import { useLocale } from '@/contexts/LocaleContext';
 import { useAuth } from '@/hooks/useAuth';
+import { useDesktopFullWidth } from '@/hooks/useDesktopFullWidth';
 import { useInAppBadgeClearTimestamp } from '@/hooks/useInAppBadgeClearTimestamp';
 import {
   useChatsForUserQuery,
@@ -16,21 +17,9 @@ import {
 import { t } from '@/lib/i18n';
 import { breakpoints, colors, fontFamily } from '@/theme/tokens';
 
-// react-native-web supports CSS position:fixed; core RN's ViewStyle type doesn't model it.
-const DESKTOP_SIDEBAR_LAYOUT_STYLE = {
-  flex: 1,
-  position: 'fixed',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-} as unknown as ViewStyle;
-const MOBILE_LAYOUT_STYLE: ViewStyle = { flex: 1 };
-
 export default function TabLayout() {
   useLocale();
-  const { width } = useWindowDimensions();
-  const isSidebar = Platform.OS === 'web' && width >= breakpoints.sidebar;
+  const { isDesktop: isSidebar, style } = useDesktopFullWidth(breakpoints.sidebar);
   const segments = useSegments() as readonly string[];
   const messagesIdx = segments.indexOf('messages');
   const hideMessagesTabHeader = messagesIdx >= 0 && segments[messagesIdx + 1] === 'chat';
@@ -52,7 +41,7 @@ export default function TabLayout() {
   const notificationsBadge =
     notificationsTabBadgeTotal > 0 ? notificationsTabBadgeTotal : undefined;
   return (
-    <View style={isSidebar ? DESKTOP_SIDEBAR_LAYOUT_STYLE : MOBILE_LAYOUT_STYLE}>
+    <View style={style}>
       <Tabs
         tabBar={(props) => <FloatingTabBar {...props} />}
         screenOptions={{

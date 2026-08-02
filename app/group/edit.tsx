@@ -18,6 +18,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { Button } from '@/components/primitives/Button';
 import { Input } from '@/components/primitives/Input';
+import { DesktopContentContainer } from '@/components/layout/DesktopContentContainer';
 import { COUNTRIES } from '@/constants/countries';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -188,6 +189,7 @@ export default function EditGroupScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        <DesktopContentContainer maxWidth={600}>
         <Text style={styles.label}>{t('groups.bannerImage')}</Text>
         <Pressable
           onPress={pickBannerImage}
@@ -429,6 +431,7 @@ export default function EditGroupScreen() {
             <Text style={styles.deleteButtonText}>{t('groups.deleteGroup')}</Text>
           </Pressable>
         ) : null}
+        </DesktopContentContainer>
       </ScrollView>
     </KeyboardAvoidingView>
   );

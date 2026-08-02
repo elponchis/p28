@@ -4,6 +4,7 @@ import { useFocusEffect } from 'expo-router';
 
 import { EmptyState } from '@/components/patterns/EmptyState';
 import { GroupCard } from '@/components/patterns/GroupCard';
+import { DesktopContentContainer } from '@/components/layout/DesktopContentContainer';
 
 import { useAuth } from '@/hooks/useAuth';
 import { useGroupsWhereUserIsAdminQuery, useGroupsForUserQuery } from '@/hooks/useApiQueries';
@@ -32,28 +33,30 @@ export default function ManageGroupsScreen() {
       contentInsetAdjustmentBehavior="automatic"
       showsVerticalScrollIndicator={false}
     >
-      {isLoading ? (
-        <View style={styles.loading}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      ) : adminGroups.length === 0 ? (
-        <EmptyState
-          iconName="shield-outline"
-          title={t('groups.noAdminGroups')}
-          subtitle={t('groups.noAdminGroupsSubtitle')}
-        />
-      ) : (
-        <View style={styles.list}>
-          {adminGroups.map((group) => (
-            <GroupCard
-              key={group.id}
-              group={group}
-              isMember={memberGroupIds.has(group.id)}
-              variant="compact"
-            />
-          ))}
-        </View>
-      )}
+      <DesktopContentContainer maxWidth={600}>
+        {isLoading ? (
+          <View style={styles.loading}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : adminGroups.length === 0 ? (
+          <EmptyState
+            iconName="shield-outline"
+            title={t('groups.noAdminGroups')}
+            subtitle={t('groups.noAdminGroupsSubtitle')}
+          />
+        ) : (
+          <View style={styles.list}>
+            {adminGroups.map((group) => (
+              <GroupCard
+                key={group.id}
+                group={group}
+                isMember={memberGroupIds.has(group.id)}
+                variant="compact"
+              />
+            ))}
+          </View>
+        )}
+      </DesktopContentContainer>
     </ScrollView>
   );
 }

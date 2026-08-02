@@ -13,6 +13,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { Button } from '@/components/primitives';
+import { DesktopContentContainer } from '@/components/layout/DesktopContentContainer';
 import { useAuth } from '@/hooks/useAuth';
 import { useCreateAnnouncementMutation, useGroupQuery } from '@/hooks/useApiQueries';
 import { getUserFacingError } from '@/lib/api';
@@ -113,6 +114,7 @@ export default function CreateAnnouncementScreen() {
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
       >
+        <DesktopContentContainer maxWidth={600}>
         {group ? <Text style={styles.groupName}>{group.name}</Text> : null}
 
         <View style={styles.reminderCard}>
@@ -183,6 +185,7 @@ export default function CreateAnnouncementScreen() {
           accessibilityLabel={t('announcements.publish')}
           accessibilityHint={t('announcements.confirmPublishMessage')}
         />
+        </DesktopContentContainer>
       </ScrollView>
     </KeyboardAvoidingView>
   );
