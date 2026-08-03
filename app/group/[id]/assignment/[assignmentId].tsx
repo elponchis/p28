@@ -1,6 +1,6 @@
 import { useLayoutEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useLocalSearchParams, useNavigation } from 'expo-router';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
@@ -12,6 +12,7 @@ import {
   useMySubmissionQuery,
   useSubmissionDownloadUrlMutation,
   useUpsertSubmissionMutation,
+  useUserIsGroupAdminQuery,
 } from '@/hooks/useApiQueries';
 import { getUserFacingError } from '@/lib/api';
 import {
@@ -33,10 +34,14 @@ interface PendingFile {
 }
 
 export default function AssignmentSubmissionScreen() {
-  const { assignmentId } = useLocalSearchParams<{ id: string; assignmentId: string }>();
+  const { id: groupId, assignmentId } = useLocalSearchParams<{
+    id: string;
+    assignmentId: string;
+  }>();
   const { session } = useAuth();
   const userId = session?.user?.id;
   const navigation = useNavigation();
+  const router = useRouter();
 
   const { data: assignment, isLoading: assignmentLoading } = useAssignmentQuery(assignmentId, {
     enabled: !!assignmentId,
@@ -46,6 +51,9 @@ export default function AssignmentSubmissionScreen() {
     isLoading: submissionLoading,
     refetch: refetchMySubmission,
   } = useMySubmissionQuery(assignmentId, userId, { enabled: !!assignmentId && !!userId });
+  const { data: isGroupAdmin = false } = useUserIsGroupAdminQuery(groupId, userId, {
+    enabled: !!groupId && !!userId,
+  });
   const upsertMutation = useUpsertSubmissionMutation();
   const downloadUrlMutation = useSubmissionDownloadUrlMutation();
 
@@ -170,6 +178,26 @@ export default function AssignmentSubmissionScreen() {
           </View>
         ) : null}
       </View>
+
+      {isGroupAdmin ? (
+        <View style={styles.adminCard}>
+          <View style={styles.adminCardTextCol}>
+            <Text style={styles.adminCardTitle}>{t('submissions.adminSectionTitle')}</Text>
+            <Text style={styles.adminCardSubtitle}>{t('submissions.adminSectionSubtitle')}</Text>
+          </View>
+          <Button
+            title={t('submissions.viewSubmissions')}
+            variant="secondary"
+            onPress={() =>
+              groupId &&
+              assignmentId &&
+              router.push(`/group/${groupId}/assignment/${assignmentId}/submissions`)
+            }
+            accessibilityLabel={t('submissions.viewSubmissions')}
+            accessibilityHint={t('submissions.viewSubmissionsHint')}
+          />
+        </View>
+      ) : null}
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t('submissions.mySubmissionTitle')}</Text>
@@ -329,6 +357,29 @@ const styles = StyleSheet.create({
     ...typography.caption,
     fontFamily: fontFamily.sansSemiBold,
     color: colors.textPrimary,
+  },
+  adminCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    backgroundColor: colors.surfaceContainerHigh,
+    borderRadius: radius.card,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  adminCardTextCol: {
+    flex: 1,
+    minWidth: 0,
+  },
+  adminCardTitle: {
+    ...typography.bodyStrong,
+    color: colors.textPrimary,
+  },
+  adminCardSubtitle: {
+    ...typography.caption,
+    color: colors.onSurfaceVariant,
+    marginTop: 2,
   },
   section: {
     marginBottom: spacing.lg,
