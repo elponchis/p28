@@ -1,5 +1,5 @@
-import { useLayoutEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -61,9 +61,28 @@ export default function AssignmentSubmissionScreen() {
   const [error, setError] = useState<string | null>(null);
   const [viewingFile, setViewingFile] = useState<{ url: string; fileName: string } | null>(null);
 
+  const handleEditAssignment = useCallback(() => {
+    if (groupId && assignmentId) router.push(`/group/${groupId}/assignment/${assignmentId}/edit`);
+  }, [router, groupId, assignmentId]);
+
   useLayoutEffect(() => {
-    navigation.setOptions({ title: assignment?.title ?? '' });
-  }, [assignment?.title, navigation]);
+    navigation.setOptions({
+      title: assignment?.title ?? '',
+      headerRight: isGroupAdmin
+        ? () => (
+            <Pressable
+              onPress={handleEditAssignment}
+              style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, padding: 8 })}
+              accessibilityLabel={t('assignments.editAssignment')}
+              accessibilityHint={t('assignments.editAssignmentHint')}
+              accessibilityRole="button"
+            >
+              <Ionicons name="pencil" size={20} color={colors.primary} />
+            </Pressable>
+          )
+        : undefined,
+    });
+  }, [assignment?.title, isGroupAdmin, handleEditAssignment, navigation]);
 
   const isPastDue = useMemo(
     () => !!assignment?.dueDate && isGroupEventPast(assignment.dueDate),

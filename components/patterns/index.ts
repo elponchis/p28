@@ -18,6 +18,8 @@ export { ComposeBar } from './ComposeBar';
 export type { ComposeBarProps, PendingComposeAttachment } from './ComposeBar';
 export { GroupEventFormSheet } from './GroupEventFormSheet';
 export type { GroupEventFormSheetProps } from './GroupEventFormSheet';
+export { AssignmentDueDateField } from './AssignmentDueDateField';
+export type { AssignmentDueDateFieldProps } from './AssignmentDueDateField';
 export { GroupRecurringMeetingFormSheet } from './GroupRecurringMeetingFormSheet';
 export type { GroupRecurringMeetingFormSheetProps } from './GroupRecurringMeetingFormSheet';
 export { GroupMemberRowList } from './GroupMemberRowList';

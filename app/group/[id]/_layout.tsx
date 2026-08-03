@@ -40,9 +40,23 @@ export default function GroupDetailStackLayout() {
         }}
       />
       <Stack.Screen
+        name="assignment/create"
+        options={{
+          title: t('assignments.addAssignment'),
+          presentation: 'modal',
+        }}
+      />
+      <Stack.Screen
         name="assignment/[assignmentId]"
         options={{
           title: '',
+        }}
+      />
+      <Stack.Screen
+        name="assignment/[assignmentId]/edit"
+        options={{
+          title: t('assignments.editAssignment'),
+          presentation: 'modal',
         }}
       />
       <Stack.Screen

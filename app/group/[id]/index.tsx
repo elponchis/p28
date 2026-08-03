@@ -240,6 +240,10 @@ export default function GroupDetailScreen() {
     if (id) router.push(`/group/${id}/course/create`);
   }, [router, id]);
 
+  const handleAddAssignment = useCallback(() => {
+    if (id) router.push(`/group/${id}/assignment/create`);
+  }, [router, id]);
+
   const handleEditCourse = useCallback(
     (courseId: string) => {
       if (id) router.push(`/group/${id}/course/${courseId}/edit`);
@@ -952,53 +956,76 @@ export default function GroupDetailScreen() {
           </View>
         ) : null}
 
-        {/* ── Assignments — hidden entirely when the group has none ── */}
-        {assignments.length > 0 ? (
+        {/* ── Assignments — hidden entirely for non-admins when the group has none ── */}
+        {assignments.length > 0 || canModerateAsAdmin ? (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>{t('assignments.sectionTitle')}</Text>
+              {canModerateAsAdmin && assignments.length > 0 ? (
+                <Pressable
+                  onPress={handleAddAssignment}
+                  style={styles.addTopicButton}
+                  accessibilityLabel={t('assignments.addAssignment')}
+                  accessibilityHint={t('assignments.addAssignmentHint')}
+                >
+                  <Ionicons name="add-circle" size={16} color={colors.secondary} />
+                  <Text style={styles.addTopicText}>{t('assignments.addAssignment')}</Text>
+                </Pressable>
+              ) : null}
             </View>
-            <View style={styles.assignmentList}>
-              {assignments.map((assignment) => {
-                const isOverdue = !!assignment.dueDate && isGroupEventPast(assignment.dueDate);
-                return (
-                  <Pressable
-                    key={assignment.id}
-                    onPress={() => router.push(`/group/${id}/assignment/${assignment.id}`)}
-                    style={({ pressed }) => [
-                      styles.assignmentCard,
-                      pressed && { opacity: 0.92 },
-                    ]}
-                    accessibilityLabel={assignment.title}
-                    accessibilityHint={t('assignments.openAssignmentHint')}
-                    accessibilityRole="button"
-                  >
-                    <View style={styles.assignmentCardHeader}>
-                      <Text style={styles.assignmentCardTitle} numberOfLines={2}>
-                        {assignment.title}
+            {assignments.length === 0 ? (
+              <EmptyState
+                iconName="document-text-outline"
+                title={t('assignments.noAssignments')}
+                subtitle={t('assignments.noAssignmentsHint')}
+                actionLabel={canModerateAsAdmin ? t('assignments.addAssignment') : undefined}
+                onAction={canModerateAsAdmin ? handleAddAssignment : undefined}
+                actionVariant="link"
+                actionAccessibilityHint={t('assignments.addAssignmentHint')}
+              />
+            ) : (
+              <View style={styles.assignmentList}>
+                {assignments.map((assignment) => {
+                  const isOverdue = !!assignment.dueDate && isGroupEventPast(assignment.dueDate);
+                  return (
+                    <Pressable
+                      key={assignment.id}
+                      onPress={() => router.push(`/group/${id}/assignment/${assignment.id}`)}
+                      style={({ pressed }) => [
+                        styles.assignmentCard,
+                        pressed && { opacity: 0.92 },
+                      ]}
+                      accessibilityLabel={assignment.title}
+                      accessibilityHint={t('assignments.openAssignmentHint')}
+                      accessibilityRole="button"
+                    >
+                      <View style={styles.assignmentCardHeader}>
+                        <Text style={styles.assignmentCardTitle} numberOfLines={2}>
+                          {assignment.title}
+                        </Text>
+                        {isOverdue ? (
+                          <View style={styles.assignmentOverdueBadge}>
+                            <Text style={styles.assignmentOverdueBadgeText}>
+                              {t('assignments.overdueBadge')}
+                            </Text>
+                          </View>
+                        ) : null}
+                      </View>
+                      <Text style={styles.assignmentCardDue}>
+                        {assignment.dueDate
+                          ? `${t('assignments.dueLabel')} ${formatGroupEventDateTime(assignment.dueDate)}`
+                          : t('assignments.noDueDate')}
                       </Text>
-                      {isOverdue ? (
-                        <View style={styles.assignmentOverdueBadge}>
-                          <Text style={styles.assignmentOverdueBadgeText}>
-                            {t('assignments.overdueBadge')}
-                          </Text>
-                        </View>
+                      {assignment.description ? (
+                        <Text style={styles.assignmentCardDescription} numberOfLines={2}>
+                          {assignment.description}
+                        </Text>
                       ) : null}
-                    </View>
-                    <Text style={styles.assignmentCardDue}>
-                      {assignment.dueDate
-                        ? `${t('assignments.dueLabel')} ${formatGroupEventDateTime(assignment.dueDate)}`
-                        : t('assignments.noDueDate')}
-                    </Text>
-                    {assignment.description ? (
-                      <Text style={styles.assignmentCardDescription} numberOfLines={2}>
-                        {assignment.description}
-                      </Text>
-                    ) : null}
-                  </Pressable>
-                );
-              })}
-            </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
           </View>
         ) : null}
 

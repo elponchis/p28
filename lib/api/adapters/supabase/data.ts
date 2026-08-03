@@ -2545,6 +2545,21 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
 
     async deleteAssignment(assignmentId: string): Promise<void | ApiError> {
       try {
+        // The submissions -> assignments FK cascade only removes DB rows; Storage objects
+        // are a separate system with no cascade, so submission files must be removed here
+        // first or they become orphaned. Requires the "Group admin can delete any submission
+        // file for their assignment" storage policy (00070) — without it, deletes for files
+        // that aren't the caller's own would be silently dropped by RLS.
+        const { data: subs, error: subsError } = await getClient()
+          .from('submissions')
+          .select('file_path')
+          .eq('assignment_id', assignmentId);
+        if (subsError) return toApiError(subsError);
+        const paths = (subs ?? []).map((s) => s.file_path).filter(Boolean);
+        if (paths.length > 0) {
+          await getClient().storage.from('assignment-submissions').remove(paths);
+        }
+
         const { error } = await getClient().from('assignments').delete().eq('id', assignmentId);
         if (error) return toApiError(error);
         return;
