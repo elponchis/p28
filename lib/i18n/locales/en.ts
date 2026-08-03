@@ -326,6 +326,7 @@ export const en = {
     deleteGroup: 'Delete group',
     deleteGroupConfirm: 'Are you sure you want to delete this group?',
     deleteGroupTypeNamePrompt: 'To confirm, type "{{name}}" below.',
+    deleteGroupConfirmInputLabel: 'Confirmation',
     groupName: 'Group name',
     groupNamePlaceholder: 'Enter group name',
     type: 'Type',

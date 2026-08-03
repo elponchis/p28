@@ -363,6 +363,7 @@ export default function EditGroupScreen() {
                 {t('groups.deleteGroupTypeNamePrompt', { name: group.name })}
               </Text>
               <Input
+                label={t('groups.deleteGroupConfirmInputLabel')}
                 value={deleteConfirmName}
                 onChangeText={setDeleteConfirmName}
                 placeholder={group.name}

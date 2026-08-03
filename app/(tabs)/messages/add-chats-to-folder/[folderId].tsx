@@ -34,6 +34,7 @@ export default function AddChatsToFolderScreen() {
     enabled: !!folderId && !!userId,
   });
   const addToFolderMutation = useAddChatToFolderMutation();
+  const insets = useSafeAreaInsets();
 
   const chatsInFolderIds = useMemo(() => new Set(chatsInFolder.map((c) => c.id)), [chatsInFolder]);
   const chatsToAdd = useMemo(
@@ -79,7 +80,6 @@ export default function AddChatsToFolderScreen() {
   if (!userId || !folderId) return null;
 
   const isSaving = addToFolderMutation.isPending;
-  const insets = useSafeAreaInsets();
   const bottomPadding = insets.bottom + spacing.xl;
 
   return (

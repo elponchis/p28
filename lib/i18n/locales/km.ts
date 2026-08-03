@@ -337,6 +337,7 @@ export const km: TranslationShape = {
     deleteGroup: 'លុបក្រុម',
     deleteGroupConfirm: 'តើអ្នកច្បាស់ជាចង់លុបក្រុមនេះមែនទេ?',
     deleteGroupTypeNamePrompt: 'ដើម្បីបញ្ជាក់ សូមវាយ "{{name}}" ខាងក្រោម។',
+    deleteGroupConfirmInputLabel: 'ការបញ្ជាក់',
     groupName: 'ឈ្មោះក្រុម',
     groupNamePlaceholder: 'បញ្ចូលឈ្មោះក្រុម',
     type: 'ប្រភេទ',

@@ -332,6 +332,7 @@ export const ko: TranslationShape = {
     deleteGroup: '그룹 삭제',
     deleteGroupConfirm: '이 그룹을 삭제하시겠습니까?',
     deleteGroupTypeNamePrompt: '확인하려면 아래에 "{{name}}"을(를) 입력하세요.',
+    deleteGroupConfirmInputLabel: '확인',
     groupName: '그룹 이름',
     groupNamePlaceholder: '그룹 이름 입력',
     type: '유형',
