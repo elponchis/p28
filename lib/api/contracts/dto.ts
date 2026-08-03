@@ -283,6 +283,70 @@ export interface UpdateLessonInput {
   sortOrder: number;
 }
 
+/** Assignment belonging to a group; access follows group membership/admin RLS. */
+export interface Assignment {
+  id: string;
+  groupId: string;
+  title: string;
+  description?: string;
+  /** ISO timestamp; undefined/absent means no deadline. */
+  dueDate?: string;
+  createdByUserId: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateAssignmentInput {
+  title: string;
+  description?: string;
+  dueDate?: string;
+  sortOrder: number;
+}
+
+export interface UpdateAssignmentInput {
+  title: string;
+  description?: string;
+  dueDate?: string;
+  sortOrder: number;
+}
+
+/**
+ * A student's submission for an assignment. One row per (assignment, user) — resubmitting
+ * replaces the file and row in place rather than creating a new one. `feedback`/`score`/
+ * `reviewedByUserId`/`reviewedAt` are set only by group admins (server-enforced).
+ */
+export interface Submission {
+  id: string;
+  assignmentId: string;
+  userId: string;
+  filePath: string;
+  fileName: string;
+  fileSize?: number;
+  submittedAt: string;
+  feedback?: string;
+  score?: number;
+  reviewedByUserId?: string;
+  reviewedAt?: string;
+  /** Enriched when fetched by a group admin viewing all submissions. */
+  authorDisplayName?: string;
+  authorAvatarUrl?: string;
+}
+
+/** Input for submitting/resubmitting: uploads fileUri, replacing any existing file for this user. */
+export interface UpsertSubmissionInput {
+  fileUri: string;
+  fileName: string;
+  fileSize?: number;
+  mimeType: string;
+}
+
+/** Group-admin-only: grade/feedback update for a submission. */
+export interface UpdateSubmissionFeedbackInput {
+  feedback?: string;
+  score?: number;
+}
+
 /** One member's RSVP row (for lists and detail). */
 export interface EventRsvpAttendee {
   userId: string;

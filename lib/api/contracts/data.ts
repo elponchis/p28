@@ -1,11 +1,13 @@
 import type { ApiError } from './errors';
 import type {
+  Assignment,
   Chat,
   ChatFolder,
   ChatFolderItem,
   ChatMember,
   ChatMessage,
   ChatSharedContentMessage,
+  CreateAssignmentInput,
   CreateChatInput,
   CreateChatMessageInput,
   CreateCourseInput,
@@ -42,6 +44,8 @@ import type {
   PostReactionType,
   Profile,
   ProfileUpdates,
+  Submission,
+  UpdateAssignmentInput,
   UpdateChatInput,
   UpdateChatMessageInput,
   UpdateCourseInput,
@@ -51,6 +55,8 @@ import type {
   UpdateGroupRecurringMeetingInput,
   UpdateGroupInput,
   UpdateLessonInput,
+  UpdateSubmissionFeedbackInput,
+  UpsertSubmissionInput,
   PushToken,
   InAppNotification,
   MarkInAppNotificationsReadInput,
@@ -266,6 +272,39 @@ export interface DataContract {
   createLesson(courseId: string, input: CreateLessonInput): Promise<Lesson | ApiError>;
   updateLesson(lessonId: string, input: UpdateLessonInput): Promise<Lesson | ApiError>;
   deleteLesson(lessonId: string): Promise<void | ApiError>;
+
+  // Assignments + submissions (group-scoped; 1 submission per student, overwritten on resubmit)
+  getAssignmentsByGroup(groupId: string): Promise<Assignment[] | ApiError>;
+  getAssignment(assignmentId: string): Promise<Assignment | ApiError>;
+  createAssignment(
+    groupId: string,
+    userId: string,
+    input: CreateAssignmentInput
+  ): Promise<Assignment | ApiError>;
+  updateAssignment(
+    assignmentId: string,
+    input: UpdateAssignmentInput
+  ): Promise<Assignment | ApiError>;
+  deleteAssignment(assignmentId: string): Promise<void | ApiError>;
+  /** Admin-only: all students' submissions for an assignment, enriched with author info. */
+  getSubmissionsByAssignment(assignmentId: string): Promise<Submission[] | ApiError>;
+  /** The caller's own submission for this assignment, or null if not yet submitted. */
+  getMySubmission(assignmentId: string, userId: string): Promise<Submission | null | ApiError>;
+  /** Submit or resubmit: replaces any existing file + row for this (assignment, user). */
+  upsertSubmission(
+    assignmentId: string,
+    userId: string,
+    input: UpsertSubmissionInput
+  ): Promise<Submission | ApiError>;
+  /** Group-admin-only: set feedback/score on a submission. */
+  updateSubmissionFeedback(
+    submissionId: string,
+    reviewerUserId: string,
+    input: UpdateSubmissionFeedbackInput
+  ): Promise<Submission | ApiError>;
+  deleteSubmission(submissionId: string): Promise<void | ApiError>;
+  /** Short-lived signed URL to view/download a submission file (private bucket). */
+  getSubmissionDownloadUrl(filePath: string): Promise<string | ApiError>;
 
   getGroupMemberSettings(groupId: string, userId: string): Promise<GroupMemberSettings | ApiError>;
   updateGroupMemberSettings(

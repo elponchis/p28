@@ -947,6 +947,185 @@ export function useDeleteLessonMutation() {
   });
 }
 
+// Assignments + submissions
+
+export function useAssignmentsByGroupQuery(
+  groupId: string | undefined,
+  options?: { enabled?: boolean }
+) {
+  const enabled = options?.enabled ?? true;
+  return useQuery({
+    queryKey: queryKeys.assignmentsByGroup(groupId ?? ''),
+    queryFn: () =>
+      queryFn(api.data.getAssignmentsByGroup(groupId!)) as Promise<
+        import('@/lib/api').Assignment[]
+      >,
+    enabled: !!groupId && enabled,
+  });
+}
+
+export function useAssignmentQuery(
+  assignmentId: string | undefined,
+  options?: { enabled?: boolean }
+) {
+  const enabled = options?.enabled ?? true;
+  return useQuery({
+    queryKey: queryKeys.assignment(assignmentId ?? ''),
+    queryFn: () =>
+      queryFn(api.data.getAssignment(assignmentId!)) as Promise<import('@/lib/api').Assignment>,
+    enabled: !!assignmentId && enabled,
+  });
+}
+
+export function useCreateAssignmentMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      groupId,
+      userId,
+      input,
+    }: {
+      groupId: string;
+      userId: string;
+      input: import('@/lib/api').CreateAssignmentInput;
+    }) => queryFn(api.data.createAssignment(groupId, userId, input)),
+    onSuccess: (assignment) => {
+      qc.invalidateQueries({ queryKey: queryKeys.assignmentsByGroup(assignment.groupId) });
+    },
+  });
+}
+
+export function useUpdateAssignmentMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      assignmentId,
+      input,
+    }: {
+      assignmentId: string;
+      input: import('@/lib/api').UpdateAssignmentInput;
+    }) => queryFn(api.data.updateAssignment(assignmentId, input)),
+    onSuccess: (assignment) => {
+      qc.invalidateQueries({ queryKey: queryKeys.assignment(assignment.id) });
+      qc.invalidateQueries({ queryKey: queryKeys.assignmentsByGroup(assignment.groupId) });
+    },
+  });
+}
+
+export function useDeleteAssignmentMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ assignmentId }: { assignmentId: string; groupId: string }) =>
+      queryFn(api.data.deleteAssignment(assignmentId)),
+    onSuccess: (_void, { groupId }) => {
+      qc.invalidateQueries({ queryKey: queryKeys.assignmentsByGroup(groupId) });
+    },
+  });
+}
+
+export function useSubmissionsByAssignmentQuery(
+  assignmentId: string | undefined,
+  options?: { enabled?: boolean }
+) {
+  const enabled = options?.enabled ?? true;
+  return useQuery({
+    queryKey: queryKeys.submissionsByAssignment(assignmentId ?? ''),
+    queryFn: () =>
+      queryFn(api.data.getSubmissionsByAssignment(assignmentId!)) as Promise<
+        import('@/lib/api').Submission[]
+      >,
+    enabled: !!assignmentId && enabled,
+  });
+}
+
+export function useMySubmissionQuery(
+  assignmentId: string | undefined,
+  userId: string | undefined,
+  options?: { enabled?: boolean }
+) {
+  const enabled = options?.enabled ?? true;
+  return useQuery({
+    queryKey: queryKeys.mySubmission(assignmentId ?? '', userId ?? ''),
+    queryFn: () =>
+      queryFn(api.data.getMySubmission(assignmentId!, userId!)) as Promise<
+        import('@/lib/api').Submission | null
+      >,
+    enabled: !!assignmentId && !!userId && enabled,
+  });
+}
+
+export function useUpsertSubmissionMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      assignmentId,
+      userId,
+      input,
+    }: {
+      assignmentId: string;
+      userId: string;
+      input: import('@/lib/api').UpsertSubmissionInput;
+    }) => queryFn(api.data.upsertSubmission(assignmentId, userId, input)),
+    onSuccess: (submission) => {
+      qc.invalidateQueries({
+        queryKey: queryKeys.mySubmission(submission.assignmentId, submission.userId),
+      });
+      qc.invalidateQueries({
+        queryKey: queryKeys.submissionsByAssignment(submission.assignmentId),
+      });
+    },
+  });
+}
+
+export function useUpdateSubmissionFeedbackMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      submissionId,
+      reviewerUserId,
+      input,
+    }: {
+      submissionId: string;
+      reviewerUserId: string;
+      input: import('@/lib/api').UpdateSubmissionFeedbackInput;
+    }) => queryFn(api.data.updateSubmissionFeedback(submissionId, reviewerUserId, input)),
+    onSuccess: (submission) => {
+      qc.invalidateQueries({
+        queryKey: queryKeys.submissionsByAssignment(submission.assignmentId),
+      });
+      qc.invalidateQueries({
+        queryKey: queryKeys.mySubmission(submission.assignmentId, submission.userId),
+      });
+    },
+  });
+}
+
+export function useDeleteSubmissionMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      submissionId,
+    }: {
+      submissionId: string;
+      assignmentId: string;
+      userId?: string;
+    }) => queryFn(api.data.deleteSubmission(submissionId)),
+    onSuccess: (_void, { assignmentId, userId }) => {
+      qc.invalidateQueries({ queryKey: queryKeys.submissionsByAssignment(assignmentId) });
+      if (userId) {
+        qc.invalidateQueries({ queryKey: queryKeys.mySubmission(assignmentId, userId) });
+      }
+    },
+  });
+}
+
+export function useSubmissionDownloadUrlMutation() {
+  return useMutation({
+    mutationFn: async ({ filePath }: { filePath: string }) =>
+      queryFn(api.data.getSubmissionDownloadUrl(filePath)) as Promise<string>,
+  });
+}
+
 export function useCreateGroupEventMutation() {
   const qc = useQueryClient();
   return useMutation({

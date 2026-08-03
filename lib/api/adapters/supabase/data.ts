@@ -11,17 +11,23 @@ import {
   normalizeMimeTypeForAllowlist,
   parseClientAttachments,
 } from '@/lib/api/messageAttachments';
+import {
+  isAllowedSubmissionMimeType,
+  MAX_SUBMISSION_FILE_BYTES,
+} from '@/lib/api/assignmentSubmissions';
 import { parseMeetingLinkInput } from '@/lib/meetingLink';
 import type { DataContract } from '../../contracts';
 import type { ApiError } from '../../contracts/errors';
 import { isApiError } from '../../contracts/guards';
 import type {
+  Assignment,
   Chat,
   ChatFolder,
   ChatFolderItem,
   ChatMember,
   ChatMessage,
   ChatSharedContentMessage,
+  CreateAssignmentInput,
   CreateChatInput,
   CreateChatMessageInput,
   CreateCourseInput,
@@ -62,6 +68,8 @@ import type {
   Profile,
   ProfileUpdates,
   PushToken,
+  Submission,
+  UpdateAssignmentInput,
   UpdateChatInput,
   UpdateChatMessageInput,
   UpdateCourseInput,
@@ -71,6 +79,8 @@ import type {
   UpdateGroupRecurringMeetingInput,
   UpdateGroupInput,
   UpdateLessonInput,
+  UpdateSubmissionFeedbackInput,
+  UpsertSubmissionInput,
 } from '../../contracts/dto';
 
 function toApiError(err: unknown): ApiError {
@@ -194,27 +204,32 @@ function sanitizeStorageFileSegment(name: string): string {
 }
 
 /**
- * Read arbitrary binary upload (image / video / document). Validates MIME allowlist and 50MB cap.
+ * Read arbitrary binary upload (image / video / document). Validates MIME allowlist and size cap;
+ * both default to the chat/discussion attachment policy but can be overridden (e.g. for
+ * assignment submissions, which have their own allowlist).
  */
 async function readBinaryFile(
   uri: string,
   contentType: string,
-  base64Data?: string | null
+  base64Data?: string | null,
+  options?: { isAllowed?: (mime: string) => boolean; maxBytes?: number }
 ): Promise<ImageUploadBody> {
+  const isAllowed = options?.isAllowed ?? isAllowedMessageAttachmentMimeType;
+  const maxBytes = options?.maxBytes ?? MAX_MESSAGE_ATTACHMENT_BYTES;
   const mime = normalizeMimeTypeForAllowlist(contentType);
-  if (!isAllowedMessageAttachmentMimeType(mime)) {
+  if (!isAllowed(mime)) {
     throw new Error('File type not allowed');
   }
 
   const size =
     base64Data == null || base64Data.length === 0 ? await getUriSizeBytes(uri) : undefined;
-  if (size !== undefined && size > MAX_MESSAGE_ATTACHMENT_BYTES) {
+  if (size !== undefined && size > maxBytes) {
     throw new Error('File is too large');
   }
 
   if (base64Data != null && base64Data.length > 0) {
     const { body } = base64ToArrayBuffer(base64Data, mime);
-    if (body.byteLength > MAX_MESSAGE_ATTACHMENT_BYTES) {
+    if (body.byteLength > maxBytes) {
       throw new Error('File is too large');
     }
     return { body, contentType: mime };
@@ -225,10 +240,10 @@ async function readBinaryFile(
     if (response.ok) {
       const blob = await response.blob();
       const type = normalizeMimeTypeForAllowlist(blob.type || mime);
-      if (!isAllowedMessageAttachmentMimeType(type)) {
+      if (!isAllowed(type)) {
         throw new Error('File type not allowed');
       }
-      if (blob.size > MAX_MESSAGE_ATTACHMENT_BYTES) {
+      if (blob.size > maxBytes) {
         throw new Error('File is too large');
       }
       return { body: blob, contentType: type };
@@ -252,7 +267,7 @@ async function readBinaryFile(
       const encoding = LegacyFS.EncodingType?.Base64 ?? 'base64';
       const base64 = await LegacyFS.readAsStringAsync(uri, { encoding });
       const { body } = base64ToArrayBuffer(base64, mime);
-      if (body.byteLength > MAX_MESSAGE_ATTACHMENT_BYTES) {
+      if (body.byteLength > maxBytes) {
         throw new Error('File is too large');
       }
       return { body, contentType: mime };
@@ -629,6 +644,70 @@ function mapLessonRow(row: LessonRow): Lesson {
     updatedAt: row.updated_at,
   };
 }
+
+type AssignmentRow = {
+  id: string;
+  group_id: string;
+  title: string;
+  description: string | null;
+  due_date: string | null;
+  created_by_user_id: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+function mapAssignmentRow(row: AssignmentRow): Assignment {
+  return {
+    id: row.id,
+    groupId: row.group_id,
+    title: row.title,
+    description: row.description ?? undefined,
+    dueDate: row.due_date ?? undefined,
+    createdByUserId: row.created_by_user_id,
+    sortOrder: row.sort_order,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+type SubmissionRow = {
+  id: string;
+  assignment_id: string;
+  user_id: string;
+  file_path: string;
+  file_name: string;
+  file_size: number | null;
+  submitted_at: string;
+  feedback: string | null;
+  score: number | null;
+  reviewed_by_user_id: string | null;
+  reviewed_at: string | null;
+};
+
+function mapSubmissionRow(
+  row: SubmissionRow,
+  profile?: { displayName?: string; avatarUrl?: string }
+): Submission {
+  return {
+    id: row.id,
+    assignmentId: row.assignment_id,
+    userId: row.user_id,
+    filePath: row.file_path,
+    fileName: row.file_name,
+    fileSize: row.file_size ?? undefined,
+    submittedAt: row.submitted_at,
+    feedback: row.feedback ?? undefined,
+    score: row.score ?? undefined,
+    reviewedByUserId: row.reviewed_by_user_id ?? undefined,
+    reviewedAt: row.reviewed_at ?? undefined,
+    authorDisplayName: profile?.displayName,
+    authorAvatarUrl: profile?.avatarUrl,
+  };
+}
+
+const SUBMISSION_ROW_COLUMNS =
+  'id, assignment_id, user_id, file_path, file_name, file_size, submitted_at, feedback, score, reviewed_by_user_id, reviewed_at';
 
 function validateRecurringMeetingWrite(
   input: CreateGroupRecurringMeetingInput | UpdateGroupRecurringMeetingInput
@@ -2366,6 +2445,287 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
         const { error } = await getClient().from('lessons').delete().eq('id', lessonId);
         if (error) return toApiError(error);
         return;
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async getAssignmentsByGroup(groupId: string): Promise<Assignment[] | ApiError> {
+      try {
+        const { data: rows, error } = await getClient()
+          .from('assignments')
+          .select(
+            'id, group_id, title, description, due_date, created_by_user_id, sort_order, created_at, updated_at'
+          )
+          .eq('group_id', groupId)
+          .order('sort_order', { ascending: true });
+        if (error) return toApiError(error);
+        return ((rows ?? []) as AssignmentRow[]).map(mapAssignmentRow);
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async getAssignment(assignmentId: string): Promise<Assignment | ApiError> {
+      try {
+        const { data, error } = await getClient()
+          .from('assignments')
+          .select(
+            'id, group_id, title, description, due_date, created_by_user_id, sort_order, created_at, updated_at'
+          )
+          .eq('id', assignmentId)
+          .single();
+        if (error) return toApiError(error);
+        if (!data) return { message: 'Assignment not found', code: 'NOT_FOUND' };
+        return mapAssignmentRow(data as AssignmentRow);
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async createAssignment(
+      groupId: string,
+      userId: string,
+      input: CreateAssignmentInput
+    ): Promise<Assignment | ApiError> {
+      try {
+        const title = input.title?.trim();
+        if (!title) {
+          return { message: 'Title is required', code: 'VALIDATION_ERROR' };
+        }
+        const { data: row, error } = await getClient()
+          .from('assignments')
+          .insert({
+            group_id: groupId,
+            title,
+            description: input.description?.trim() || null,
+            due_date: input.dueDate || null,
+            created_by_user_id: userId,
+            sort_order: input.sortOrder,
+          })
+          .select(
+            'id, group_id, title, description, due_date, created_by_user_id, sort_order, created_at, updated_at'
+          )
+          .single();
+        if (error) return toApiError(error);
+        return mapAssignmentRow(row as AssignmentRow);
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async updateAssignment(
+      assignmentId: string,
+      input: UpdateAssignmentInput
+    ): Promise<Assignment | ApiError> {
+      try {
+        const title = input.title?.trim();
+        if (!title) {
+          return { message: 'Title is required', code: 'VALIDATION_ERROR' };
+        }
+        const { data: row, error } = await getClient()
+          .from('assignments')
+          .update({
+            title,
+            description: input.description?.trim() || null,
+            due_date: input.dueDate || null,
+            sort_order: input.sortOrder,
+          })
+          .eq('id', assignmentId)
+          .select(
+            'id, group_id, title, description, due_date, created_by_user_id, sort_order, created_at, updated_at'
+          )
+          .single();
+        if (error) return toApiError(error);
+        return mapAssignmentRow(row as AssignmentRow);
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async deleteAssignment(assignmentId: string): Promise<void | ApiError> {
+      try {
+        const { error } = await getClient().from('assignments').delete().eq('id', assignmentId);
+        if (error) return toApiError(error);
+        return;
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async getSubmissionsByAssignment(assignmentId: string): Promise<Submission[] | ApiError> {
+      try {
+        const { data: rows, error } = await getClient()
+          .from('submissions')
+          .select(SUBMISSION_ROW_COLUMNS)
+          .eq('assignment_id', assignmentId)
+          .order('submitted_at', { ascending: false });
+        if (error) return toApiError(error);
+        const list = (rows ?? []) as SubmissionRow[];
+        if (list.length === 0) return [];
+        const userIds = [...new Set(list.map((r) => r.user_id))];
+        const profileMap = await loadProfileMapForUserIds(getClient, userIds);
+        return list.map((r) => mapSubmissionRow(r, profileMap.get(r.user_id)));
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async getMySubmission(
+      assignmentId: string,
+      userId: string
+    ): Promise<Submission | null | ApiError> {
+      try {
+        const { data, error } = await getClient()
+          .from('submissions')
+          .select(SUBMISSION_ROW_COLUMNS)
+          .eq('assignment_id', assignmentId)
+          .eq('user_id', userId)
+          .maybeSingle();
+        if (error) return toApiError(error);
+        if (!data) return null;
+        return mapSubmissionRow(data as SubmissionRow);
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async upsertSubmission(
+      assignmentId: string,
+      userId: string,
+      input: UpsertSubmissionInput
+    ): Promise<Submission | ApiError> {
+      try {
+        const fileName = input.fileName?.trim();
+        if (!fileName) {
+          return { message: 'File name is required', code: 'VALIDATION_ERROR' };
+        }
+
+        const { data: existingRow, error: existingError } = await getClient()
+          .from('submissions')
+          .select('id, file_path')
+          .eq('assignment_id', assignmentId)
+          .eq('user_id', userId)
+          .maybeSingle();
+        if (existingError) return toApiError(existingError);
+
+        let body: ImageUploadBody['body'];
+        let contentType: string;
+        try {
+          const read = await readBinaryFile(input.fileUri, input.mimeType, undefined, {
+            isAllowed: isAllowedSubmissionMimeType,
+            maxBytes: MAX_SUBMISSION_FILE_BYTES,
+          });
+          body = read.body;
+          contentType = read.contentType;
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : 'Upload failed';
+          if (msg === 'File is too large' || msg === 'File type not allowed') {
+            return { message: msg, code: 'VALIDATION_ERROR' };
+          }
+          return toApiError(e);
+        }
+
+        const safeFileName = sanitizeStorageFileSegment(fileName);
+        const path = `${assignmentId}/${userId}/${Date.now()}-${safeFileName}`;
+        const { error: uploadError } = await getClient()
+          .storage.from('assignment-submissions')
+          .upload(path, body, { upsert: false, contentType });
+        if (uploadError) return toApiError(uploadError);
+
+        // Only remove the old file once the new one is safely uploaded, so a failed
+        // upload never leaves the student with no file at all (no orphaned file either,
+        // since the old path is removed right after the new row/file are both in place).
+        if (existingRow?.file_path && existingRow.file_path !== path) {
+          await getClient()
+            .storage.from('assignment-submissions')
+            .remove([existingRow.file_path]);
+        }
+
+        const payload = {
+          assignment_id: assignmentId,
+          user_id: userId,
+          file_path: path,
+          file_name: fileName,
+          file_size: input.fileSize ?? null,
+          submitted_at: new Date().toISOString(),
+        };
+
+        const { data: row, error } = existingRow
+          ? await getClient()
+              .from('submissions')
+              .update(payload)
+              .eq('id', existingRow.id)
+              .select(SUBMISSION_ROW_COLUMNS)
+              .single()
+          : await getClient()
+              .from('submissions')
+              .insert(payload)
+              .select(SUBMISSION_ROW_COLUMNS)
+              .single();
+        if (error) return toApiError(error);
+        return mapSubmissionRow(row as SubmissionRow);
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async updateSubmissionFeedback(
+      submissionId: string,
+      reviewerUserId: string,
+      input: UpdateSubmissionFeedbackInput
+    ): Promise<Submission | ApiError> {
+      try {
+        const { data: row, error } = await getClient()
+          .from('submissions')
+          .update({
+            feedback: input.feedback?.trim() || null,
+            score: input.score ?? null,
+            reviewed_by_user_id: reviewerUserId,
+            reviewed_at: new Date().toISOString(),
+          })
+          .eq('id', submissionId)
+          .select(SUBMISSION_ROW_COLUMNS)
+          .single();
+        if (error) return toApiError(error);
+        if (!row) {
+          return { message: 'Submission not found or not authorized', code: 'NOT_FOUND' };
+        }
+        return mapSubmissionRow(row as SubmissionRow);
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async deleteSubmission(submissionId: string): Promise<void | ApiError> {
+      try {
+        const { data: existing, error: fetchError } = await getClient()
+          .from('submissions')
+          .select('file_path')
+          .eq('id', submissionId)
+          .maybeSingle();
+        if (fetchError) return toApiError(fetchError);
+        const { error } = await getClient().from('submissions').delete().eq('id', submissionId);
+        if (error) return toApiError(error);
+        if (existing?.file_path) {
+          await getClient().storage.from('assignment-submissions').remove([existing.file_path]);
+        }
+        return;
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async getSubmissionDownloadUrl(filePath: string): Promise<string | ApiError> {
+      try {
+        const { data, error } = await getClient()
+          .storage.from('assignment-submissions')
+          .createSignedUrl(filePath, 60 * 60);
+        if (error) return toApiError(error);
+        if (!data?.signedUrl) {
+          return { message: 'Failed to create download link', code: 'NOT_FOUND' };
+        }
+        return data.signedUrl;
       } catch (e) {
         return toApiError(e);
       }
