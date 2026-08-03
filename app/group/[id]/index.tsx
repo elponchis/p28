@@ -30,6 +30,7 @@ import { GroupRecurringMeetingFormSheet } from '@/components/patterns/GroupRecur
 import { useAuth } from '@/hooks/useAuth';
 import {
   useAnnouncementsQuery,
+  useAssignmentsByGroupQuery,
   useCoursesByGroupQuery,
   useCreateGroupEventMutation,
   useCreateGroupRecurringMeetingMutation,
@@ -50,7 +51,7 @@ import {
 } from '@/hooks/useApiQueries';
 import { getUserFacingError, isApiError } from '@/lib/api';
 import type { CreateGroupRecurringMeetingInput, GroupRecurringMeeting } from '@/lib/api';
-import { formatGroupEventDateTime, formatRelativeTime } from '@/lib/dates';
+import { formatGroupEventDateTime, formatRelativeTime, isGroupEventPast } from '@/lib/dates';
 import { compareGroupEventsByStartThenCreated } from '@/lib/groupEventsSort';
 import { t } from '@/lib/i18n';
 import { formatRecurringMeetingSummary } from '@/lib/recurringMeetingSummary';
@@ -104,6 +105,9 @@ export default function GroupDetailScreen() {
       discover: !isMember,
     });
   const { data: courses = [], refetch: refetchCourses } = useCoursesByGroupQuery(id, {
+    enabled: !!id,
+  });
+  const { data: assignments = [], refetch: refetchAssignments } = useAssignmentsByGroupQuery(id, {
     enabled: !!id,
   });
   const { data: groupAdmins = [] } = useGroupAdminsQuery(id, { enabled: !!id });
@@ -161,6 +165,7 @@ export default function GroupDetailScreen() {
       refetchGroupEvents();
       refetchRecurringMeetings();
       refetchCourses();
+      refetchAssignments();
     }, [
       refetchGroup,
       refetchMembership,
@@ -170,6 +175,7 @@ export default function GroupDetailScreen() {
       refetchGroupEvents,
       refetchRecurringMeetings,
       refetchCourses,
+      refetchAssignments,
     ])
   );
 
@@ -946,6 +952,56 @@ export default function GroupDetailScreen() {
           </View>
         ) : null}
 
+        {/* ── Assignments — hidden entirely when the group has none ── */}
+        {assignments.length > 0 ? (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>{t('assignments.sectionTitle')}</Text>
+            </View>
+            <View style={styles.assignmentList}>
+              {assignments.map((assignment) => {
+                const isOverdue = !!assignment.dueDate && isGroupEventPast(assignment.dueDate);
+                return (
+                  <Pressable
+                    key={assignment.id}
+                    onPress={() => router.push(`/group/${id}/assignment/${assignment.id}`)}
+                    style={({ pressed }) => [
+                      styles.assignmentCard,
+                      pressed && { opacity: 0.92 },
+                    ]}
+                    accessibilityLabel={assignment.title}
+                    accessibilityHint={t('assignments.openAssignmentHint')}
+                    accessibilityRole="button"
+                  >
+                    <View style={styles.assignmentCardHeader}>
+                      <Text style={styles.assignmentCardTitle} numberOfLines={2}>
+                        {assignment.title}
+                      </Text>
+                      {isOverdue ? (
+                        <View style={styles.assignmentOverdueBadge}>
+                          <Text style={styles.assignmentOverdueBadgeText}>
+                            {t('assignments.overdueBadge')}
+                          </Text>
+                        </View>
+                      ) : null}
+                    </View>
+                    <Text style={styles.assignmentCardDue}>
+                      {assignment.dueDate
+                        ? `${t('assignments.dueLabel')} ${formatGroupEventDateTime(assignment.dueDate)}`
+                        : t('assignments.noDueDate')}
+                    </Text>
+                    {assignment.description ? (
+                      <Text style={styles.assignmentCardDescription} numberOfLines={2}>
+                        {assignment.description}
+                      </Text>
+                    ) : null}
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        ) : null}
+
         {/* ── Announcements (Stitch “Latest Updates” layout) ── */}
         <View style={styles.section}>
           <View style={styles.latestUpdatesHeader}>
@@ -1678,6 +1734,47 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   courseCardDescription: {
+    ...typography.caption,
+    color: colors.onSurfaceVariant,
+  },
+  assignmentList: {
+    gap: spacing.md,
+  },
+  assignmentCard: {
+    backgroundColor: colors.surfaceContainerLowest,
+    borderRadius: radius.card,
+    padding: spacing.md,
+    ...editorialShadow,
+  },
+  assignmentCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    marginBottom: spacing.xxs,
+  },
+  assignmentCardTitle: {
+    ...typography.bodyStrong,
+    color: colors.textPrimary,
+    flex: 1,
+  },
+  assignmentOverdueBadge: {
+    backgroundColor: colors.amberSoft,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xxs,
+    borderRadius: radius.chip,
+  },
+  assignmentOverdueBadgeText: {
+    ...typography.caption,
+    fontFamily: fontFamily.sansSemiBold,
+    color: colors.textPrimary,
+  },
+  assignmentCardDue: {
+    ...typography.caption,
+    color: colors.onSurfaceVariant,
+    marginBottom: spacing.xxs,
+  },
+  assignmentCardDescription: {
     ...typography.caption,
     color: colors.onSurfaceVariant,
   },

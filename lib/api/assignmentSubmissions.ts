@@ -23,3 +23,6 @@ export const ALLOWED_SUBMISSION_MIME_TYPES: ReadonlySet<string> = new Set([
 export function isAllowedSubmissionMimeType(mime: string): boolean {
   return ALLOWED_SUBMISSION_MIME_TYPES.has(mime.split(';')[0].trim().toLowerCase());
 }
+
+/** MIME list for expo-document-picker's `type` filter when picking a submission file. */
+export const SUBMISSION_PICKER_MIME_WHITELIST: string[] = [...ALLOWED_SUBMISSION_MIME_TYPES];

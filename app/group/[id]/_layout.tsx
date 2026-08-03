@@ -40,6 +40,12 @@ export default function GroupDetailStackLayout() {
         }}
       />
       <Stack.Screen
+        name="assignment/[assignmentId]"
+        options={{
+          title: '',
+        }}
+      />
+      <Stack.Screen
         name="course/create"
         options={{
           title: t('courses.addCourse'),
