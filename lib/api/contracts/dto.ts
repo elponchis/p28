@@ -482,17 +482,19 @@ export interface PostReactionDetail {
 }
 
 /** Structured attachment on chat messages and discussion posts. */
-export type MessageAttachmentKind = 'image' | 'video' | 'file';
+export type MessageAttachmentKind = 'image' | 'video' | 'file' | 'audio';
 
 export interface MessageAttachment {
   kind: MessageAttachmentKind;
-  /** Public URL of the image, video, or downloadable file. */
+  /** Public URL of the image, video, audio, or downloadable file. */
   url: string;
-  /** Original file name (expected for `file`, optional for video). */
+  /** Original file name (expected for `file`, optional for video/audio). */
   fileName?: string;
   mimeType?: string;
   /** Video poster image URL (JPEG), optional. */
   thumbnailUrl?: string;
+  /** Duration in seconds (voice messages). */
+  durationSec?: number;
 }
 
 /** Reply to a discussion. From discussion_posts table. */
@@ -612,6 +614,8 @@ export interface ChatMessage {
   body: string;
   createdAt: string;
   updatedAt?: string;
+  /** When set, the message was soft-deleted; body/attachments are cleared server-side and the UI shows a tombstone. */
+  deletedAt?: string;
   authorDisplayName?: string;
   authorAvatarUrl?: string;
   parentMessageId?: string;

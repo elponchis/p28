@@ -7,6 +7,7 @@ import { t } from '@/lib/i18n';
 import { colors, radius, spacing, typography, fontFamily } from '@/theme/tokens';
 
 import type { MessageLike } from './types';
+import { VoiceMessageBubble } from './VoiceMessageBubble';
 
 export function messageLikeToAttachments(post: MessageLike): MessageAttachment[] {
   if (post.attachments?.length) return post.attachments;
@@ -81,6 +82,16 @@ export function MessageAttachmentsBlock({
                 <Ionicons name="play-circle" size={44} color={colors.onPrimary} />
               </View>
             </Pressable>
+          );
+        }
+        if (att.kind === 'audio') {
+          return (
+            <VoiceMessageBubble
+              key={key}
+              url={att.url}
+              durationSec={att.durationSec}
+              isOwnMessage={isOwnMessage}
+            />
           );
         }
         const ext = fileExtension(att.fileName, att.url);

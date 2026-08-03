@@ -36,6 +36,7 @@ export function storedMessageToPendingAttachments(
       uploadedUrl: a.url,
       uploadedThumbnailUrl: a.thumbnailUrl,
       uploading: false,
+      durationSec: a.durationSec,
     }));
   }
   const urls = msg.imageUrls ?? [];
@@ -66,6 +67,15 @@ export function pendingToMessageAttachments(
         v.thumbnailUrl = p.uploadedThumbnailUrl;
       }
       return v;
+    }
+    if (p.kind === 'audio') {
+      return {
+        kind: 'audio',
+        url: p.uploadedUrl!,
+        fileName: p.fileName,
+        mimeType: p.mimeType,
+        durationSec: p.durationSec,
+      };
     }
     return {
       kind: 'file',

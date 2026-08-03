@@ -365,6 +365,8 @@ export interface DataContract {
     userId: string,
     input: UpdateChatMessageInput
   ): Promise<ChatMessage | ApiError>;
+  /** Soft delete (Telegram-style tombstone): clears body/attachments and sets deletedAt. Own messages only. */
+  deleteChatMessage(messageId: string, userId: string): Promise<void | ApiError>;
   reactToChatMessage(
     messageId: string,
     chatId: string,

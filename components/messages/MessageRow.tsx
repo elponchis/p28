@@ -55,7 +55,8 @@ export function MessageRow({
 }: MessageRowProps) {
   const counts = post.reactionCounts ?? { prayer: 0, laugh: 0, thumbsUp: 0 };
   const userReactions = post.userReactionTypes ?? [];
-  const hasReactions = counts.prayer > 0 || counts.laugh > 0 || counts.thumbsUp > 0;
+  const hasReactions =
+    !post.deletedAt && (counts.prayer > 0 || counts.laugh > 0 || counts.thumbsUp > 0);
   const isOwnMessage = !!currentUserId && post.userId === currentUserId;
   const outboundStatus = post.outboundStatus;
   const showFailedOutbound = isOwnMessage && outboundStatus === 'failed' && !!onRetrySend;
@@ -68,12 +69,14 @@ export function MessageRow({
   const isUserReaction = (type: PostReactionType) =>
     !!currentUserId && userReactions.includes(type);
 
+  const isDeleted = !!post.deletedAt;
   const clockTime = formatMessageSentClockTime(post.createdAt);
-  const isEdited = post.updatedAt && post.updatedAt !== post.createdAt;
+  const isEdited = !isDeleted && post.updatedAt && post.updatedAt !== post.createdAt;
+  const canReactNow = canReact && !isDeleted;
 
   const longPressHint = showFailedOutbound
     ? undefined
-    : canReact
+    : canReactNow
       ? isOwnMessage
         ? t('discussions.messageRowLongPressHintOwn')
         : t('discussions.messageRowLongPressHintOther')
@@ -147,67 +150,83 @@ export function MessageRow({
                 ) : null}
                 <View style={styles.bubbleStack}>
                   <Pressable
-                    onLongPress={canReact ? handleLongPress : undefined}
+                    onLongPress={canReactNow ? handleLongPress : undefined}
                     delayLongPress={400}
                     style={({ pressed }) => [
                       styles.bubble,
                       isOwnMessage ? styles.bubbleOwn : styles.bubbleOther,
                       showFailedOutbound && styles.bubbleFailed,
-                      pressed && canReact && !outboundStatus && styles.bubblePressed,
+                      pressed && canReactNow && !outboundStatus && styles.bubblePressed,
                     ]}
                     accessibilityLabel={
-                      showFailedOutbound
-                        ? t('discussions.sendFailed')
-                        : t('discussions.reactToReply')
+                      isDeleted
+                        ? t('discussions.messageDeleted')
+                        : showFailedOutbound
+                          ? t('discussions.sendFailed')
+                          : t('discussions.reactToReply')
                     }
                     accessibilityHint={longPressHint}
                     accessibilityRole="button"
                   >
-                    {parentPost ? (
-                      <View style={[styles.replyPreview, isOwnMessage && styles.replyPreviewOwn]}>
-                        <Text
-                          style={[
-                            styles.replyPreviewAuthor,
-                            isOwnMessage && styles.replyPreviewAuthorOwn,
-                          ]}
-                        >
-                          {t('discussions.replyingTo')}{' '}
-                          {parentPost.authorDisplayName ?? t('common.loading')}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.replyPreviewBody,
-                            isOwnMessage && styles.replyPreviewBodyOwn,
-                          ]}
-                          numberOfLines={2}
-                        >
-                          {parentPost.body ?? ''}
-                        </Text>
-                      </View>
-                    ) : null}
-
-                    {post.body ? (
-                      <Text style={[styles.messageBody, isOwnMessage && styles.messageBodyOwn]}>
-                        {post.body}
+                    {isDeleted ? (
+                      <Text
+                        style={[styles.deletedLabel, isOwnMessage && styles.deletedLabelOwn]}
+                      >
+                        {t('discussions.messageDeleted')}
                       </Text>
-                    ) : null}
+                    ) : (
+                      <>
+                        {parentPost ? (
+                          <View
+                            style={[styles.replyPreview, isOwnMessage && styles.replyPreviewOwn]}
+                          >
+                            <Text
+                              style={[
+                                styles.replyPreviewAuthor,
+                                isOwnMessage && styles.replyPreviewAuthorOwn,
+                              ]}
+                            >
+                              {t('discussions.replyingTo')}{' '}
+                              {parentPost.authorDisplayName ?? t('common.loading')}
+                            </Text>
+                            <Text
+                              style={[
+                                styles.replyPreviewBody,
+                                isOwnMessage && styles.replyPreviewBodyOwn,
+                              ]}
+                              numberOfLines={2}
+                            >
+                              {parentPost.body ?? ''}
+                            </Text>
+                          </View>
+                        ) : null}
 
-                    {isEdited ? (
-                      <Text style={[styles.editedLabel, isOwnMessage && styles.editedLabelOwn]}>
-                        {t('discussions.edited')}
-                      </Text>
-                    ) : null}
+                        {post.body ? (
+                          <Text style={[styles.messageBody, isOwnMessage && styles.messageBodyOwn]}>
+                            {post.body}
+                          </Text>
+                        ) : null}
 
-                    <MessageAttachmentsBlock
-                      post={post}
-                      isOwnMessage={isOwnMessage}
-                      onImagePress={onImagePress}
-                      onVideoPress={onVideoPress}
-                      onFilePress={onFilePress}
-                    />
-                    {showFailedOutbound ? (
-                      <Text style={styles.failedOutboundLabel}>{t('discussions.sendFailed')}</Text>
-                    ) : null}
+                        {isEdited ? (
+                          <Text style={[styles.editedLabel, isOwnMessage && styles.editedLabelOwn]}>
+                            {t('discussions.edited')}
+                          </Text>
+                        ) : null}
+
+                        <MessageAttachmentsBlock
+                          post={post}
+                          isOwnMessage={isOwnMessage}
+                          onImagePress={onImagePress}
+                          onVideoPress={onVideoPress}
+                          onFilePress={onFilePress}
+                        />
+                        {showFailedOutbound ? (
+                          <Text style={styles.failedOutboundLabel}>
+                            {t('discussions.sendFailed')}
+                          </Text>
+                        ) : null}
+                      </>
+                    )}
                   </Pressable>
                 </View>
                 {!isOwnMessage && showSentClockTime ? (
@@ -455,6 +474,17 @@ const styles = StyleSheet.create({
   },
   editedLabelOwn: {
     color: 'rgba(255, 255, 255, 0.6)',
+  },
+
+  deletedLabel: {
+    fontFamily: fontFamily.sans,
+    fontSize: 14,
+    lineHeight: 20,
+    fontStyle: 'italic',
+    color: colors.onSurfaceVariant,
+  },
+  deletedLabelOwn: {
+    color: 'rgba(255, 255, 255, 0.7)',
   },
 
   reactionBadges: {

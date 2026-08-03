@@ -27,6 +27,8 @@ export interface ReactionSheetPrimaryAction {
   onPress: () => void;
   accessibilityLabel?: string;
   accessibilityHint?: string;
+  /** Red icon/label styling (e.g. Delete). */
+  destructive?: boolean;
 }
 
 export interface ReactionSheetProps {
@@ -106,8 +108,16 @@ export function ReactionSheet({
                     accessibilityHint={action.accessibilityHint}
                     accessibilityRole="button"
                   >
-                    <Ionicons name={action.icon} size={22} color={colors.textPrimary} />
-                    <Text style={styles.primaryLabel}>{action.label}</Text>
+                    <Ionicons
+                      name={action.icon}
+                      size={22}
+                      color={action.destructive ? colors.error : colors.textPrimary}
+                    />
+                    <Text
+                      style={[styles.primaryLabel, action.destructive && styles.primaryLabelDestructive]}
+                    >
+                      {action.label}
+                    </Text>
                   </Pressable>
                 ))}
               </View>
@@ -266,6 +276,9 @@ const styles = StyleSheet.create({
   primaryLabel: {
     ...typography.body,
     color: colors.textPrimary,
+  },
+  primaryLabelDestructive: {
+    color: colors.error,
   },
   loading: {
     padding: spacing.xl,

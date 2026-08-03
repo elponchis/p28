@@ -21,6 +21,8 @@ export interface MessageLike {
   body: string;
   createdAt: string;
   updatedAt?: string;
+  /** When set, the message was soft-deleted; render a tombstone instead of body/attachments. */
+  deletedAt?: string;
   authorDisplayName?: string;
   authorAvatarUrl?: string;
   imageUrls?: string[];

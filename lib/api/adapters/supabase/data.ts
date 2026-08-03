@@ -3673,7 +3673,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
         const { data: rows, error } = await getClient()
           .from('chat_messages')
           .select(
-            'id, chat_id, user_id, body, created_at, updated_at, parent_message_id, image_urls, attachments'
+            'id, chat_id, user_id, body, created_at, updated_at, deleted_at, parent_message_id, image_urls, attachments'
           )
           .eq('chat_id', chatId)
           .order('created_at', { ascending: true });
@@ -3740,6 +3740,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
             attachments?: unknown;
             parent_message_id?: string;
             updated_at?: string;
+            deleted_at?: string;
           };
           const attachments = attachmentsForApiRow(row.attachments, row.image_urls);
           const imageUrls = deriveLegacyImageUrls(attachments);
@@ -3750,6 +3751,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
             body: r.body,
             createdAt: r.created_at,
             updatedAt: row.updated_at ?? undefined,
+            deletedAt: row.deleted_at ?? undefined,
             authorDisplayName: profile?.displayName,
             authorAvatarUrl: profile?.avatarUrl,
             parentMessageId: row.parent_message_id ?? undefined,
@@ -3823,7 +3825,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
           .from('chat_messages')
           .insert(payload)
           .select(
-            'id, chat_id, user_id, body, created_at, updated_at, parent_message_id, image_urls, attachments'
+            'id, chat_id, user_id, body, created_at, updated_at, deleted_at, parent_message_id, image_urls, attachments'
           )
           .single();
         if (error) return toApiError(error);
@@ -3851,6 +3853,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
           body: string;
           created_at: string;
           updated_at?: string;
+          deleted_at?: string;
           parent_message_id?: string;
           image_urls?: string[];
           attachments?: unknown;
@@ -3864,6 +3867,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
           body: r.body,
           createdAt: r.created_at,
           updatedAt: r.updated_at ?? undefined,
+          deletedAt: r.deleted_at ?? undefined,
           authorDisplayName: profile?.displayName,
           authorAvatarUrl: profile?.avatarUrl,
           parentMessageId: r.parent_message_id ?? undefined,
@@ -3905,7 +3909,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
           .eq('id', messageId)
           .eq('user_id', userId)
           .select(
-            'id, chat_id, user_id, body, created_at, updated_at, parent_message_id, image_urls, attachments'
+            'id, chat_id, user_id, body, created_at, updated_at, deleted_at, parent_message_id, image_urls, attachments'
           )
           .maybeSingle();
         if (error) return toApiError(error);
@@ -3952,6 +3956,34 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
           imageUrls: imageUrlsOut,
           attachments: attachmentsOut && attachmentsOut.length > 0 ? attachmentsOut : undefined,
         };
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async deleteChatMessage(messageId: string, userId: string): Promise<void | ApiError> {
+      try {
+        const { error } = await getClient()
+          .from('chat_messages')
+          .update({
+            deleted_at: new Date().toISOString(),
+            body: '',
+            attachments: [],
+            image_urls: null,
+          })
+          .eq('id', messageId)
+          .eq('user_id', userId);
+        if (error) return toApiError(error);
+        // Best-effort: clear reactions on the now-deleted message too. RLS lets any chat
+        // member delete their own reaction row, not arbitrary rows, so this only succeeds
+        // for the caller's own reactions; any left by others are harmless orphaned rows
+        // that the (now content-free) tombstone never renders.
+        await getClient()
+          .from('chat_message_reactions')
+          .delete()
+          .eq('message_id', messageId)
+          .eq('user_id', userId);
+        return;
       } catch (e) {
         return toApiError(e);
       }

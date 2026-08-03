@@ -1845,6 +1845,24 @@ export function useUpdateChatMessageMutation() {
   });
 }
 
+export function useDeleteChatMessageMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      messageId,
+      userId,
+    }: {
+      messageId: string;
+      chatId: string;
+      userId: string;
+    }) => queryFn(api.data.deleteChatMessage(messageId, userId)) as Promise<void>,
+    onSuccess: (_, { chatId, userId }) => {
+      qc.invalidateQueries({ queryKey: queryKeys.chatMessages(chatId, userId) });
+      qc.invalidateQueries({ queryKey: queryKeys.chatSharedContent(chatId) });
+    },
+  });
+}
+
 export function useReactToChatMessageMutation() {
   const qc = useQueryClient();
   return useMutation({

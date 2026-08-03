@@ -29,6 +29,7 @@ import {
   FriendPickerSheet,
   MessageRow,
   VideoAttachmentModal,
+  VoiceRecorderModal,
 } from '@/components/messages';
 import { ComposeBar, type PendingComposeAttachment } from '@/components/patterns/ComposeBar';
 import { FadeActionSheet, FADE_SHEET_PICKER_DEFER_MS } from '@/components/patterns/FadeActionSheet';
@@ -44,6 +45,7 @@ import {
   useChatQuery,
   useCreateChatMessageMutation,
   useCreateChatMutation,
+  useDeleteChatMessageMutation,
   useMarkChatReadMutation,
   useReactToChatMessageMutation,
   useRemoveChatMessageReactionMutation,
@@ -138,7 +140,9 @@ export default function ChatDetailScreen() {
   const uploadChatAttachmentMutation = useUploadChatMessageAttachmentMutation();
   const reactMutation = useReactToChatMessageMutation();
   const removeReactionMutation = useRemoveChatMessageReactionMutation();
+  const deleteMessageMutation = useDeleteChatMessageMutation();
   const markReadMutation = useMarkChatReadMutation();
+  const [voiceRecorderVisible, setVoiceRecorderVisible] = useState(false);
 
   const onChatMessagesContentSizeChange = useCallback(() => {
     if (!shouldStickToEndRef.current) return;
@@ -575,6 +579,40 @@ export default function ChatDetailScreen() {
     setPendingAttachments((prev) => prev.filter((p) => p.id !== attachmentId));
   }, []);
 
+  const handleVoiceRecorded = useCallback(
+    async (localUri: string, durationSec: number, mimeType: string) => {
+      if (!userId) return;
+      if (pendingAttachments.length >= MAX_ATTACHMENTS) return;
+      const attachmentId = newComposeAttachmentId();
+      setPendingAttachments((prev) => [
+        ...prev,
+        {
+          id: attachmentId,
+          kind: 'audio',
+          displayUri: localUri,
+          durationSec,
+          mimeType,
+          uploading: true,
+        },
+      ]);
+      try {
+        const url = await uploadChatAttachmentMutation.mutateAsync({
+          userId,
+          localUri,
+          contentType: mimeType,
+          fileName: `voice-${Date.now()}.${mimeType === 'audio/webm' ? 'webm' : 'm4a'}`,
+          objectKind: 'message',
+        });
+        setPendingAttachments((prev) =>
+          prev.map((p) => (p.id === attachmentId ? { ...p, uploadedUrl: url, uploading: false } : p))
+        );
+      } catch {
+        setPendingAttachments((prev) => prev.filter((p) => p.id !== attachmentId));
+      }
+    },
+    [userId, pendingAttachments.length, uploadChatAttachmentMutation]
+  );
+
   const attachmentMenuOptions = useMemo(
     () => [
       {
@@ -596,6 +634,13 @@ export default function ChatDetailScreen() {
         label: t('attachments.file'),
         onPress: () => {
           void pickDocument();
+        },
+      },
+      {
+        icon: 'mic-outline' as const,
+        label: t('attachments.voice'),
+        onPress: () => {
+          setVoiceRecorderVisible(true);
         },
       },
     ],
@@ -669,6 +714,23 @@ export default function ChatDetailScreen() {
     setPendingAttachments([]);
   }, []);
 
+  const handleDeleteMessage = useCallback(
+    (msg: ChatMessage) => {
+      if (!userId || !id) return;
+      Alert.alert(t('discussions.deleteMessageConfirmTitle'), t('discussions.deleteMessageConfirmBody'), [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('discussions.sheetDelete'),
+          style: 'destructive',
+          onPress: () => {
+            deleteMessageMutation.mutate({ messageId: msg.id, chatId: id, userId });
+          },
+        },
+      ]);
+    },
+    [userId, id, deleteMessageMutation]
+  );
+
   const reactionSheetPrimaryActions = useMemo((): ReactionSheetPrimaryAction[] => {
     const msg = reactionMessage;
     if (!msg || !userId) return [];
@@ -701,9 +763,21 @@ export default function ChatDetailScreen() {
           handleStartEdit(msg);
         },
       });
+      actions.push({
+        key: 'delete',
+        label: t('discussions.sheetDelete'),
+        icon: 'trash-outline',
+        accessibilityLabel: t('discussions.sheetDelete'),
+        accessibilityHint: t('discussions.sheetDeleteHint'),
+        destructive: true,
+        onPress: () => {
+          setReactionMessage(null);
+          handleDeleteMessage(msg);
+        },
+      });
     }
     return actions;
-  }, [reactionMessage, userId, handleStartEdit]);
+  }, [reactionMessage, userId, handleStartEdit, handleDeleteMessage]);
 
   if (!id) {
     router.back();
@@ -809,7 +883,7 @@ export default function ChatDetailScreen() {
             const isLastInGroup = !nextMsg || nextMsg.userId !== msg.userId || nextIsDifferentDay;
             const outboundStatus = (msg as ChatMessage & { outboundStatus?: 'sending' | 'failed' })
               .outboundStatus;
-            const canReactToMessage = !!userId && !outboundStatus;
+            const canReactToMessage = !!userId && !outboundStatus && !msg.deletedAt;
             const showSentClockTime =
               !nextMsg ||
               messageLocalMinuteKey(nextMsg.createdAt) !== messageLocalMinuteKey(msg.createdAt);
@@ -1018,6 +1092,14 @@ export default function ChatDetailScreen() {
         fileName={previewFile?.fileName ?? ''}
         mimeType={previewFile?.mimeType}
         onRequestClose={() => setPreviewFile(null)}
+      />
+
+      <VoiceRecorderModal
+        visible={voiceRecorderVisible}
+        onRequestClose={() => setVoiceRecorderVisible(false)}
+        onRecorded={(localUri, durationSec, mimeType) => {
+          void handleVoiceRecorded(localUri, durationSec, mimeType);
+        }}
       />
     </View>
   );

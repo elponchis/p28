@@ -21,6 +21,14 @@ export const ALLOWED_MESSAGE_ATTACHMENT_MIME_TYPES: ReadonlySet<string> = new Se
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   'text/plain',
   'application/zip',
+  'audio/m4a',
+  'audio/mp4',
+  'audio/x-m4a',
+  'audio/aac',
+  'audio/webm',
+  'audio/ogg',
+  'audio/wav',
+  'audio/mpeg',
 ]);
 
 export function normalizeMimeTypeForAllowlist(mime: string): string {
@@ -40,7 +48,7 @@ export function parseStoredAttachments(raw: unknown): MessageAttachment[] {
     const o = item as Record<string, unknown>;
     const kind = o.kind;
     const url = o.url;
-    if (kind !== 'image' && kind !== 'video' && kind !== 'file') continue;
+    if (kind !== 'image' && kind !== 'video' && kind !== 'file' && kind !== 'audio') continue;
     if (typeof url !== 'string' || !url.trim()) continue;
     out.push({
       kind,
@@ -48,6 +56,7 @@ export function parseStoredAttachments(raw: unknown): MessageAttachment[] {
       fileName: typeof o.fileName === 'string' ? o.fileName : undefined,
       mimeType: typeof o.mimeType === 'string' ? o.mimeType : undefined,
       thumbnailUrl: typeof o.thumbnailUrl === 'string' ? o.thumbnailUrl : undefined,
+      durationSec: typeof o.durationSec === 'number' ? o.durationSec : undefined,
     });
   }
   return out;

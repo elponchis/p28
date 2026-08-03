@@ -8,7 +8,7 @@ import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens'
 
 export interface PendingComposeAttachment {
   id: string;
-  kind: 'image' | 'video' | 'file';
+  kind: 'image' | 'video' | 'file' | 'audio';
   fileName?: string;
   mimeType?: string;
   /** Local or remote URI shown in preview */
@@ -16,6 +16,15 @@ export interface PendingComposeAttachment {
   uploadedUrl?: string;
   uploadedThumbnailUrl?: string;
   uploading: boolean;
+  /** Duration in seconds (voice messages). */
+  durationSec?: number;
+}
+
+function formatDurationLabel(seconds?: number): string {
+  const total = Math.max(0, Math.round(seconds ?? 0));
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
 }
 
 interface ContextBanner {
@@ -133,7 +142,31 @@ export function ComposeBar({
         <View style={isChat ? chatStyles.attachedImagesRow : styles.attachedImagesRow}>
           {pendingAttachments.map((att) => (
             <View key={att.id} style={styles.attachedImageWrap}>
-              {att.kind === 'file' ? (
+              {att.kind === 'audio' ? (
+                <View
+                  style={isChat ? chatStyles.filePreview : styles.filePreview}
+                  accessibilityLabel={t('attachments.voiceMessage')}
+                >
+                  <Ionicons
+                    name="mic-outline"
+                    size={22}
+                    color={isChat ? colors.onSurfaceVariant : colors.primary}
+                  />
+                  <Text
+                    style={isChat ? chatStyles.filePreviewName : styles.filePreviewName}
+                    numberOfLines={1}
+                  >
+                    {formatDurationLabel(att.durationSec)}
+                  </Text>
+                  {att.uploading ? (
+                    <ActivityIndicator
+                      size="small"
+                      color={colors.primary}
+                      style={styles.previewSpinner}
+                    />
+                  ) : null}
+                </View>
+              ) : att.kind === 'file' ? (
                 <View
                   style={isChat ? chatStyles.filePreview : styles.filePreview}
                   accessibilityLabel={att.fileName ?? t('attachments.file')}
