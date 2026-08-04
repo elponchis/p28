@@ -86,6 +86,23 @@ export const km: TranslationShape = {
     tagsHint: 'បំបែកស្លាកច្រើនដោយសញ្ញាក្បៀស',
     expandDetailsHint: 'ពង្រីកដើម្បីមើលព័ត៌មានលម្អិតបន្ថែម',
     collapseDetailsHint: 'បង្រួមព័ត៌មានលម្អិតប្រវត្តិរូប',
+    dangerZone: 'តំបន់គ្រោះថ្នាក់',
+    deleteAccount: 'លុបគណនី',
+    deleteAccountHint: 'បើកអេក្រង់លុបគណនី',
+    deletingAccount: 'កំពុងលុបគណនី…',
+    deleteAccountTitle: 'លុបគណនីរបស់អ្នក',
+    deleteAccountIrreversible: 'សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។',
+    deleteAccountWillDelete:
+      'ប្រវត្តិរូប អ៊ីមែល រូបភាព និងឯកសារកិច្ចការដែលអ្នកបានដាក់ស្នើនឹងត្រូវលុបជាអចិន្ត្រៃយ៍។',
+    deleteAccountWillAnonymize:
+      'សារ និងការបង្ហោះដែលអ្នកបានទុកនៅក្នុងជជែកក្រុម និងការពិភាក្សា នឹងនៅតែមាននៅទីនោះសម្រាប់បរិបទរបស់អ្នកដទៃ ប៉ុន្តែបង្ហាញថាមកពីគណនីដែលបានលុប ខ្លឹមសារខ្លួនឯងត្រូវបានលុប។',
+    deleteAccountConfirmLabel: 'វាយអ៊ីមែលរបស់អ្នក ({{email}}) ដើម្បីបញ្ជាក់',
+    deleteAccountConfirmPlaceholder: 'your@email.com',
+    deleteAccountBlockedTitle: 'មិនទាន់អាចលុបគណនីរបស់អ្នកបានទេ',
+    deleteAccountBlockedHint:
+      'សូមកំណត់អ្នកគ្រប់គ្រងផ្សេងទៀតសម្រាប់ក្រុមខាងលើ ឬចាកចេញ/លុបក្រុមនោះ រួចព្យាយាមម្តងទៀត។',
+    accountDeletedTitle: 'គណនីត្រូវបានលុប',
+    accountDeletedMessage: 'គណនីរបស់អ្នកត្រូវបានលុប។ អ្នកនឹងចាកចេញឥឡូវនេះ។',
   },
   onboarding: {
     title: 'សូមស្វាគមន៍។\nប្រាប់យើងពីអ្នក។',

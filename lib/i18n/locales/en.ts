@@ -86,6 +86,23 @@ export const en = {
     tagsHint: 'Separate multiple tags with commas',
     expandDetailsHint: 'Expands to show more profile details',
     collapseDetailsHint: 'Collapses profile details',
+    dangerZone: 'Danger zone',
+    deleteAccount: 'Delete account',
+    deleteAccountHint: 'Opens the account deletion screen',
+    deletingAccount: 'Deleting account…',
+    deleteAccountTitle: 'Delete your account',
+    deleteAccountIrreversible: 'This cannot be undone.',
+    deleteAccountWillDelete:
+      'Your profile, email, avatar, and any assignment files you submitted will be permanently deleted.',
+    deleteAccountWillAnonymize:
+      'Messages and posts you left in group chats and discussions will be kept for others’ context, but shown as from a deleted account — the content itself is cleared.',
+    deleteAccountConfirmLabel: 'Type your email ({{email}}) to confirm',
+    deleteAccountConfirmPlaceholder: 'your@email.com',
+    deleteAccountBlockedTitle: 'Can’t delete your account yet',
+    deleteAccountBlockedHint:
+      'Assign another admin for the group(s) above, or leave/delete the group, then try again.',
+    accountDeletedTitle: 'Account deleted',
+    accountDeletedMessage: 'Your account has been deleted. You’ll be signed out now.',
   },
   onboarding: {
     title: 'Welcome home.\nTell us about yourself.',

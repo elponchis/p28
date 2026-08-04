@@ -37,6 +37,7 @@ export default function ProfileLayout() {
         <Stack.Screen name="notifications" options={{ headerShown: false }} />
         <Stack.Screen name="language" options={{ headerShown: false }} />
         <Stack.Screen name="conduct" options={{ headerShown: false }} />
+        <Stack.Screen name="delete-account" options={{ headerShown: false }} />
       </Stack>
     </View>
   );

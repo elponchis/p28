@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
   Pressable,
@@ -8,6 +9,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { LabeledSwitchRow } from '@/components/patterns';
 import { DesktopContentContainer } from '@/components/layout/DesktopContentContainer';
@@ -36,6 +38,7 @@ const LOCALES: {
 export default function SettingsScreen() {
   const { session } = useAuth();
   const { locale, setLocale } = useLocale();
+  const router = useRouter();
   const userId = session?.user?.id;
 
   const {
@@ -126,95 +129,112 @@ export default function SettingsScreen() {
       }
     >
       <DesktopContentContainer maxWidth={600}>
-      {error ? (
-        <View style={styles.errorBanner}>
-          <Text style={styles.errorText}>{error}</Text>
-          <Pressable
-            onPress={() => fetchPrefs()}
-            style={({ pressed }) => [styles.retryButton, pressed && styles.retryButtonPressed]}
-            accessibilityLabel={t('notifications.retry')}
-            accessibilityHint={t('notifications.retryHint')}
-          >
-            <Text style={styles.retryButtonText}>{t('notifications.retry')}</Text>
-          </Pressable>
-        </View>
-      ) : null}
+        {error ? (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorText}>{error}</Text>
+            <Pressable
+              onPress={() => fetchPrefs()}
+              style={({ pressed }) => [styles.retryButton, pressed && styles.retryButtonPressed]}
+              accessibilityLabel={t('notifications.retry')}
+              accessibilityHint={t('notifications.retryHint')}
+            >
+              <Text style={styles.retryButtonText}>{t('notifications.retry')}</Text>
+            </Pressable>
+          </View>
+        ) : null}
 
-      {/* Notification preferences */}
-      <Text style={styles.sectionTitle}>{t('profile.notificationPreferences')}</Text>
-      <Text style={styles.intro}>{t('notifications.intro')}</Text>
-      {showToggles ? (
+        {/* Notification preferences */}
+        <Text style={styles.sectionTitle}>{t('profile.notificationPreferences')}</Text>
+        <Text style={styles.intro}>{t('notifications.intro')}</Text>
+        {showToggles ? (
+          <View style={styles.card}>
+            <LabeledSwitchRow
+              label={t('notifications.events')}
+              value={prefs?.eventsEnabled ?? true}
+              onValueChange={(v) => handleToggle('eventsEnabled', v)}
+              disabled={isSubmittingPrefs}
+              accessibilityLabel={t('notifications.events')}
+              accessibilityHint={t('notifications.eventsHint')}
+            />
+            <LabeledSwitchRow
+              label={t('notifications.announcements')}
+              value={prefs?.announcementsEnabled ?? true}
+              onValueChange={(v) => handleToggle('announcementsEnabled', v)}
+              disabled={isSubmittingPrefs}
+              accessibilityLabel={t('notifications.announcements')}
+              accessibilityHint={t('notifications.announcementsHint')}
+            />
+            <LabeledSwitchRow
+              label={t('notifications.recurringMeetings')}
+              value={prefs?.recurringMeetingsEnabled ?? true}
+              onValueChange={(v) => handleToggle('recurringMeetingsEnabled', v)}
+              disabled={isSubmittingPrefs}
+              accessibilityLabel={t('notifications.recurringMeetings')}
+              accessibilityHint={t('notifications.recurringMeetingsHint')}
+            />
+            <LabeledSwitchRow
+              label={t('notifications.messages')}
+              value={prefs?.messagesEnabled ?? true}
+              onValueChange={(v) => handleToggle('messagesEnabled', v)}
+              disabled={isSubmittingPrefs}
+              accessibilityLabel={t('notifications.messages')}
+              accessibilityHint={t('notifications.messagesHint')}
+            />
+          </View>
+        ) : null}
+
+        {/* App language */}
+        <Text style={[styles.sectionTitle, styles.sectionTitleSpaced]}>
+          {t('profile.appLanguage')}
+        </Text>
+        <Text style={styles.intro}>{t('language.subtitle')}</Text>
         <View style={styles.card}>
-          <LabeledSwitchRow
-            label={t('notifications.events')}
-            value={prefs?.eventsEnabled ?? true}
-            onValueChange={(v) => handleToggle('eventsEnabled', v)}
-            disabled={isSubmittingPrefs}
-            accessibilityLabel={t('notifications.events')}
-            accessibilityHint={t('notifications.eventsHint')}
-          />
-          <LabeledSwitchRow
-            label={t('notifications.announcements')}
-            value={prefs?.announcementsEnabled ?? true}
-            onValueChange={(v) => handleToggle('announcementsEnabled', v)}
-            disabled={isSubmittingPrefs}
-            accessibilityLabel={t('notifications.announcements')}
-            accessibilityHint={t('notifications.announcementsHint')}
-          />
-          <LabeledSwitchRow
-            label={t('notifications.recurringMeetings')}
-            value={prefs?.recurringMeetingsEnabled ?? true}
-            onValueChange={(v) => handleToggle('recurringMeetingsEnabled', v)}
-            disabled={isSubmittingPrefs}
-            accessibilityLabel={t('notifications.recurringMeetings')}
-            accessibilityHint={t('notifications.recurringMeetingsHint')}
-          />
-          <LabeledSwitchRow
-            label={t('notifications.messages')}
-            value={prefs?.messagesEnabled ?? true}
-            onValueChange={(v) => handleToggle('messagesEnabled', v)}
-            disabled={isSubmittingPrefs}
-            accessibilityLabel={t('notifications.messages')}
-            accessibilityHint={t('notifications.messagesHint')}
-          />
+          {LOCALES.map(({ value, labelKey }) => (
+            <Pressable
+              key={value}
+              onPress={() => handleSelectLanguage(value)}
+              disabled={isSubmittingLang}
+              style={({ pressed }) => [
+                styles.optionRow,
+                pressed && styles.optionRowPressed,
+                value === locale && styles.optionRowSelected,
+              ]}
+              accessibilityLabel={t(labelKey)}
+              accessibilityHint={t('profile.appLanguageHint')}
+              accessibilityRole="button"
+            >
+              <Text style={styles.optionLabel}>{t(labelKey)}</Text>
+              {value === locale ? <Text style={styles.optionCheck}>✓</Text> : null}
+            </Pressable>
+          ))}
         </View>
-      ) : null}
 
-      {/* App language */}
-      <Text style={[styles.sectionTitle, styles.sectionTitleSpaced]}>
-        {t('profile.appLanguage')}
-      </Text>
-      <Text style={styles.intro}>{t('language.subtitle')}</Text>
-      <View style={styles.card}>
-        {LOCALES.map(({ value, labelKey }) => (
+        {isSubmittingLang ? (
+          <View style={styles.loadingRow}>
+            <ActivityIndicator
+              size="small"
+              color={colors.primary}
+              accessibilityLabel={t('common.loading')}
+            />
+          </View>
+        ) : null}
+
+        {/* Danger zone */}
+        <Text style={[styles.sectionTitle, styles.sectionTitleSpaced]}>
+          {t('profile.dangerZone')}
+        </Text>
+        <View style={styles.card}>
           <Pressable
-            key={value}
-            onPress={() => handleSelectLanguage(value)}
-            disabled={isSubmittingLang}
-            style={({ pressed }) => [
-              styles.optionRow,
-              pressed && styles.optionRowPressed,
-              value === locale && styles.optionRowSelected,
-            ]}
-            accessibilityLabel={t(labelKey)}
-            accessibilityHint={t('profile.appLanguageHint')}
+            onPress={() => router.push('/profile/delete-account')}
+            style={({ pressed }) => [styles.dangerRow, pressed && styles.dangerRowPressed]}
+            accessibilityLabel={t('profile.deleteAccount')}
+            accessibilityHint={t('profile.deleteAccountHint')}
             accessibilityRole="button"
           >
-            <Text style={styles.optionLabel}>{t(labelKey)}</Text>
-            {value === locale ? <Text style={styles.optionCheck}>✓</Text> : null}
+            <Ionicons name="trash-outline" size={20} color={colors.error} />
+            <Text style={styles.dangerLabel}>{t('profile.deleteAccount')}</Text>
           </Pressable>
-        ))}
-      </View>
-
-      {isSubmittingLang ? (
-        <View style={styles.loadingRow}>
-          <ActivityIndicator
-            size="small"
-            color={colors.primary}
-            accessibilityLabel={t('common.loading')}
-          />
         </View>
-      ) : null}
       </DesktopContentContainer>
     </ScrollView>
   );
@@ -279,4 +299,14 @@ const styles = StyleSheet.create({
   optionLabel: { ...typography.body, color: colors.textPrimary },
   optionCheck: { ...typography.bodyStrong, color: colors.primary },
   loadingRow: { marginTop: spacing.md, alignItems: 'center' },
+  dangerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.cardPadding,
+    minHeight: minTouchTarget,
+  },
+  dangerRowPressed: { backgroundColor: colors.surface100 },
+  dangerLabel: { ...typography.body, color: colors.error },
 });

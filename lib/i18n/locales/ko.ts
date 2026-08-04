@@ -85,6 +85,23 @@ export const ko: TranslationShape = {
     tagsHint: '여러 개는 쉼표로 구분해서 입력하세요',
     expandDetailsHint: '펼쳐서 프로필 상세정보를 봅니다',
     collapseDetailsHint: '프로필 상세정보를 접습니다',
+    dangerZone: '위험 영역',
+    deleteAccount: '계정 삭제',
+    deleteAccountHint: '계정 삭제 화면을 엽니다',
+    deletingAccount: '계정 삭제 중…',
+    deleteAccountTitle: '계정 삭제',
+    deleteAccountIrreversible: '이 작업은 되돌릴 수 없어요.',
+    deleteAccountWillDelete:
+      '프로필, 이메일, 아바타, 그리고 제출했던 과제 파일은 영구적으로 삭제돼요.',
+    deleteAccountWillAnonymize:
+      '그룹 채팅과 토론에 남긴 메시지·글은 다른 사람들의 대화 맥락을 위해 남아있지만, 탈퇴한 계정의 것으로 표시되고 내용 자체는 지워져요.',
+    deleteAccountConfirmLabel: '확인을 위해 이메일({{email}})을 입력하세요',
+    deleteAccountConfirmPlaceholder: 'your@email.com',
+    deleteAccountBlockedTitle: '아직 계정을 삭제할 수 없어요',
+    deleteAccountBlockedHint:
+      '위 그룹에 다른 관리자를 지정하거나, 그룹을 나가거나 삭제한 뒤 다시 시도해주세요.',
+    accountDeletedTitle: '계정이 삭제되었습니다',
+    accountDeletedMessage: '계정이 삭제되었어요. 곧 로그아웃됩니다.',
   },
   onboarding: {
     title: '환영합니다.\n자신을 소개해 주세요.',

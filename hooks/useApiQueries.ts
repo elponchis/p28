@@ -75,6 +75,13 @@ export function useUpdateProfileMutation() {
   });
 }
 
+/** Deletes the caller's own account. See lib/api/contracts/data.ts's deleteAccount() docs. */
+export function useDeleteAccountMutation() {
+  return useMutation({
+    mutationFn: async () => queryFn(api.data.deleteAccount()) as Promise<void>,
+  });
+}
+
 export function useCreateProfileMutation() {
   const qc = useQueryClient();
   return useMutation({
