@@ -1096,6 +1096,10 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
       }
     },
 
+    async deleteAccount(): Promise<void | ApiError> {
+      return invokePushEdgeFunctionWithUserJwt(getClient, 'delete-account', {});
+    },
+
     async setNotificationsBadgeClearedAt(
       userId: string,
       clearedAtIso: string

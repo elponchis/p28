@@ -70,6 +70,13 @@ export interface DataContract {
   getProfile(userId: string): Promise<Profile | ApiError>;
   createProfile(userId: string, data: OnboardingProfileData): Promise<Profile | ApiError>;
   updateProfile(userId: string, updates: ProfileUpdates): Promise<Profile | ApiError>;
+  /**
+   * Deletes the caller's own account (Apple guideline 5.1.1(v)). Runs server-side via the
+   * delete-account Edge Function — operates only on the signed-in user, there is no way to
+   * pass another user's id. May fail with a validation-style error if the caller is the sole
+   * admin of a group that still has other members (see the Edge Function's own docs).
+   */
+  deleteAccount(): Promise<void | ApiError>;
   /** When base64Data is provided (e.g. from picker with base64: true), it is used for upload and imageUri is only for fallback/logging. */
   uploadProfileImage(
     userId: string,
