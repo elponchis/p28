@@ -1,17 +1,28 @@
 import { useCallback, useLayoutEffect } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { IconButton } from '@/components/primitives';
 import { EmptyState } from '@/components/patterns/EmptyState';
+import { DiscussionListSection } from '@/components/patterns/DiscussionListSection';
 import { useAuth } from '@/hooks/useAuth';
 import {
   useCourseQuery,
   useDeleteLessonMutation,
+  useDiscussionsQuery,
   useLessonsByCourseQuery,
   useUserIsGroupAdminQuery,
 } from '@/hooks/useApiQueries';
+import type { Discussion } from '@/lib/api';
 import { t } from '@/lib/i18n';
 import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
@@ -34,6 +45,10 @@ export default function CourseDetailScreen() {
     enabled: !!groupId && !!userId,
   });
   const deleteLessonMutation = useDeleteLessonMutation();
+  const { data: boardDiscussions = [], isLoading: boardLoading } = useDiscussionsQuery({
+    courseId,
+    enabled: !!courseId,
+  });
 
   const handleEditCourse = useCallback(() => {
     if (groupId && courseId) router.push(`/group/${groupId}/course/${courseId}/edit`);
@@ -62,6 +77,19 @@ export default function CourseDetailScreen() {
     if (groupId && courseId) router.push(`/group/${groupId}/course/${courseId}/lesson/create`);
   }, [router, groupId, courseId]);
 
+  const handleAddBoardTopic = useCallback(() => {
+    if (groupId && courseId) {
+      router.push(`/group/discussion/create?groupId=${groupId}&courseId=${courseId}`);
+    }
+  }, [router, groupId, courseId]);
+
+  const handleOpenBoardTopic = useCallback(
+    (discussion: Discussion) => {
+      router.push(`/group/discussion/${discussion.id}`);
+    },
+    [router]
+  );
+
   const handleEditLesson = useCallback(
     (lessonId: string) => {
       if (groupId && courseId) {
@@ -74,19 +102,23 @@ export default function CourseDetailScreen() {
   const handleDeleteLesson = useCallback(
     (lessonId: string, lessonTitle: string) => {
       if (!courseId) return;
-      Alert.alert(t('lessons.deleteLesson'), `${lessonTitle}\n\n${t('lessons.deleteLessonConfirm')}`, [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('lessons.deleteLesson'),
-          style: 'destructive',
-          onPress: () => {
-            deleteLessonMutation.mutate(
-              { lessonId, courseId },
-              { onSuccess: () => refetchLessons() }
-            );
+      Alert.alert(
+        t('lessons.deleteLesson'),
+        `${lessonTitle}\n\n${t('lessons.deleteLessonConfirm')}`,
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: t('lessons.deleteLesson'),
+            style: 'destructive',
+            onPress: () => {
+              deleteLessonMutation.mutate(
+                { lessonId, courseId },
+                { onSuccess: () => refetchLessons() }
+              );
+            },
           },
-        },
-      ]);
+        ]
+      );
     },
     [courseId, deleteLessonMutation, refetchLessons]
   );
@@ -188,6 +220,20 @@ export default function CourseDetailScreen() {
               ))}
             </View>
           )}
+
+          <DiscussionListSection
+            title={t('courses.discussionBoard')}
+            discussions={boardDiscussions}
+            isLoading={boardLoading}
+            emptyIconName="chatbubbles-outline"
+            emptyTitle={t('discussions.noDiscussions')}
+            emptySubtitle={t('discussions.noDiscussionsHint')}
+            canAdd={!!userId}
+            addLabel={t('discussions.addDiscussion')}
+            addHint={t('discussions.addDiscussionHint')}
+            onAddPress={handleAddBoardTopic}
+            onItemPress={handleOpenBoardTopic}
+          />
         </>
       )}
     </ScrollView>

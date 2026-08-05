@@ -26,7 +26,11 @@ import { t } from '@/lib/i18n';
 import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
 export default function CreateDiscussionScreen() {
-  const { groupId: paramGroupId } = useLocalSearchParams<{ groupId?: string }>();
+  const {
+    groupId: paramGroupId,
+    courseId,
+    lessonId,
+  } = useLocalSearchParams<{ groupId?: string; courseId?: string; lessonId?: string }>();
   const { session } = useAuth();
   const router = useRouter();
   const userId = session?.user?.id;
@@ -54,7 +58,12 @@ export default function CreateDiscussionScreen() {
       {
         groupId,
         userId,
-        input: { title: trimmedTitle, body: body.trim() || trimmedTitle },
+        input: {
+          title: trimmedTitle,
+          body: body.trim() || trimmedTitle,
+          courseId,
+          lessonId,
+        },
       },
       {
         onSuccess: (discussion) => router.replace(`/group/discussion/${discussion.id}`),
@@ -81,77 +90,77 @@ export default function CreateDiscussionScreen() {
         showsVerticalScrollIndicator={false}
       >
         <DesktopContentContainer maxWidth={600}>
-        {!paramGroupId ? (
-          <View style={styles.groupField}>
-            <Text style={styles.fieldLabel}>{t('groups.title')}</Text>
-            <Pressable
-              onPress={() => setGroupPickerVisible(true)}
-              style={({ pressed }) => [styles.groupSelect, pressed && styles.groupSelectPressed]}
-              accessibilityLabel={t('groups.title')}
-              accessibilityHint={t('discussions.selectGroupHint')}
-            >
-              <Text style={styles.groupSelectText}>
-                {selectedGroup ? selectedGroup.name : t('common.loading')}
+          {!paramGroupId ? (
+            <View style={styles.groupField}>
+              <Text style={styles.fieldLabel}>{t('groups.title')}</Text>
+              <Pressable
+                onPress={() => setGroupPickerVisible(true)}
+                style={({ pressed }) => [styles.groupSelect, pressed && styles.groupSelectPressed]}
+                accessibilityLabel={t('groups.title')}
+                accessibilityHint={t('discussions.selectGroupHint')}
+              >
+                <Text style={styles.groupSelectText}>
+                  {selectedGroup ? selectedGroup.name : t('common.loading')}
+                </Text>
+                <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
+              </Pressable>
+            </View>
+          ) : null}
+
+          <Input
+            label={t('discussions.topicPlaceholder')}
+            value={title}
+            onChangeText={setTitle}
+            placeholder={t('discussions.topicPlaceholder')}
+            autoCapitalize="sentences"
+            editable={!isSubmitting}
+            accessibilityLabel={t('discussions.topicPlaceholder')}
+          />
+
+          <Input
+            label={t('discussions.bodyPlaceholder')}
+            value={body}
+            onChangeText={setBody}
+            placeholder={t('discussions.bodyPlaceholder')}
+            multiline
+            numberOfLines={4}
+            inputStyle={{ minHeight: 100, textAlignVertical: 'top' }}
+            editable={!isSubmitting}
+            accessibilityLabel={t('discussions.bodyPlaceholder')}
+          />
+
+          <View style={styles.conductReminder}>
+            <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
+            <Text style={styles.conductReminderText}>{t('discussions.conductReminder')}</Text>
+          </View>
+
+          {error || (createMutation.error && 'message' in createMutation.error) ? (
+            <View style={styles.errorBanner}>
+              <Text style={styles.errorText}>
+                {error ??
+                  (createMutation.error && 'message' in createMutation.error
+                    ? getUserFacingError(createMutation.error)
+                    : '')}
               </Text>
-              <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
-            </Pressable>
+            </View>
+          ) : null}
+
+          <View style={styles.actions}>
+            <Button
+              title={t('common.cancel')}
+              variant="secondary"
+              onPress={() => router.back()}
+              disabled={isSubmitting}
+              accessibilityLabel={t('common.cancel')}
+            />
+            <Button
+              title={isSubmitting ? t('common.loading') : t('discussions.createDiscussion')}
+              onPress={handleSubmit}
+              disabled={!title.trim() || !groupId || isSubmitting}
+              accessibilityLabel={t('discussions.createDiscussion')}
+              accessibilityHint={t('discussions.createDiscussionHint')}
+            />
           </View>
-        ) : null}
-
-        <Input
-          label={t('discussions.topicPlaceholder')}
-          value={title}
-          onChangeText={setTitle}
-          placeholder={t('discussions.topicPlaceholder')}
-          autoCapitalize="sentences"
-          editable={!isSubmitting}
-          accessibilityLabel={t('discussions.topicPlaceholder')}
-        />
-
-        <Input
-          label={t('discussions.bodyPlaceholder')}
-          value={body}
-          onChangeText={setBody}
-          placeholder={t('discussions.bodyPlaceholder')}
-          multiline
-          numberOfLines={4}
-          inputStyle={{ minHeight: 100, textAlignVertical: 'top' }}
-          editable={!isSubmitting}
-          accessibilityLabel={t('discussions.bodyPlaceholder')}
-        />
-
-        <View style={styles.conductReminder}>
-          <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
-          <Text style={styles.conductReminderText}>{t('discussions.conductReminder')}</Text>
-        </View>
-
-        {error || (createMutation.error && 'message' in createMutation.error) ? (
-          <View style={styles.errorBanner}>
-            <Text style={styles.errorText}>
-              {error ??
-                (createMutation.error && 'message' in createMutation.error
-                  ? getUserFacingError(createMutation.error)
-                  : '')}
-            </Text>
-          </View>
-        ) : null}
-
-        <View style={styles.actions}>
-          <Button
-            title={t('common.cancel')}
-            variant="secondary"
-            onPress={() => router.back()}
-            disabled={isSubmitting}
-            accessibilityLabel={t('common.cancel')}
-          />
-          <Button
-            title={isSubmitting ? t('common.loading') : t('discussions.createDiscussion')}
-            onPress={handleSubmit}
-            disabled={!title.trim() || !groupId || isSubmitting}
-            accessibilityLabel={t('discussions.createDiscussion')}
-            accessibilityHint={t('discussions.createDiscussionHint')}
-          />
-        </View>
         </DesktopContentContainer>
       </ScrollView>
 

@@ -715,9 +715,11 @@ export const ko: TranslationShape = {
     createCourseSaveHint: '이 코스를 만듭니다',
     editCourseSaveHint: '이 코스의 변경사항을 저장합니다',
     fieldsRequired: '제목을 입력해주세요',
+    discussionBoard: '코스 게시판',
   },
   lessons: {
     sectionTitle: '레슨',
+    qaSectionTitle: '질문과 답변',
     noLessons: '아직 레슨이 없어요',
     noLessonsHint: '이 강의에 추가된 레슨이 여기에 표시돼요.',
     lessonLabel: '레슨 {{number}}',

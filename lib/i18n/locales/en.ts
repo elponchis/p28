@@ -813,9 +813,11 @@ export const en = {
     createCourseSaveHint: 'Creates this course',
     editCourseSaveHint: 'Saves changes to this course',
     fieldsRequired: 'Title is required',
+    discussionBoard: 'Discussion board',
   },
   lessons: {
     sectionTitle: 'Lessons',
+    qaSectionTitle: 'Questions & answers',
     noLessons: 'No lessons yet',
     noLessonsHint: 'Lessons added to this course will appear here.',
     lessonLabel: 'Lesson {{number}}',

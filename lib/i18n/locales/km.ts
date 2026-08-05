@@ -724,9 +724,11 @@ export const km: TranslationShape = {
     createCourseSaveHint: 'បង្កើតវគ្គសិក្សានេះ',
     editCourseSaveHint: 'រក្សាទុកការផ្លាស់ប្តូរនៃវគ្គសិក្សានេះ',
     fieldsRequired: 'សូមបញ្ចូលចំណងជើង',
+    discussionBoard: 'ក្តារពិភាក្សាវគ្គសិក្សា',
   },
   lessons: {
     sectionTitle: 'មេរៀន',
+    qaSectionTitle: 'សំណួរនិងចម្លើយ',
     noLessons: 'មិនទាន់មានមេរៀននៅឡើយទេ',
     noLessonsHint: 'មេរៀនដែលបន្ថែមទៅវគ្គសិក្សានេះនឹងបង្ហាញនៅទីនេះ។',
     lessonLabel: 'មេរៀនទី {{number}}',
