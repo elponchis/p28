@@ -336,7 +336,11 @@ export interface DataContract {
   ): Promise<GroupDiscussion | ApiError>;
 
   // Reddit-style discussions (topics + replies)
-  getDiscussions(params?: { groupId?: string }): Promise<Discussion[] | ApiError>;
+  // groupId alone -> general group feed (excludes event/course/lesson-linked threads).
+  // courseId alone -> that course's discussion board. courseId + lessonId -> that lesson's Q&A.
+  getDiscussions(
+    params?: { groupId?: string; courseId?: string; lessonId?: string }
+  ): Promise<Discussion[] | ApiError>;
   getDiscussion(id: string): Promise<Discussion | ApiError>;
   createDiscussion(
     groupId: string,

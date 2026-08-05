@@ -1350,12 +1350,16 @@ export function useCreateGroupDiscussionMutation() {
 
 // --- Reddit-style discussions ---
 
-export function useDiscussionsQuery(params?: { groupId?: string; enabled?: boolean }) {
-  const { groupId, enabled = true } = params ?? {};
+export function useDiscussionsQuery(
+  params?: { groupId?: string; courseId?: string; lessonId?: string; enabled?: boolean }
+) {
+  const { groupId, courseId, lessonId, enabled = true } = params ?? {};
   return useQuery({
-    queryKey: queryKeys.discussions({ groupId }),
+    queryKey: queryKeys.discussions({ groupId, courseId, lessonId }),
     queryFn: () =>
-      queryFn(api.data.getDiscussions({ groupId })) as Promise<import('@/lib/api').Discussion[]>,
+      queryFn(api.data.getDiscussions({ groupId, courseId, lessonId })) as Promise<
+        import('@/lib/api').Discussion[]
+      >,
     enabled,
   });
 }

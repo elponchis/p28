@@ -513,12 +513,17 @@ export interface Discussion {
     status: GroupEventStatus;
     startsAt: string;
   };
+  /** Set when this thread is a course's discussion board (courseId only) or a lesson's Q&A (courseId + lessonId). */
+  courseId?: string;
+  lessonId?: string;
 }
 
-/** Input for creating a discussion (topic). */
+/** Input for creating a discussion (topic). Set courseId (course board) or courseId+lessonId (lesson Q&A) to scope it to the LMS instead of the general group feed. */
 export interface CreateDiscussionInput {
   title: string;
   body: string;
+  courseId?: string;
+  lessonId?: string;
 }
 
 /** Input for updating a discussion (partial). */

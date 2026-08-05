@@ -810,6 +810,8 @@ type DiscussionRow = {
   body: string;
   created_at: string;
   updated_at?: string;
+  course_id?: string | null;
+  lesson_id?: string | null;
 };
 
 function mapDiscussionRow(
@@ -831,6 +833,8 @@ function mapDiscussionRow(
     authorDisplayName: profile?.displayName,
     authorAvatarUrl: profile?.avatarUrl,
     groupName: groupName ?? undefined,
+    courseId: row.course_id ?? undefined,
+    lessonId: row.lesson_id ?? undefined,
     ...(linkedGroupEvent ? { linkedGroupEvent } : {}),
   };
 }
@@ -3056,10 +3060,14 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
       }
     },
 
-    async getDiscussions(params?: { groupId?: string }): Promise<Discussion[] | ApiError> {
+    async getDiscussions(params?: {
+      groupId?: string;
+      courseId?: string;
+      lessonId?: string;
+    }): Promise<Discussion[] | ApiError> {
       try {
         const excludeIds = new Set<string>();
-        if (params?.groupId) {
+        if (params?.groupId && !params?.courseId && !params?.lessonId) {
           const { data: shadowIds, error: shadowErr } = await getClient().rpc(
             'discovery_group_event_discussion_ids',
             { p_group_id: params.groupId }
@@ -3072,11 +3080,18 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
         let query = getClient()
           .from('discussions')
           .select(
-            'id, group_id, user_id, title, body, created_at, updated_at, groups(name), discussion_posts(count)'
+            'id, group_id, user_id, title, body, created_at, updated_at, course_id, lesson_id, groups(name), discussion_posts(count)'
           )
           .order('created_at', { ascending: false });
-        if (params?.groupId) {
-          query = query.eq('group_id', params.groupId);
+        if (params?.courseId) {
+          query = query.eq('course_id', params.courseId);
+          query = params.lessonId
+            ? query.eq('lesson_id', params.lessonId)
+            : query.is('lesson_id', null);
+        } else if (params?.lessonId) {
+          query = query.eq('lesson_id', params.lessonId);
+        } else if (params?.groupId) {
+          query = query.eq('group_id', params.groupId).is('course_id', null).is('lesson_id', null);
         }
         const { data: rows, error } = await query;
         if (error) return toApiError(error);
@@ -3132,7 +3147,9 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
       try {
         const { data: row, error } = await getClient()
           .from('discussions')
-          .select('id, group_id, user_id, title, body, created_at, updated_at, groups(name)')
+          .select(
+            'id, group_id, user_id, title, body, created_at, updated_at, course_id, lesson_id, groups(name)'
+          )
           .eq('id', id)
           .single();
         if (error) return toApiError(error);
@@ -3190,11 +3207,13 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
           user_id: userId,
           title,
           body: body || title,
+          ...(input.courseId ? { course_id: input.courseId } : {}),
+          ...(input.lessonId ? { lesson_id: input.lessonId } : {}),
         };
         const { data: row, error } = await getClient()
           .from('discussions')
           .insert(payload)
-          .select('id, group_id, user_id, title, body, created_at, updated_at')
+          .select('id, group_id, user_id, title, body, created_at, updated_at, course_id, lesson_id')
           .single();
         if (error) return toApiError(error);
         if (!row) return { message: 'Failed to create discussion', code: 'NOT_FOUND' };

@@ -9,7 +9,8 @@ export const queryKeys = {
   group: (id: string) => ['group', id] as const,
   groupMembers: (groupId: string) => ['groupMembers', groupId] as const,
   groupDiscussions: (groupId: string) => ['groupDiscussions', groupId] as const,
-  discussions: (params?: { groupId?: string }) => ['discussions', params ?? {}] as const,
+  discussions: (params?: { groupId?: string; courseId?: string; lessonId?: string }) =>
+    ['discussions', params ?? {}] as const,
   discussion: (id: string) => ['discussion', id] as const,
   discussionPosts: (discussionId: string, userId?: string) =>
     ['discussionPosts', discussionId, userId ?? null] as const,
