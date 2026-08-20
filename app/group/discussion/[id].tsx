@@ -65,7 +65,7 @@ import {
   MAX_MESSAGE_ATTACHMENT_BYTES,
   normalizeMimeTypeForAllowlist,
 } from '@/lib/api/messageAttachments';
-import { api, getUserFacingError } from '@/lib/api';
+import { api, getUserFacingError, isApiError } from '@/lib/api';
 import { enqueueDocumentPick } from '@/lib/documentPickerLock';
 import { queryKeys } from '@/lib/api/queryKeys';
 import type {
@@ -579,6 +579,7 @@ export default function DiscussionDetailScreen() {
     if (result.canceled || !result.assets.length) return;
     const slotsLeft = MAX_ATTACHMENTS - pendingAttachments.length;
     const toUpload = result.assets.slice(0, Math.max(0, slotsLeft));
+    let uploadError: string | null = null;
     for (const asset of toUpload) {
       if (!asset.uri) continue;
       const attId = newComposeAttachmentId();
@@ -595,9 +596,19 @@ export default function DiscussionDetailScreen() {
         setPendingAttachments((prev) =>
           prev.map((p) => (p.id === attId ? { ...p, uploadedUrl: url, uploading: false } : p))
         );
-      } catch {
+      } catch (e) {
+        console.error('[discussion] image upload failed', e);
+        uploadError = isApiError(e)
+          ? getUserFacingError(e)
+          : e instanceof Error
+            ? e.message
+            : getUserFacingError(null);
         setPendingAttachments((prev) => prev.filter((p) => p.id !== attId));
       }
+    }
+    // One message for the batch, so picking five photos can't stack five dialogs.
+    if (uploadError) {
+      void notify({ title: t('common.error'), message: uploadError });
     }
   }, [userId, pendingAttachments.length, uploadImageMutation]);
 
@@ -664,7 +675,16 @@ export default function DiscussionDetailScreen() {
             : p
         )
       );
-    } catch {
+    } catch (e) {
+      console.error('[discussion] video upload failed', e);
+      void notify({
+        title: t('common.error'),
+        message: isApiError(e)
+          ? getUserFacingError(e)
+          : e instanceof Error
+            ? e.message
+            : getUserFacingError(null),
+      });
       setPendingAttachments((prev) => prev.filter((p) => p.id !== attachmentId));
     }
   }, [userId, pendingAttachments.length, uploadDiscussionAttachmentMutation]);
@@ -729,7 +749,16 @@ export default function DiscussionDetailScreen() {
       setPendingAttachments((prev) =>
         prev.map((p) => (p.id === attachmentId ? { ...p, uploadedUrl: url, uploading: false } : p))
       );
-    } catch {
+    } catch (e) {
+      console.error('[discussion] file upload failed', e);
+      void notify({
+        title: t('common.error'),
+        message: isApiError(e)
+          ? getUserFacingError(e)
+          : e instanceof Error
+            ? e.message
+            : getUserFacingError(null),
+      });
       setPendingAttachments((prev) => prev.filter((p) => p.id !== attachmentId));
     }
   }, [userId, pendingAttachments.length, uploadDiscussionAttachmentMutation]);
