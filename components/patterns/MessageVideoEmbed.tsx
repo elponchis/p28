@@ -30,8 +30,21 @@ export function MessageVideoEmbed({ body, accessibilityLabel }: MessageVideoEmbe
   );
 }
 
+/**
+ * Cap on the embed's width inside a message.
+ *
+ * VideoEmbedPlayer fills its container, which is right for a lesson page but
+ * turns a pasted link into a hero player inside a chat bubble or a reply card —
+ * on desktop the card is 600px wide, so the embed dwarfed the message it came
+ * with. Wide enough to keep the provider's controls usable, and clearly a
+ * preview rather than the main event.
+ */
+const MESSAGE_EMBED_MAX_WIDTH = 280;
+
 const styles = StyleSheet.create({
   wrap: {
     marginTop: spacing.xs,
+    width: '100%',
+    maxWidth: MESSAGE_EMBED_MAX_WIDTH,
   },
 });
