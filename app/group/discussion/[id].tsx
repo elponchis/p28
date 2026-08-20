@@ -85,6 +85,7 @@ import {
 import { t } from '@/lib/i18n';
 import { confirm, notify } from '@/lib/dialogs';
 import { downloadFileInBrowser } from '@/lib/downloadFile';
+import { isCloudinaryConfigured, uploadVideoToCloudinary } from '@/lib/cloudinaryVideo';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 function OriginalPostRow({
@@ -669,6 +670,30 @@ export default function DiscussionDetailScreen() {
       },
     ]);
     try {
+      if (isCloudinaryConfigured()) {
+        // Phone cameras produce HEVC, which no browser decodes — it plays as a
+        // black rectangle and yields no poster. Cloudinary re-encodes on ingest
+        // and serves a codec the viewer's browser understands, plus a poster.
+        const file = (asset as { file?: File }).file;
+        const transcoded = await uploadVideoToCloudinary(
+          file ?? { uri: asset.uri, name: fileName, type: mime },
+          { folder: userId }
+        );
+        setPendingAttachments((prev) =>
+          prev.map((p) =>
+            p.id === attachmentId
+              ? {
+                  ...p,
+                  displayUri: transcoded.posterUrl,
+                  uploadedUrl: transcoded.url,
+                  uploadedThumbnailUrl: transcoded.posterUrl,
+                  uploading: false,
+                }
+              : p
+          )
+        );
+        return;
+      }
       const videoUrl = await uploadDiscussionAttachmentMutation.mutateAsync({
         userId,
         localUri: asset.uri,
