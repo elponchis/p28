@@ -257,6 +257,24 @@ function ReplyRow({
                         style={styles.replySendingSpinner}
                       />
                     ) : null}
+                    {canReact && !outboundStatus && onLongPress ? (
+                      // Long-press opens the same sheet, but that gesture is invisible
+                      // on desktop web — this is the discoverable way in.
+                      <Pressable
+                        onPress={onLongPress}
+                        style={styles.replyMenuButton}
+                        hitSlop={8}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('common.options')}
+                        accessibilityHint={longPressHint}
+                      >
+                        <Ionicons
+                          name="ellipsis-horizontal"
+                          size={16}
+                          color={colors.textSecondary}
+                        />
+                      </Pressable>
+                    ) : null}
                   </View>
                 </View>
               </View>
@@ -1445,6 +1463,10 @@ const styles = StyleSheet.create({
   reactionBadgeCount: {
     ...typography.caption,
     color: colors.textSecondary,
+  },
+  replyMenuButton: {
+    paddingHorizontal: spacing.xxs,
+    paddingVertical: spacing.xxs,
   },
   replyCardHeader: {
     flexDirection: 'row',
