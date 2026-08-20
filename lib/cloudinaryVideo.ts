@@ -16,6 +16,16 @@
 const CLOUD_NAME = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME ?? '';
 const UPLOAD_PRESET = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET ?? '';
 
+/** Cloudinary's free plan rejects videos over 100 MB; paid plans raise this. */
+export const CLOUDINARY_MAX_VIDEO_BYTES = Number(
+  process.env.EXPO_PUBLIC_CLOUDINARY_MAX_VIDEO_BYTES ?? 100 * 1024 * 1024
+);
+
+/** True for URLs we serve through Cloudinary, which are the ones that can 423. */
+export function isCloudinaryUrl(url: string): boolean {
+  return url.startsWith('https://res.cloudinary.com/');
+}
+
 export interface CloudinaryVideo {
   /** Playback URL, transcoded per requesting browser. */
   url: string;
@@ -81,6 +91,9 @@ export function cloudinaryPosterUrl(publicId: string): string {
  */
 export type CloudinaryUploadBody = Blob | { uri: string; name: string; type: string };
 
+/** How long an upload waits for the encode before posting anyway. */
+const UPLOAD_GRACE_MS = 20_000;
+
 export interface UploadOptions {
   /** Folder inside the Cloudinary account, e.g. the uploader's user id. */
   folder?: string;
@@ -133,7 +146,11 @@ export async function uploadVideoToCloudinary(
   const eagerUrl = parsed.eager?.[0]?.secure_url;
   const url = eagerUrl ?? cloudinaryPlaybackUrl(publicId);
   if (!eagerUrl) {
-    await waitUntilPlayable(url);
+    // Encoding runs at roughly the video's own duration, so a long clip would
+    // hold the composer for minutes. Kick the encode off and give it a short
+    // grace period — enough that short clips are ready on arrival — then post
+    // regardless. The player waits out whatever is left (see waitUntilPlayable).
+    await waitUntilPlayable(url, UPLOAD_GRACE_MS);
   }
 
   return {

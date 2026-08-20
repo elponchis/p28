@@ -576,6 +576,10 @@ export const en = {
     openFile: 'Open file',
     download: 'Download',
     downloadHint: 'Save or share this file',
+    videoProcessing:
+      'Preparing this video for playback. This can take a few minutes for a long clip.',
+    videoTooLarge:
+      'This video is too large (max {{mb}} MB). Try a shorter clip or a lower recording quality.',
     downloadVideo: 'Download or share video',
     downloadVideoHint: 'Saves the video temporarily and opens the share sheet',
     shareUnavailable: 'Sharing is not available on this device.',

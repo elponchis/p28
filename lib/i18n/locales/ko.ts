@@ -569,6 +569,9 @@ export const ko: TranslationShape = {
     openFile: '파일 열기',
     download: '다운로드',
     downloadHint: '파일 저장 또는 공유',
+    videoProcessing: '재생할 수 있도록 영상을 변환하고 있습니다. 긴 영상은 몇 분 걸릴 수 있어요.',
+    videoTooLarge:
+      '영상이 너무 큽니다 (최대 {{mb}}MB). 더 짧게 자르거나 낮은 화질로 촬영해 주세요.',
     downloadVideo: '동영상 다운로드 또는 공유',
     downloadVideoHint: '동영상을 임시로 저장한 뒤 공유 시트를 엽니다',
     shareUnavailable: '이 기기에서는 공유를 사용할 수 없습니다.',
@@ -724,7 +727,8 @@ export const ko: TranslationShape = {
     noLessonsHint: '이 강의에 추가된 레슨이 여기에 표시돼요.',
     lessonLabel: '레슨 {{number}}',
     openLessonHint: '이 레슨의 영상을 재생합니다',
-    unsupportedVideoUrl: '아직 지원하지 않는 영상 링크예요. YouTube와 Vimeo 링크만 재생할 수 있어요.',
+    unsupportedVideoUrl:
+      '아직 지원하지 않는 영상 링크예요. YouTube와 Vimeo 링크만 재생할 수 있어요.',
     addLesson: '레슨 추가',
     addLessonHint: '이 코스에 새 레슨을 만듭니다',
     editLesson: '레슨 편집',

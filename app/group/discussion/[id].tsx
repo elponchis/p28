@@ -85,7 +85,11 @@ import {
 import { t } from '@/lib/i18n';
 import { confirm, notify } from '@/lib/dialogs';
 import { downloadFileInBrowser } from '@/lib/downloadFile';
-import { isCloudinaryConfigured, uploadVideoToCloudinary } from '@/lib/cloudinaryVideo';
+import {
+  CLOUDINARY_MAX_VIDEO_BYTES,
+  isCloudinaryConfigured,
+  uploadVideoToCloudinary,
+} from '@/lib/cloudinaryVideo';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 function OriginalPostRow({
@@ -654,6 +658,21 @@ export default function DiscussionDetailScreen() {
     });
     if (result.canceled || !result.assets[0]?.uri) return;
     const asset = result.assets[0];
+    // Cloudinary rejects oversized video outright, so catch it here rather than
+    // after the user has waited through the upload.
+    if (
+      isCloudinaryConfigured() &&
+      asset.fileSize != null &&
+      asset.fileSize > CLOUDINARY_MAX_VIDEO_BYTES
+    ) {
+      void notify({
+        title: t('common.error'),
+        message: t('attachments.videoTooLarge', {
+          mb: Math.floor(CLOUDINARY_MAX_VIDEO_BYTES / (1024 * 1024)),
+        }),
+      });
+      return;
+    }
     const attachmentId = newComposeAttachmentId();
     const posterUri = await tryGetVideoPosterUri(asset.uri);
     const fileName = asset.fileName ?? `video-${Date.now()}.mp4`;

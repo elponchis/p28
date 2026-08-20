@@ -575,6 +575,8 @@ export const km: TranslationShape = {
     openFile: 'បើកឯកសារ',
     download: 'ទាញយក',
     downloadHint: 'រក្សាទុក ឬចែករំលែកឯកសារ',
+    videoProcessing: 'កំពុងរៀបចំវីដេអូនេះសម្រាប់ការចាក់។ វីដេអូវែងអាចចំណាយពេលពីរបីនាទី។',
+    videoTooLarge: 'វីដេអូនេះធំពេក (អតិបរមា {{mb}} MB)។ សូមសាកល្បងវីដេអូខ្លីជាង ឬគុណភាពទាបជាង។',
     downloadVideo: 'ទាញយក ឬចែករំលែកវីដេអូ',
     downloadVideoHint: 'រក្សាទុកវីដេអូបណ្តោះអាសន្ន រួចបើកសន្លឹកចែករំលែក',
     shareUnavailable: 'មិនអាចចែករំលែកនៅលើឧបករណ៍នេះទេ។',
@@ -733,7 +735,8 @@ export const km: TranslationShape = {
     noLessonsHint: 'មេរៀនដែលបន្ថែមទៅវគ្គសិក្សានេះនឹងបង្ហាញនៅទីនេះ។',
     lessonLabel: 'មេរៀនទី {{number}}',
     openLessonHint: 'ចាក់វីដេអូនៃមេរៀននេះ',
-    unsupportedVideoUrl: 'តំណវីដេអូនេះមិនទាន់គាំទ្រនៅឡើយទេ។ គាំទ្រតែតំណ YouTube និង Vimeo ប៉ុណ្ណោះ។',
+    unsupportedVideoUrl:
+      'តំណវីដេអូនេះមិនទាន់គាំទ្រនៅឡើយទេ។ គាំទ្រតែតំណ YouTube និង Vimeo ប៉ុណ្ណោះ។',
     addLesson: 'បន្ថែមមេរៀន',
     addLessonHint: 'បង្កើតមេរៀនថ្មីសម្រាប់វគ្គសិក្សានេះ',
     editLesson: 'កែសម្រួលមេរៀន',
@@ -766,7 +769,8 @@ export const km: TranslationShape = {
     editAssignment: 'កែសម្រួលកិច្ចការ',
     editAssignmentHint: 'កែសម្រួលចំណងជើង ការពិពណ៌នា និងកំណត់ថ្ងៃនៃកិច្ចការនេះ',
     deleteAssignment: 'លុបកិច្ចការ',
-    deleteAssignmentConfirm: 'កិច្ចការនេះ និងការដាក់ស្នើ/ឯកសាររបស់សិស្សទាំងអស់នឹងត្រូវលុបជាអចិន្ត្រៃយ៍។',
+    deleteAssignmentConfirm:
+      'កិច្ចការនេះ និងការដាក់ស្នើ/ឯកសាររបស់សិស្សទាំងអស់នឹងត្រូវលុបជាអចិន្ត្រៃយ៍។',
     titleLabel: 'ចំណងជើងកិច្ចការ',
     titlePlaceholder: 'ឧ. របាយការណ៍អានសប្តាហ៍ទី៣',
     descriptionLabel: 'ការពិពណ៌នា',

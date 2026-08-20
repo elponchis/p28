@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
+import { isCloudinaryUrl, waitUntilPlayable } from '@/lib/cloudinaryVideo';
 import { downloadFileInBrowser } from '@/lib/downloadFile';
 import { getMediaViewerSize } from '@/lib/mediaViewerBounds';
 import { t } from '@/lib/i18n';
@@ -29,6 +30,68 @@ function fileExtensionLabel(fileName: string): string {
 /** Remote progressive files (e.g. Supabase public URLs) need an explicit content type on iOS. */
 function videoSourceFromUrl(url: string): VideoSource {
   return /^https?:\/\//i.test(url) ? { uri: url, contentType: 'progressive' } : url;
+}
+
+/**
+ * Holds the player back until the transcode actually exists.
+ *
+ * Cloudinary encodes lazily and answers 423 until it finishes, and an encode
+ * runs at roughly the video's own duration — a five-minute clip is minutes of
+ * work. Uploading only waits out a short grace period, so a viewer can arrive
+ * before the file does. Mounting the player on a 423 just fails silently, so
+ * wait here and say what is happening instead.
+ */
+function VideoModalGate({
+  videoUrl,
+  suggestedFileName,
+  onClose,
+}: {
+  videoUrl: string;
+  suggestedFileName?: string;
+  onClose: () => void;
+}) {
+  const insets = useSafeAreaInsets();
+  const [ready, setReady] = useState(() => !isCloudinaryUrl(videoUrl));
+
+  useEffect(() => {
+    if (ready) return;
+    let cancelled = false;
+    // Long ceiling: this is the encode of a whole video, not a network hiccup.
+    void waitUntilPlayable(videoUrl, 10 * 60_000).then(() => {
+      // Mount the player either way — on timeout it can still surface its own
+      // error, which beats spinning forever.
+      if (!cancelled) setReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [videoUrl, ready]);
+
+  if (ready) {
+    return (
+      <VideoModalInner
+        videoUrl={videoUrl}
+        suggestedFileName={suggestedFileName}
+        onClose={onClose}
+      />
+    );
+  }
+
+  return (
+    <View style={videoStyles.wrap}>
+      <Pressable
+        onPress={onClose}
+        style={[videoStyles.closeBtn, { top: spacing.md + insets.top }]}
+        accessibilityLabel={t('common.back')}
+        accessibilityRole="button"
+        hitSlop={12}
+      >
+        <Ionicons name="close" size={28} color={colors.onPrimary} />
+      </Pressable>
+      <ActivityIndicator size="large" color={colors.onPrimary} />
+      <Text style={videoStyles.processingLabel}>{t('attachments.videoProcessing')}</Text>
+    </View>
+  );
 }
 
 function VideoModalInner({
@@ -138,6 +201,13 @@ const videoStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  processingLabel: {
+    ...typography.body,
+    color: colors.onPrimary,
+    marginTop: spacing.md,
+    textAlign: 'center',
+    paddingHorizontal: spacing.lg,
+  },
   video: {
     backgroundColor: '#000',
   },
@@ -177,7 +247,7 @@ export function VideoAttachmentModal({
       onRequestClose={onRequestClose}
     >
       {videoUrl ? (
-        <VideoModalInner
+        <VideoModalGate
           key={videoUrl}
           videoUrl={videoUrl}
           suggestedFileName={suggestedFileName}
