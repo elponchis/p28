@@ -2,7 +2,6 @@ import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -25,6 +24,7 @@ import {
 import { api } from '@/lib/api';
 import { getUserFacingError } from '@/lib/errors';
 import { t } from '@/lib/i18n';
+import { notify } from '@/lib/dialogs';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 export default function CreateChatScreen() {
@@ -76,7 +76,10 @@ export default function CreateChatScreen() {
 
   const handleCreate = useCallback(async () => {
     if (selectedIds.size === 0) {
-      Alert.alert(t('messages.addFriends'), t('messages.selectFriends'));
+      void notify({
+        title: t('messages.addFriends'),
+        message: t('messages.selectFriends'),
+      });
       return;
     }
     const memberIds = [...selectedIds];
@@ -119,7 +122,10 @@ export default function CreateChatScreen() {
           router.replace(`/messages/chat/${chat.id}`);
         },
         onError: (err) => {
-          Alert.alert(t('common.error'), getUserFacingError(err));
+          void notify({
+            title: t('common.error'),
+            message: getUserFacingError(err),
+          });
         },
       }
     );

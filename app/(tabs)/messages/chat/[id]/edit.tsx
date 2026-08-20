@@ -3,7 +3,6 @@ import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -22,6 +21,7 @@ import {
 } from '@/hooks/useApiQueries';
 import { getUserFacingError } from '@/lib/api';
 import { t } from '@/lib/i18n';
+import { notify } from '@/lib/dialogs';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 export default function ChatEditScreen() {
@@ -85,7 +85,10 @@ export default function ChatEditScreen() {
       router.back();
     } catch (err) {
       const msg = getUserFacingError(err);
-      Alert.alert(t('common.error'), msg);
+      void notify({
+        title: t('common.error'),
+        message: msg,
+      });
     }
   }, [id, userId, name, description, chat, pendingImageUri, pendingImageBase64]);
 

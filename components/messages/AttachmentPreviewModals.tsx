@@ -4,7 +4,6 @@ import * as Sharing from 'expo-sharing';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   Pressable,
   StyleSheet,
@@ -17,6 +16,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { getMediaViewerSize } from '@/lib/mediaViewerBounds';
 import { t } from '@/lib/i18n';
+import { notify } from '@/lib/dialogs';
 import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
 function fileExtensionLabel(fileName: string): string {
@@ -71,11 +71,17 @@ function VideoModalInner({
       if (canShare) {
         await Sharing.shareAsync(localUri);
       } else {
-        Alert.alert(t('common.error'), t('attachments.shareUnavailable'));
+        void notify({
+          title: t('common.error'),
+          message: t('attachments.shareUnavailable'),
+        });
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : t('common.error');
-      Alert.alert(t('common.error'), msg);
+      void notify({
+        title: t('common.error'),
+        message: msg,
+      });
     } finally {
       setBusy(false);
     }
@@ -204,12 +210,18 @@ export function FileAttachmentModal({
       if (canShare) {
         await Sharing.shareAsync(localUri);
       } else {
-        Alert.alert(t('common.error'), t('attachments.shareUnavailable'));
+        void notify({
+          title: t('common.error'),
+          message: t('attachments.shareUnavailable'),
+        });
       }
       onRequestClose();
     } catch (e) {
       const msg = e instanceof Error ? e.message : t('common.error');
-      Alert.alert(t('common.error'), msg);
+      void notify({
+        title: t('common.error'),
+        message: msg,
+      });
     } finally {
       setBusy(false);
     }

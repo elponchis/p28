@@ -7,7 +7,6 @@ import * as MediaLibrary from 'expo-media-library';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Keyboard,
   KeyboardAvoidingView,
   Modal,
@@ -72,6 +71,7 @@ import { queryKeys } from '@/lib/api/queryKeys';
 import type { ChatMessage, CreateChatMessageInput, PostReactionType } from '@/lib/api';
 import { formatDateHeader, isSameDay, messageLocalMinuteKey } from '@/lib/dates';
 import { t } from '@/lib/i18n';
+import { confirm, notify } from '@/lib/dialogs';
 
 import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
@@ -317,7 +317,10 @@ export default function ChatDetailScreen() {
             router.push(`/messages/chat/${newChat.id}`);
           },
           onError: (err) => {
-            Alert.alert(t('common.error'), getUserFacingError(err));
+            void notify({
+              title: t('common.error'),
+              message: getUserFacingError(err),
+            });
           },
         }
       );
@@ -415,7 +418,10 @@ export default function ChatDetailScreen() {
     if (!userId) return;
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert(t('common.error'), t('profile.photoPermissionRequired'));
+      void notify({
+        title: t('common.error'),
+        message: t('profile.photoPermissionRequired'),
+      });
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -459,7 +465,10 @@ export default function ChatDetailScreen() {
     if (pendingAttachments.length >= MAX_ATTACHMENTS) return;
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert(t('common.error'), t('profile.photoPermissionRequired'));
+      void notify({
+        title: t('common.error'),
+        message: t('profile.photoPermissionRequired'),
+      });
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -532,18 +541,27 @@ export default function ChatDetailScreen() {
         })
       );
     } catch (e) {
-      Alert.alert(t('common.error'), e instanceof Error ? e.message : String(e));
+      void notify({
+        title: t('common.error'),
+        message: e instanceof Error ? e.message : String(e),
+      });
       return;
     }
     if (result.canceled || !result.assets?.[0]) return;
     const doc = result.assets[0];
     const mime = normalizeMimeTypeForAllowlist(doc.mimeType ?? 'application/octet-stream');
     if (!isAllowedMessageAttachmentMimeType(mime)) {
-      Alert.alert(t('common.error'), t('attachments.unsupportedFileType'));
+      void notify({
+        title: t('common.error'),
+        message: t('attachments.unsupportedFileType'),
+      });
       return;
     }
     if (doc.size != null && doc.size > MAX_MESSAGE_ATTACHMENT_BYTES) {
-      Alert.alert(t('common.error'), t('attachments.fileTooLarge'));
+      void notify({
+        title: t('common.error'),
+        message: t('attachments.fileTooLarge'),
+      });
       return;
     }
     const attachmentId = newComposeAttachmentId();
@@ -604,7 +622,9 @@ export default function ChatDetailScreen() {
           objectKind: 'message',
         });
         setPendingAttachments((prev) =>
-          prev.map((p) => (p.id === attachmentId ? { ...p, uploadedUrl: url, uploading: false } : p))
+          prev.map((p) =>
+            p.id === attachmentId ? { ...p, uploadedUrl: url, uploading: false } : p
+          )
         );
       } catch {
         setPendingAttachments((prev) => prev.filter((p) => p.id !== attachmentId));
@@ -653,7 +673,10 @@ export default function ChatDetailScreen() {
     try {
       const { status } = await MediaLibrary.requestPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert(t('common.error'), t('discussions.downloadPermissionDenied'));
+        void notify({
+          title: t('common.error'),
+          message: t('discussions.downloadPermissionDenied'),
+        });
         return;
       }
       const ext = previewImageUrl.match(/\.(jpe?g|png|gif|webp)/i)?.[1] ?? 'jpg';
@@ -662,13 +685,19 @@ export default function ChatDetailScreen() {
       await FileSystem.downloadAsync(previewImageUrl, localUri);
       await MediaLibrary.createAssetAsync(localUri);
       setPreviewImageUrl(null);
-      Alert.alert(t('discussions.downloadSuccess'), t('discussions.downloadSuccessMessage'));
+      void notify({
+        title: t('discussions.downloadSuccess'),
+        message: t('discussions.downloadSuccessMessage'),
+      });
     } catch (err) {
       const msg =
         err && typeof err === 'object' && typeof (err as Error).message === 'string'
           ? (err as Error).message
           : t('discussions.downloadError');
-      Alert.alert(t('common.error'), msg);
+      void notify({
+        title: t('common.error'),
+        message: msg,
+      });
     } finally {
       setIsDownloading(false);
     }
@@ -715,18 +744,17 @@ export default function ChatDetailScreen() {
   }, []);
 
   const handleDeleteMessage = useCallback(
-    (msg: ChatMessage) => {
+    async (msg: ChatMessage) => {
       if (!userId || !id) return;
-      Alert.alert(t('discussions.deleteMessageConfirmTitle'), t('discussions.deleteMessageConfirmBody'), [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('discussions.sheetDelete'),
-          style: 'destructive',
-          onPress: () => {
-            deleteMessageMutation.mutate({ messageId: msg.id, chatId: id, userId });
-          },
-        },
-      ]);
+      const confirmed = await confirm({
+        title: t('discussions.deleteMessageConfirmTitle'),
+        message: t('discussions.deleteMessageConfirmBody'),
+        confirmLabel: t('discussions.sheetDelete'),
+        cancelLabel: t('common.cancel'),
+        destructive: true,
+      });
+      if (!confirmed) return;
+      deleteMessageMutation.mutate({ messageId: msg.id, chatId: id, userId });
     },
     [userId, id, deleteMessageMutation]
   );

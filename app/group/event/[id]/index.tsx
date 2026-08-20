@@ -1,15 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { Button } from '@/components/primitives';
@@ -34,6 +26,7 @@ import {
   isGroupEventPast,
 } from '@/lib/dates';
 import { t } from '@/lib/i18n';
+import { confirm, notify } from '@/lib/dialogs';
 import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
 function paramString(v: string | string[] | undefined): string | undefined {
@@ -103,25 +96,27 @@ export default function GroupEventDetailScreen() {
   const canRsvp =
     isMember && !!event?.requiresRsvp && isActive && isFuture && !!userId && !!eventId;
 
-  const handleCancelEvent = useCallback(() => {
+  const handleCancelEvent = useCallback(async () => {
     if (!eventId || !event) return;
-    Alert.alert(t('groupEvents.cancelEvent'), t('groupEvents.cancelEventConfirm'), [
-      { text: t('common.cancel'), style: 'cancel' },
+    const confirmed = await confirm({
+      title: t('groupEvents.cancelEvent'),
+      message: t('groupEvents.cancelEventConfirm'),
+      confirmLabel: t('groupEvents.cancelEvent'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+    });
+    if (!confirmed) return;
+    cancelMutation.mutate(
+      { eventId, groupId: event.groupId },
       {
-        text: t('groupEvents.cancelEvent'),
-        style: 'destructive',
-        onPress: () => {
-          cancelMutation.mutate(
-            { eventId, groupId: event.groupId },
-            {
-              onError: (e) => {
-                Alert.alert(t('common.error'), isApiError(e) ? getUserFacingError(e) : '');
-              },
-            }
-          );
+        onError: (e) => {
+          void notify({
+            title: t('common.error'),
+            message: isApiError(e) ? getUserFacingError(e) : '',
+          });
         },
-      },
-    ]);
+      }
+    );
   }, [eventId, event, cancelMutation]);
 
   const handleEditSubmit = useCallback(
@@ -172,7 +167,10 @@ export default function GroupEventDetailScreen() {
   const openEventDiscussion = useCallback(() => {
     if (!event) return;
     if (!isMember) {
-      Alert.alert(t('groups.join'), t('groupEvents.joinToDiscuss'));
+      void notify({
+        title: t('groups.join'),
+        message: t('groupEvents.joinToDiscuss'),
+      });
       return;
     }
     router.push(`/group/discussion/${event.discussionId}`);
@@ -181,7 +179,10 @@ export default function GroupEventDetailScreen() {
   const openAttendees = useCallback(() => {
     if (!event) return;
     if (!isMember) {
-      Alert.alert(t('groups.join'), t('groupEvents.joinToSeeAttendees'));
+      void notify({
+        title: t('groups.join'),
+        message: t('groupEvents.joinToSeeAttendees'),
+      });
       return;
     }
     router.push(`/group/event/${event.id}/attendees`);

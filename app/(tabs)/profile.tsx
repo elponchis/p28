@@ -18,7 +18,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfileQuery } from '@/hooks/useApiQueries';
 import { getUserFacingError } from '@/lib/api';
-import { confirm } from '@/lib/confirm';
+import { confirm } from '@/lib/dialogs';
 import { preferredLanguageDisplayLabel, t } from '@/lib/i18n';
 import { Avatar, Badge } from '@/components/primitives';
 import { TAB_BAR_HEIGHT } from '@/components/navigation/FloatingTabBar';

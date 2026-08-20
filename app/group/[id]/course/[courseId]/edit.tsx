@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -22,16 +21,18 @@ import {
 } from '@/hooks/useApiQueries';
 import { getUserFacingError } from '@/lib/api';
 import { t } from '@/lib/i18n';
+import { confirm } from '@/lib/dialogs';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 export default function EditCourseScreen() {
   const { id: groupId, courseId } = useLocalSearchParams<{ id: string; courseId: string }>();
   const router = useRouter();
 
-  const { data: course, isLoading: courseLoading, isError: isCourseError } = useCourseQuery(
-    courseId,
-    { enabled: !!courseId }
-  );
+  const {
+    data: course,
+    isLoading: courseLoading,
+    isError: isCourseError,
+  } = useCourseQuery(courseId, { enabled: !!courseId });
   const updateMutation = useUpdateCourseMutation();
   const deleteMutation = useDeleteCourseMutation();
   const isSubmitting = updateMutation.isPending;
@@ -81,25 +82,24 @@ export default function EditCourseScreen() {
     );
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!courseId || !groupId) return;
-    Alert.alert(t('courses.deleteCourse'), t('courses.deleteCourseConfirm'), [
-      { text: t('common.cancel'), style: 'cancel' },
+    const confirmed = await confirm({
+      title: t('courses.deleteCourse'),
+      message: t('courses.deleteCourseConfirm'),
+      confirmLabel: t('courses.deleteCourse'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+    });
+    if (!confirmed) return;
+    setError(null);
+    deleteMutation.mutate(
+      { courseId, groupId },
       {
-        text: t('courses.deleteCourse'),
-        style: 'destructive',
-        onPress: () => {
-          setError(null);
-          deleteMutation.mutate(
-            { courseId, groupId },
-            {
-              onSuccess: () => router.replace(`/group/${groupId}`),
-              onError: (err) => setError(getUserFacingError(err)),
-            }
-          );
-        },
-      },
-    ]);
+        onSuccess: () => router.replace(`/group/${groupId}`),
+        onError: (err) => setError(getUserFacingError(err)),
+      }
+    );
   };
 
   if (!groupId || !courseId) {

@@ -2,7 +2,6 @@ import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -19,6 +18,7 @@ import {
 } from '@/hooks/useApiQueries';
 import { getUserFacingError } from '@/lib/errors';
 import { t } from '@/lib/i18n';
+import { notify } from '@/lib/dialogs';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 export default function CreateFolderScreen() {
@@ -45,7 +45,10 @@ export default function CreateFolderScreen() {
   const handleCreate = useCallback(() => {
     const n = name.trim();
     if (!n) {
-      Alert.alert(t('messages.folderName'), t('messages.folderName'));
+      void notify({
+        title: t('messages.folderName'),
+        message: t('messages.folderName'),
+      });
       return;
     }
     createFolderMutation.mutate(
@@ -71,7 +74,10 @@ export default function CreateFolderScreen() {
           });
         },
         onError: (err) => {
-          Alert.alert(t('common.error'), getUserFacingError(err));
+          void notify({
+            title: t('common.error'),
+            message: getUserFacingError(err),
+          });
         },
       }
     );

@@ -7,7 +7,6 @@ import * as MediaLibrary from 'expo-media-library';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Keyboard,
   KeyboardAvoidingView,
   Modal,
@@ -83,6 +82,7 @@ import {
   messageLocalMinuteKey,
 } from '@/lib/dates';
 import { t } from '@/lib/i18n';
+import { notify } from '@/lib/dialogs';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 function OriginalPostRow({
@@ -564,7 +564,10 @@ export default function DiscussionDetailScreen() {
     if (!userId) return;
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert(t('common.error'), t('profile.photoPermissionRequired'));
+      void notify({
+        title: t('common.error'),
+        message: t('profile.photoPermissionRequired'),
+      });
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -603,7 +606,10 @@ export default function DiscussionDetailScreen() {
     if (pendingAttachments.length >= MAX_ATTACHMENTS) return;
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert(t('common.error'), t('profile.photoPermissionRequired'));
+      void notify({
+        title: t('common.error'),
+        message: t('profile.photoPermissionRequired'),
+      });
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -676,18 +682,27 @@ export default function DiscussionDetailScreen() {
         })
       );
     } catch (e) {
-      Alert.alert(t('common.error'), e instanceof Error ? e.message : String(e));
+      void notify({
+        title: t('common.error'),
+        message: e instanceof Error ? e.message : String(e),
+      });
       return;
     }
     if (result.canceled || !result.assets?.[0]) return;
     const doc = result.assets[0];
     const mime = normalizeMimeTypeForAllowlist(doc.mimeType ?? 'application/octet-stream');
     if (!isAllowedMessageAttachmentMimeType(mime)) {
-      Alert.alert(t('common.error'), t('attachments.unsupportedFileType'));
+      void notify({
+        title: t('common.error'),
+        message: t('attachments.unsupportedFileType'),
+      });
       return;
     }
     if (doc.size != null && doc.size > MAX_MESSAGE_ATTACHMENT_BYTES) {
-      Alert.alert(t('common.error'), t('attachments.fileTooLarge'));
+      void notify({
+        title: t('common.error'),
+        message: t('attachments.fileTooLarge'),
+      });
       return;
     }
     const attachmentId = newComposeAttachmentId();
@@ -756,7 +771,10 @@ export default function DiscussionDetailScreen() {
     try {
       const { status } = await MediaLibrary.requestPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert(t('common.error'), t('discussions.downloadPermissionDenied'));
+        void notify({
+          title: t('common.error'),
+          message: t('discussions.downloadPermissionDenied'),
+        });
         return;
       }
       const ext = previewImageUrl.match(/\.(jpe?g|png|gif|webp)/i)?.[1] ?? 'jpg';
@@ -765,13 +783,19 @@ export default function DiscussionDetailScreen() {
       await FileSystem.downloadAsync(previewImageUrl, localUri);
       await MediaLibrary.createAssetAsync(localUri);
       setPreviewImageUrl(null);
-      Alert.alert(t('discussions.downloadSuccess'), t('discussions.downloadSuccessMessage'));
+      void notify({
+        title: t('discussions.downloadSuccess'),
+        message: t('discussions.downloadSuccessMessage'),
+      });
     } catch (err) {
       const msg =
         err && typeof err === 'object' && typeof (err as Error).message === 'string'
           ? (err as Error).message
           : t('discussions.downloadError');
-      Alert.alert(t('common.error'), msg);
+      void notify({
+        title: t('common.error'),
+        message: msg,
+      });
     } finally {
       setIsDownloading(false);
     }

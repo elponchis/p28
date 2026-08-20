@@ -1,20 +1,13 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/hooks/useAuth';
 import { useAddChatToFolderMutation, useChatsForUserQuery } from '@/hooks/useApiQueries';
 import { getUserFacingError } from '@/lib/errors';
 import { t } from '@/lib/i18n';
+import { notify } from '@/lib/dialogs';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 export default function AddChatsToFolderScreen() {
@@ -73,7 +66,10 @@ export default function AddChatsToFolderScreen() {
         router.back();
       })
       .catch((err) => {
-        Alert.alert(t('common.error'), getUserFacingError(err));
+        void notify({
+          title: t('common.error'),
+          message: getUserFacingError(err),
+        });
       });
   }, [folderId, userId, selectedChatIds, addToFolderMutation, router]);
 

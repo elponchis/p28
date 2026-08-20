@@ -4,7 +4,6 @@ import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import { Image } from 'expo-image';
 import {
   ActivityIndicator,
-  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -55,6 +54,7 @@ import { formatGroupEventDateTime, formatRelativeTime, isGroupEventPast } from '
 import { compareGroupEventsByStartThenCreated } from '@/lib/groupEventsSort';
 import { t } from '@/lib/i18n';
 import { formatRecurringMeetingSummary } from '@/lib/recurringMeetingSummary';
+import { confirm } from '@/lib/dialogs';
 import { colors, fontFamily, radius, shadow, spacing, typography } from '@/theme/tokens';
 
 function getLanguageName(code: string): string {
@@ -252,25 +252,17 @@ export default function GroupDetailScreen() {
   );
 
   const handleDeleteCourse = useCallback(
-    (courseId: string, courseTitle: string) => {
+    async (courseId: string, courseTitle: string) => {
       if (!id) return;
-      Alert.alert(
-        t('courses.deleteCourse'),
-        `${courseTitle}\n\n${t('courses.deleteCourseConfirm')}`,
-        [
-          { text: t('common.cancel'), style: 'cancel' },
-          {
-            text: t('courses.deleteCourse'),
-            style: 'destructive',
-            onPress: () => {
-              deleteCourseMutation.mutate(
-                { courseId, groupId: id },
-                { onSuccess: () => refetchCourses() }
-              );
-            },
-          },
-        ]
-      );
+      const confirmed = await confirm({
+        title: t('courses.deleteCourse'),
+        message: `${courseTitle}\n\n${t('courses.deleteCourseConfirm')}`,
+        confirmLabel: t('courses.deleteCourse'),
+        cancelLabel: t('common.cancel'),
+        destructive: true,
+      });
+      if (!confirmed) return;
+      deleteCourseMutation.mutate({ courseId, groupId: id }, { onSuccess: () => refetchCourses() });
     },
     [id, deleteCourseMutation, refetchCourses]
   );
@@ -314,35 +306,28 @@ export default function GroupDetailScreen() {
     setRecurringFormError(null);
   }, []);
 
-  const handleRecurringDeleteRequest = useCallback(() => {
+  const handleRecurringDeleteRequest = useCallback(async () => {
     if (!recurringEdit) return;
-    Alert.alert(
-      t('recurringMeetings.deleteRecurring'),
-      t('recurringMeetings.deleteRecurringConfirm'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('recurringMeetings.deleteRecurring'),
-          style: 'destructive',
-          onPress: () => {
-            setRecurringFormError(null);
-            deleteRecurringMutation.mutate(
-              { meetingId: recurringEdit.id, groupId: recurringEdit.groupId },
-              {
-                onSuccess: () => {
-                  handleCloseRecurringSheet();
-                  refetchRecurringMeetings();
-                },
-                onError: (err) => {
-                  setRecurringFormError(
-                    isApiError(err) ? getUserFacingError(err) : t('common.error')
-                  );
-                },
-              }
-            );
-          },
+    const confirmed = await confirm({
+      title: t('recurringMeetings.deleteRecurring'),
+      message: t('recurringMeetings.deleteRecurringConfirm'),
+      confirmLabel: t('recurringMeetings.deleteRecurring'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+    });
+    if (!confirmed) return;
+    setRecurringFormError(null);
+    deleteRecurringMutation.mutate(
+      { meetingId: recurringEdit.id, groupId: recurringEdit.groupId },
+      {
+        onSuccess: () => {
+          handleCloseRecurringSheet();
+          refetchRecurringMeetings();
         },
-      ]
+        onError: (err) => {
+          setRecurringFormError(isApiError(err) ? getUserFacingError(err) : t('common.error'));
+        },
+      }
     );
   }, [recurringEdit, deleteRecurringMutation, handleCloseRecurringSheet, refetchRecurringMeetings]);
 
@@ -898,10 +883,7 @@ export default function GroupDetailScreen() {
                   <View key={course.id} style={styles.courseCard}>
                     <Pressable
                       onPress={() => router.push(`/group/${id}/course/${course.id}`)}
-                      style={({ pressed }) => [
-                        styles.courseCardMain,
-                        pressed && { opacity: 0.92 },
-                      ]}
+                      style={({ pressed }) => [styles.courseCardMain, pressed && { opacity: 0.92 }]}
                       accessibilityLabel={course.title}
                       accessibilityHint={t('courses.openCourseHint')}
                       accessibilityRole="button"
@@ -991,10 +973,7 @@ export default function GroupDetailScreen() {
                     <Pressable
                       key={assignment.id}
                       onPress={() => router.push(`/group/${id}/assignment/${assignment.id}`)}
-                      style={({ pressed }) => [
-                        styles.assignmentCard,
-                        pressed && { opacity: 0.92 },
-                      ]}
+                      style={({ pressed }) => [styles.assignmentCard, pressed && { opacity: 0.92 }]}
                       accessibilityLabel={assignment.title}
                       accessibilityHint={t('assignments.openAssignmentHint')}
                       accessibilityRole="button"

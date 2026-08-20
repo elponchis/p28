@@ -2,7 +2,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -24,6 +23,7 @@ import {
 } from '@/hooks/useApiQueries';
 import { api, getUserFacingError } from '@/lib/api';
 import { t } from '@/lib/i18n';
+import { confirm, notify } from '@/lib/dialogs';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 export default function ManageChatMembersScreen() {
@@ -85,28 +85,26 @@ export default function ManageChatMembersScreen() {
   }, []);
 
   const handleConfirmRemoveMember = useCallback(
-    (memberUserId: string, memberDisplayName: string) => {
+    async (memberUserId: string, memberDisplayName: string) => {
       if (!id || !userId) return;
-      Alert.alert(
-        t('messages.removeMemberConfirmTitle'),
-        t('messages.removeMemberConfirmMessage', { name: memberDisplayName }),
-        [
-          { text: t('common.cancel'), style: 'cancel' },
-          {
-            text: t('messages.remove'),
-            style: 'destructive',
-            onPress: () => {
-              removeMemberMutation.mutate(
-                { chatId: id, memberUserId, removedByUserId: userId },
-                {
-                  onError: (err) => {
-                    Alert.alert(t('common.error'), getUserFacingError(err));
-                  },
-                }
-              );
-            },
+      const confirmed = await confirm({
+        title: t('messages.removeMemberConfirmTitle'),
+        message: t('messages.removeMemberConfirmMessage', { name: memberDisplayName }),
+        confirmLabel: t('messages.remove'),
+        cancelLabel: t('common.cancel'),
+        destructive: true,
+      });
+      if (!confirmed) return;
+      removeMemberMutation.mutate(
+        { chatId: id, memberUserId, removedByUserId: userId },
+        {
+          onError: (err) => {
+            void notify({
+              title: t('common.error'),
+              message: getUserFacingError(err),
+            });
           },
-        ]
+        }
       );
     },
     [id, userId, removeMemberMutation]
@@ -140,7 +138,10 @@ export default function ManageChatMembersScreen() {
       {
         onSuccess: (newChat) => router.replace(`/messages/chat/${newChat.id}`),
         onError: (err) => {
-          Alert.alert(t('common.error'), getUserFacingError(err));
+          void notify({
+            title: t('common.error'),
+            message: getUserFacingError(err),
+          });
         },
       }
     );

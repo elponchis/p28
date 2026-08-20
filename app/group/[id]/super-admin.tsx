@@ -1,14 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { Avatar, Button } from '@/components/primitives';
@@ -25,6 +17,7 @@ import {
 import type { GroupAdmin, Profile } from '@/lib/api';
 import { getUserFacingError } from '@/lib/errors';
 import { t } from '@/lib/i18n';
+import { confirm, notify } from '@/lib/dialogs';
 import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
 const SEARCH_DEBOUNCE_MS = 350;
@@ -90,61 +83,63 @@ export default function SuperAdminAssignGroupAdminScreen() {
   }, [userId, isRoleLoading, isSuperAdminError, isSuperAdmin, router]);
 
   const handleAssign = useCallback(
-    (targetUserId: string, name: string) => {
+    async (targetUserId: string, name: string) => {
       if (!groupId) return;
-      Alert.alert(
-        t('groups.superAdminAssignConfirmTitle'),
-        t('groups.superAdminAssignConfirmMessage', { name }),
-        [
-          { text: t('common.cancel'), style: 'cancel' },
-          {
-            text: t('groups.superAdminAssignButton'),
-            onPress: () => {
-              addAdminMutation.mutate(
-                { groupId, userId: targetUserId },
-                {
-                  onSuccess: () => {
-                    Alert.alert(t('common.successTitle'), t('groups.superAdminAssignSuccess'));
-                  },
-                  onError: (err) => {
-                    Alert.alert(t('common.error'), getUserFacingError(err));
-                  },
-                }
-              );
-            },
+      const confirmed = await confirm({
+        title: t('groups.superAdminAssignConfirmTitle'),
+        message: t('groups.superAdminAssignConfirmMessage', { name }),
+        confirmLabel: t('groups.superAdminAssignButton'),
+        cancelLabel: t('common.cancel'),
+      });
+      if (!confirmed) return;
+      addAdminMutation.mutate(
+        { groupId, userId: targetUserId },
+        {
+          onSuccess: () => {
+            void notify({
+              title: t('common.successTitle'),
+              message: t('groups.superAdminAssignSuccess'),
+            });
           },
-        ]
+          onError: (err) => {
+            void notify({
+              title: t('common.error'),
+              message: getUserFacingError(err),
+            });
+          },
+        }
       );
     },
     [groupId, addAdminMutation]
   );
 
   const handleRemove = useCallback(
-    (targetUserId: string, name: string) => {
+    async (targetUserId: string, name: string) => {
       if (!groupId) return;
-      Alert.alert(
-        t('groups.superAdminRemoveConfirmTitle'),
-        t('groups.superAdminRemoveConfirmMessage', { name }),
-        [
-          { text: t('common.cancel'), style: 'cancel' },
-          {
-            text: t('groups.superAdminRemoveAdminButton'),
-            style: 'destructive',
-            onPress: () => {
-              removeAdminMutation.mutate(
-                { groupId, userId: targetUserId },
-                {
-                  onSuccess: () => {
-                    Alert.alert(t('common.successTitle'), t('groups.superAdminRemoveSuccess'));
-                  },
-                  onError: (err) => {
-                    Alert.alert(t('common.error'), getUserFacingError(err));
-                  },
-                }
-              );
-            },
+      const confirmed = await confirm({
+        title: t('groups.superAdminRemoveConfirmTitle'),
+        message: t('groups.superAdminRemoveConfirmMessage', { name }),
+        confirmLabel: t('groups.superAdminRemoveAdminButton'),
+        cancelLabel: t('common.cancel'),
+        destructive: true,
+      });
+      if (!confirmed) return;
+      removeAdminMutation.mutate(
+        { groupId, userId: targetUserId },
+        {
+          onSuccess: () => {
+            void notify({
+              title: t('common.successTitle'),
+              message: t('groups.superAdminRemoveSuccess'),
+            });
           },
-        ]
+          onError: (err) => {
+            void notify({
+              title: t('common.error'),
+              message: getUserFacingError(err),
+            });
+          },
+        }
       );
     },
     [groupId, removeAdminMutation]

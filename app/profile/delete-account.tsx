@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -19,6 +18,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useDeleteAccountMutation } from '@/hooks/useApiQueries';
 import { getUserFacingError } from '@/lib/api';
 import { t } from '@/lib/i18n';
+import { notify } from '@/lib/dialogs';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 export default function DeleteAccountScreen() {
@@ -37,16 +37,14 @@ export default function DeleteAccountScreen() {
     if (!canConfirm || isDeleting) return;
     setError(null);
     deleteMutation.mutate(undefined, {
-      onSuccess: () => {
-        Alert.alert(t('profile.accountDeletedTitle'), t('profile.accountDeletedMessage'), [
-          {
-            text: t('common.done'),
-            onPress: async () => {
-              await signOut();
-              router.replace('/auth/sign-in');
-            },
-          },
-        ]);
+      onSuccess: async () => {
+        await notify({
+          title: t('profile.accountDeletedTitle'),
+          message: t('profile.accountDeletedMessage'),
+          dismissLabel: t('common.done'),
+        });
+        await signOut();
+        router.replace('/auth/sign-in');
       },
       onError: (err) => setError(getUserFacingError(err)),
     });

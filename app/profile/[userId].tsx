@@ -1,14 +1,6 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
@@ -25,6 +17,7 @@ import {
 import { api, getUserFacingError } from '@/lib/api';
 import type { ApiError } from '@/lib/api';
 import { preferredLanguageDisplayLabel, t } from '@/lib/i18n';
+import { notify } from '@/lib/dialogs';
 import { avatarSizes, colors, radius, spacing, typography } from '@/theme/tokens';
 
 const cardStyle = {
@@ -79,14 +72,20 @@ export default function UserProfileScreen() {
             onSuccess: (chat) => pushToChat(chat.id),
             onError: (err) => {
               const msg = getUserFacingError(err);
-              Alert.alert(t('common.error'), msg);
+              void notify({
+                title: t('common.error'),
+                message: msg,
+              });
             },
           }
         );
       }
     } catch (err) {
       const msg = getUserFacingError(err as ApiError);
-      Alert.alert(t('common.error'), msg);
+      void notify({
+        title: t('common.error'),
+        message: msg,
+      });
     }
   }, [currentUserId, userId, router, createChatMutation]);
 

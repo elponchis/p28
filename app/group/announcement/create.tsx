@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -19,6 +18,7 @@ import { useCreateAnnouncementMutation, useGroupQuery } from '@/hooks/useApiQuer
 import { getUserFacingError } from '@/lib/api';
 import { MEETING_LINK_MAX_LENGTH, parseMeetingLinkInput } from '@/lib/meetingLink';
 import { t } from '@/lib/i18n';
+import { confirm } from '@/lib/dialogs';
 import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
 export default function CreateAnnouncementScreen() {
@@ -74,7 +74,7 @@ export default function CreateAnnouncementScreen() {
     );
   }, [userId, groupId, title, body, meetingLink, createMutation, router]);
 
-  const handlePublishPress = useCallback(() => {
+  const handlePublishPress = useCallback(async () => {
     const trimmedTitle = title.trim();
     const trimmedBody = body.trim();
     if (!trimmedTitle || !trimmedBody) {
@@ -82,14 +82,14 @@ export default function CreateAnnouncementScreen() {
       return;
     }
     setError(null);
-    Alert.alert(
-      t('announcements.confirmPublishTitle'),
-      `${t('announcements.publishWarning')}\n\n${t('announcements.confirmPublishMessage')}`,
-      [
-        { text: t('announcements.goBack'), style: 'cancel' },
-        { text: t('announcements.confirmPublishCta'), onPress: submitCreate },
-      ]
-    );
+    const confirmed = await confirm({
+      title: t('announcements.confirmPublishTitle'),
+      message: `${t('announcements.publishWarning')}\n\n${t('announcements.confirmPublishMessage')}`,
+      confirmLabel: t('announcements.confirmPublishCta'),
+      cancelLabel: t('announcements.goBack'),
+    });
+    if (!confirmed) return;
+    submitCreate();
   }, [title, body, submitCreate]);
 
   if (!groupId) {
@@ -115,76 +115,76 @@ export default function CreateAnnouncementScreen() {
         contentInsetAdjustmentBehavior="automatic"
       >
         <DesktopContentContainer maxWidth={600}>
-        {group ? <Text style={styles.groupName}>{group.name}</Text> : null}
+          {group ? <Text style={styles.groupName}>{group.name}</Text> : null}
 
-        <View style={styles.reminderCard}>
-          <Ionicons name="information-circle-outline" size={22} color={colors.primary} />
-          <Text style={styles.reminderText}>{t('announcements.eligibilityReminder')}</Text>
-        </View>
+          <View style={styles.reminderCard}>
+            <Ionicons name="information-circle-outline" size={22} color={colors.primary} />
+            <Text style={styles.reminderText}>{t('announcements.eligibilityReminder')}</Text>
+          </View>
 
-        <Text style={styles.label}>{t('announcements.titleLabel')}</Text>
-        <TextInput
-          style={styles.input}
-          value={title}
-          onChangeText={setTitle}
-          placeholder={t('announcements.titlePlaceholder')}
-          placeholderTextColor={colors.onSurfaceVariant}
-          maxLength={200}
-          accessibilityLabel={t('announcements.titleLabel')}
-          accessibilityHint={t('announcements.titlePlaceholder')}
-        />
+          <Text style={styles.label}>{t('announcements.titleLabel')}</Text>
+          <TextInput
+            style={styles.input}
+            value={title}
+            onChangeText={setTitle}
+            placeholder={t('announcements.titlePlaceholder')}
+            placeholderTextColor={colors.onSurfaceVariant}
+            maxLength={200}
+            accessibilityLabel={t('announcements.titleLabel')}
+            accessibilityHint={t('announcements.titlePlaceholder')}
+          />
 
-        <Text style={styles.label}>{t('announcements.bodyLabel')}</Text>
-        <TextInput
-          style={[styles.input, styles.bodyInput]}
-          value={body}
-          onChangeText={setBody}
-          placeholder={t('announcements.bodyPlaceholder')}
-          placeholderTextColor={colors.onSurfaceVariant}
-          multiline
-          textAlignVertical="top"
-          accessibilityLabel={t('announcements.bodyLabel')}
-          accessibilityHint={t('announcements.bodyPlaceholder')}
-        />
+          <Text style={styles.label}>{t('announcements.bodyLabel')}</Text>
+          <TextInput
+            style={[styles.input, styles.bodyInput]}
+            value={body}
+            onChangeText={setBody}
+            placeholder={t('announcements.bodyPlaceholder')}
+            placeholderTextColor={colors.onSurfaceVariant}
+            multiline
+            textAlignVertical="top"
+            accessibilityLabel={t('announcements.bodyLabel')}
+            accessibilityHint={t('announcements.bodyPlaceholder')}
+          />
 
-        <Text style={styles.label}>{t('groupEvents.meetingLink')}</Text>
-        <TextInput
-          style={styles.input}
-          value={meetingLink}
-          onChangeText={(v) => {
-            setMeetingLink(v);
-            setMeetingLinkError(null);
-          }}
-          placeholder={t('groupEvents.meetingLinkPlaceholder')}
-          placeholderTextColor={colors.onSurfaceVariant}
-          maxLength={MEETING_LINK_MAX_LENGTH}
-          autoCapitalize="none"
-          autoCorrect={false}
-          keyboardType="url"
-          accessibilityLabel={t('groupEvents.meetingLink')}
-          accessibilityHint={t('groupEvents.meetingLinkPlaceholder')}
-        />
-        {meetingLinkError ? (
-          <Text style={styles.errorText} accessibilityLiveRegion="polite">
-            {meetingLinkError}
-          </Text>
-        ) : null}
+          <Text style={styles.label}>{t('groupEvents.meetingLink')}</Text>
+          <TextInput
+            style={styles.input}
+            value={meetingLink}
+            onChangeText={(v) => {
+              setMeetingLink(v);
+              setMeetingLinkError(null);
+            }}
+            placeholder={t('groupEvents.meetingLinkPlaceholder')}
+            placeholderTextColor={colors.onSurfaceVariant}
+            maxLength={MEETING_LINK_MAX_LENGTH}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+            accessibilityLabel={t('groupEvents.meetingLink')}
+            accessibilityHint={t('groupEvents.meetingLinkPlaceholder')}
+          />
+          {meetingLinkError ? (
+            <Text style={styles.errorText} accessibilityLiveRegion="polite">
+              {meetingLinkError}
+            </Text>
+          ) : null}
 
-        {error ? (
-          <Text style={styles.errorText} accessibilityLiveRegion="polite">
-            {error}
-          </Text>
-        ) : null}
+          {error ? (
+            <Text style={styles.errorText} accessibilityLiveRegion="polite">
+              {error}
+            </Text>
+          ) : null}
 
-        <Button
-          title={
-            createMutation.isPending ? t('announcements.publishing') : t('announcements.publish')
-          }
-          onPress={handlePublishPress}
-          disabled={createMutation.isPending}
-          accessibilityLabel={t('announcements.publish')}
-          accessibilityHint={t('announcements.confirmPublishMessage')}
-        />
+          <Button
+            title={
+              createMutation.isPending ? t('announcements.publishing') : t('announcements.publish')
+            }
+            onPress={handlePublishPress}
+            disabled={createMutation.isPending}
+            accessibilityLabel={t('announcements.publish')}
+            accessibilityHint={t('announcements.confirmPublishMessage')}
+          />
         </DesktopContentContainer>
       </ScrollView>
     </KeyboardAvoidingView>

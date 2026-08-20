@@ -1,13 +1,5 @@
 import { useCallback, useLayoutEffect } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
@@ -24,6 +16,7 @@ import {
 } from '@/hooks/useApiQueries';
 import type { Discussion } from '@/lib/api';
 import { t } from '@/lib/i18n';
+import { confirm } from '@/lib/dialogs';
 import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
 export default function CourseDetailScreen() {
@@ -100,25 +93,17 @@ export default function CourseDetailScreen() {
   );
 
   const handleDeleteLesson = useCallback(
-    (lessonId: string, lessonTitle: string) => {
+    async (lessonId: string, lessonTitle: string) => {
       if (!courseId) return;
-      Alert.alert(
-        t('lessons.deleteLesson'),
-        `${lessonTitle}\n\n${t('lessons.deleteLessonConfirm')}`,
-        [
-          { text: t('common.cancel'), style: 'cancel' },
-          {
-            text: t('lessons.deleteLesson'),
-            style: 'destructive',
-            onPress: () => {
-              deleteLessonMutation.mutate(
-                { lessonId, courseId },
-                { onSuccess: () => refetchLessons() }
-              );
-            },
-          },
-        ]
-      );
+      const confirmed = await confirm({
+        title: t('lessons.deleteLesson'),
+        message: `${lessonTitle}\n\n${t('lessons.deleteLessonConfirm')}`,
+        confirmLabel: t('lessons.deleteLesson'),
+        cancelLabel: t('common.cancel'),
+        destructive: true,
+      });
+      if (!confirmed) return;
+      deleteLessonMutation.mutate({ lessonId, courseId }, { onSuccess: () => refetchLessons() });
     },
     [courseId, deleteLessonMutation, refetchLessons]
   );

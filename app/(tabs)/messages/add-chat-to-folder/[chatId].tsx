@@ -1,20 +1,13 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { useAuth } from '@/hooks/useAuth';
 import { useAddChatToFolderMutation, useChatFoldersQuery } from '@/hooks/useApiQueries';
 import { getUserFacingError } from '@/lib/errors';
 import { t } from '@/lib/i18n';
+import { notify } from '@/lib/dialogs';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 export default function AddChatToFolderScreen() {
@@ -33,7 +26,8 @@ export default function AddChatToFolderScreen() {
         { folderId, chatId, userId },
         {
           onSuccess: () => router.back(),
-          onError: (err) => Alert.alert(t('common.error'), getUserFacingError(err)),
+          onError: (err) =>
+            void notify({ title: t('common.error'), message: getUserFacingError(err) }),
         }
       );
     },

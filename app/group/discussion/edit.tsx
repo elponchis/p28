@@ -2,7 +2,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -24,6 +23,7 @@ import {
 } from '@/hooks/useApiQueries';
 import { getUserFacingError } from '@/lib/api';
 import { t } from '@/lib/i18n';
+import { confirm } from '@/lib/dialogs';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 export default function EditDiscussionScreen() {
@@ -67,28 +67,28 @@ export default function EditDiscussionScreen() {
     );
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!discussionId) return;
 
-    Alert.alert(t('discussions.deleteDiscussion'), t('discussions.deleteDiscussionConfirm'), [
-      { text: t('common.cancel'), style: 'cancel' },
+    const confirmed = await confirm({
+      title: t('discussions.deleteDiscussion'),
+      message: t('discussions.deleteDiscussionConfirm'),
+      confirmLabel: t('discussions.deleteDiscussion'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+    });
+    if (!confirmed) return;
+
+    setErrorMessage(null);
+    deleteMutation.mutate(
+      { discussionId },
       {
-        text: t('discussions.deleteDiscussion'),
-        style: 'destructive',
-        onPress: () => {
-          setErrorMessage(null);
-          deleteMutation.mutate(
-            { discussionId },
-            {
-              onSuccess: () => {
-                router.replace(`/group/${discussion?.groupId ?? ''}`);
-              },
-              onError: (err) => setErrorMessage(getUserFacingError(err)),
-            }
-          );
+        onSuccess: () => {
+          router.replace(`/group/${discussion?.groupId ?? ''}`);
         },
-      },
-    ]);
+        onError: (err) => setErrorMessage(getUserFacingError(err)),
+      }
+    );
   };
 
   useEffect(() => {
@@ -122,75 +122,75 @@ export default function EditDiscussionScreen() {
         showsVerticalScrollIndicator={false}
       >
         <DesktopContentContainer maxWidth={600}>
-        <Input
-          label={t('discussions.topicPlaceholder')}
-          value={title}
-          onChangeText={setTitle}
-          placeholder={t('discussions.topicPlaceholder')}
-          autoCapitalize="sentences"
-          editable={!isSubmitting}
-          accessibilityLabel={t('discussions.topicPlaceholder')}
-        />
+          <Input
+            label={t('discussions.topicPlaceholder')}
+            value={title}
+            onChangeText={setTitle}
+            placeholder={t('discussions.topicPlaceholder')}
+            autoCapitalize="sentences"
+            editable={!isSubmitting}
+            accessibilityLabel={t('discussions.topicPlaceholder')}
+          />
 
-        <Input
-          label={t('discussions.bodyPlaceholder')}
-          value={body}
-          onChangeText={setBody}
-          placeholder={t('discussions.bodyPlaceholder')}
-          multiline
-          numberOfLines={4}
-          inputStyle={{ minHeight: 100, textAlignVertical: 'top' }}
-          editable={!isSubmitting}
-          accessibilityLabel={t('discussions.bodyPlaceholder')}
-        />
+          <Input
+            label={t('discussions.bodyPlaceholder')}
+            value={body}
+            onChangeText={setBody}
+            placeholder={t('discussions.bodyPlaceholder')}
+            multiline
+            numberOfLines={4}
+            inputStyle={{ minHeight: 100, textAlignVertical: 'top' }}
+            editable={!isSubmitting}
+            accessibilityLabel={t('discussions.bodyPlaceholder')}
+          />
 
-        {errorMessage || (mutationError && 'message' in mutationError) ? (
-          <View style={styles.errorBanner}>
-            <Text style={styles.errorText}>
-              {errorMessage ??
-                (mutationError && 'message' in mutationError
-                  ? getUserFacingError(mutationError)
-                  : '')}
-            </Text>
+          {errorMessage || (mutationError && 'message' in mutationError) ? (
+            <View style={styles.errorBanner}>
+              <Text style={styles.errorText}>
+                {errorMessage ??
+                  (mutationError && 'message' in mutationError
+                    ? getUserFacingError(mutationError)
+                    : '')}
+              </Text>
+            </View>
+          ) : null}
+
+          <View style={styles.actions}>
+            <Button
+              title={isSubmitting ? t('common.loading') : t('common.save')}
+              onPress={handleSave}
+              disabled={!title.trim() || isSubmitting}
+              fullWidth
+              accessibilityLabel={t('common.save')}
+              accessibilityHint={t('discussions.editDiscussionHint')}
+            />
+            <Button
+              title={t('common.cancel')}
+              variant="secondary"
+              onPress={() => router.back()}
+              disabled={isSubmitting}
+              fullWidth
+              accessibilityLabel={t('common.cancel')}
+            />
           </View>
-        ) : null}
 
-        <View style={styles.actions}>
-          <Button
-            title={isSubmitting ? t('common.loading') : t('common.save')}
-            onPress={handleSave}
-            disabled={!title.trim() || isSubmitting}
-            fullWidth
-            accessibilityLabel={t('common.save')}
-            accessibilityHint={t('discussions.editDiscussionHint')}
-          />
-          <Button
-            title={t('common.cancel')}
-            variant="secondary"
-            onPress={() => router.back()}
-            disabled={isSubmitting}
-            fullWidth
-            accessibilityLabel={t('common.cancel')}
-          />
-        </View>
-
-        <View style={styles.deleteSection}>
-          <Pressable
-            onPress={handleDelete}
-            disabled={isSubmitting}
-            style={({ pressed }) => [
-              styles.deleteButton,
-              pressed && styles.deleteButtonPressed,
-              isSubmitting && styles.deleteButtonDisabled,
-            ]}
-            accessibilityLabel={t('discussions.deleteDiscussion')}
-            accessibilityHint={t('discussions.deleteDiscussionConfirm')}
-            accessibilityRole="button"
-          >
-            <Ionicons name="trash-outline" size={20} color={colors.error} />
-            <Text style={styles.deleteButtonText}>{t('discussions.deleteDiscussion')}</Text>
-          </Pressable>
-        </View>
+          <View style={styles.deleteSection}>
+            <Pressable
+              onPress={handleDelete}
+              disabled={isSubmitting}
+              style={({ pressed }) => [
+                styles.deleteButton,
+                pressed && styles.deleteButtonPressed,
+                isSubmitting && styles.deleteButtonDisabled,
+              ]}
+              accessibilityLabel={t('discussions.deleteDiscussion')}
+              accessibilityHint={t('discussions.deleteDiscussionConfirm')}
+              accessibilityRole="button"
+            >
+              <Ionicons name="trash-outline" size={20} color={colors.error} />
+              <Text style={styles.deleteButtonText}>{t('discussions.deleteDiscussion')}</Text>
+            </Pressable>
+          </View>
         </DesktopContentContainer>
       </ScrollView>
     </KeyboardAvoidingView>

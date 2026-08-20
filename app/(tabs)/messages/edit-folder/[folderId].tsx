@@ -2,7 +2,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -22,6 +21,7 @@ import {
 import type { Chat } from '@/lib/api';
 import { getUserFacingError } from '@/lib/errors';
 import { t } from '@/lib/i18n';
+import { notify } from '@/lib/dialogs';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 function FolderChatRow({
@@ -110,14 +110,18 @@ export default function EditFolderScreen() {
     const n = name.trim();
     if (!n || !folderId || !userId) return;
     if (!folder) {
-      Alert.alert(t('common.error'), t('messages.folderNotFound'));
+      void notify({
+        title: t('common.error'),
+        message: t('messages.folderNotFound'),
+      });
       return;
     }
     updateFolderMutation.mutate(
       { folderId, userId, name: n },
       {
         onSuccess: () => router.back(),
-        onError: (err) => Alert.alert(t('common.error'), getUserFacingError(err)),
+        onError: (err) =>
+          void notify({ title: t('common.error'), message: getUserFacingError(err) }),
       }
     );
   }, [folderId, userId, name, folder, updateFolderMutation, router]);
@@ -135,7 +139,8 @@ export default function EditFolderScreen() {
         { folderId, chatId, userId },
         {
           onSettled: () => setRemovingChatId(null),
-          onError: (err) => Alert.alert(t('common.error'), getUserFacingError(err)),
+          onError: (err) =>
+            void notify({ title: t('common.error'), message: getUserFacingError(err) }),
         }
       );
     },

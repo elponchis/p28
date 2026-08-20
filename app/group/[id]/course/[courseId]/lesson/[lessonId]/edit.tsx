@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -23,6 +22,7 @@ import {
 import { getUserFacingError } from '@/lib/api';
 import { t } from '@/lib/i18n';
 import { parseVideoEmbedUrl } from '@/lib/videoEmbed';
+import { confirm } from '@/lib/dialogs';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 export default function EditLessonScreen() {
@@ -97,25 +97,24 @@ export default function EditLessonScreen() {
     );
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!lessonId || !courseId) return;
-    Alert.alert(t('lessons.deleteLesson'), t('lessons.deleteLessonConfirm'), [
-      { text: t('common.cancel'), style: 'cancel' },
+    const confirmed = await confirm({
+      title: t('lessons.deleteLesson'),
+      message: t('lessons.deleteLessonConfirm'),
+      confirmLabel: t('lessons.deleteLesson'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+    });
+    if (!confirmed) return;
+    setError(null);
+    deleteMutation.mutate(
+      { lessonId, courseId },
       {
-        text: t('lessons.deleteLesson'),
-        style: 'destructive',
-        onPress: () => {
-          setError(null);
-          deleteMutation.mutate(
-            { lessonId, courseId },
-            {
-              onSuccess: () => router.replace(`/group/${groupId}/course/${courseId}`),
-              onError: (err) => setError(getUserFacingError(err)),
-            }
-          );
-        },
-      },
-    ]);
+        onSuccess: () => router.replace(`/group/${groupId}/course/${courseId}`),
+        onError: (err) => setError(getUserFacingError(err)),
+      }
+    );
   };
 
   if (!groupId || !courseId || !lessonId) {

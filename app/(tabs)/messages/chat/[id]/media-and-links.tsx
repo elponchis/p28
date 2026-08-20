@@ -3,7 +3,6 @@ import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Dimensions,
   Modal,
   Pressable,
@@ -24,6 +23,7 @@ import { getUserFacingError } from '@/lib/api';
 import type { ChatSharedContentMessage, MessageAttachment } from '@/lib/api';
 import { extractUrlsFromText } from '@/lib/extractUrlsFromText';
 import { t } from '@/lib/i18n';
+import { notify } from '@/lib/dialogs';
 import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
 type MediaGridItem = {
@@ -159,7 +159,10 @@ export default function ChatMediaAndLinksScreen() {
     try {
       const { status } = await MediaLibrary.requestPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert(t('common.error'), t('discussions.downloadPermissionDenied'));
+        void notify({
+          title: t('common.error'),
+          message: t('discussions.downloadPermissionDenied'),
+        });
         return;
       }
       const ext = previewImageUrl.match(/\.(jpe?g|png|gif|webp)/i)?.[1] ?? 'jpg';
@@ -168,13 +171,19 @@ export default function ChatMediaAndLinksScreen() {
       await FileSystem.downloadAsync(previewImageUrl, localUri);
       await MediaLibrary.createAssetAsync(localUri);
       setPreviewImageUrl(null);
-      Alert.alert(t('discussions.downloadSuccess'), t('discussions.downloadSuccessMessage'));
+      void notify({
+        title: t('discussions.downloadSuccess'),
+        message: t('discussions.downloadSuccessMessage'),
+      });
     } catch (err) {
       const msg =
         err && typeof err === 'object' && typeof (err as Error).message === 'string'
           ? (err as Error).message
           : t('discussions.downloadError');
-      Alert.alert(t('common.error'), msg);
+      void notify({
+        title: t('common.error'),
+        message: msg,
+      });
     } finally {
       setIsDownloadingImage(false);
     }

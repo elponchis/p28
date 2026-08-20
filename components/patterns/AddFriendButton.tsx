@@ -14,6 +14,7 @@ import {
 } from '@/hooks/useApiQueries';
 import { t } from '@/lib/i18n';
 import { getUserFacingError } from '@/lib/api';
+import { notify } from '@/lib/dialogs';
 import { colors, radius, typography, spacing } from '@/theme/tokens';
 
 export interface AddFriendButtonProps {
@@ -60,7 +61,10 @@ export function AddFriendButton({
           const msg = getUserFacingError(err);
           onError?.(msg);
           if (!onError) {
-            Alert.alert(t('common.error'), msg);
+            void notify({
+              title: t('common.error'),
+              message: msg,
+            });
           }
         },
       }

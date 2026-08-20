@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import {
   RecordingPresets,
@@ -10,6 +10,7 @@ import {
 } from 'expo-audio';
 
 import { t } from '@/lib/i18n';
+import { notify } from '@/lib/dialogs';
 import { colors, radius, spacing, typography, fontFamily } from '@/theme/tokens';
 
 const MAX_RECORDING_SEC = 5 * 60;
@@ -63,7 +64,10 @@ export function VoiceRecorderModal({
         onRecorded(uri, durationSec, mimeType);
       }
     } catch {
-      Alert.alert(t('common.error'), t('common.error'));
+      void notify({
+        title: t('common.error'),
+        message: t('common.error'),
+      });
     } finally {
       onRequestClose();
     }
@@ -84,7 +88,10 @@ export function VoiceRecorderModal({
         const perm = await requestRecordingPermissionsAsync();
         if (!perm.granted) {
           if (!cancelled) {
-            Alert.alert(t('common.error'), t('attachments.micPermissionRequired'));
+            void notify({
+              title: t('common.error'),
+              message: t('attachments.micPermissionRequired'),
+            });
             onRequestClose();
           }
           return;
@@ -96,7 +103,10 @@ export function VoiceRecorderModal({
         recorder.record();
       } catch {
         if (!cancelled) {
-          Alert.alert(t('common.error'), t('common.error'));
+          void notify({
+            title: t('common.error'),
+            message: t('common.error'),
+          });
           onRequestClose();
         }
       } finally {

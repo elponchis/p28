@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -23,6 +22,7 @@ import {
 } from '@/hooks/useApiQueries';
 import { getUserFacingError } from '@/lib/api';
 import { t } from '@/lib/i18n';
+import { confirm } from '@/lib/dialogs';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 export default function EditAssignmentScreen() {
@@ -84,25 +84,24 @@ export default function EditAssignmentScreen() {
     );
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!assignmentId || !groupId) return;
-    Alert.alert(t('assignments.deleteAssignment'), t('assignments.deleteAssignmentConfirm'), [
-      { text: t('common.cancel'), style: 'cancel' },
+    const confirmed = await confirm({
+      title: t('assignments.deleteAssignment'),
+      message: t('assignments.deleteAssignmentConfirm'),
+      confirmLabel: t('assignments.deleteAssignment'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+    });
+    if (!confirmed) return;
+    setError(null);
+    deleteMutation.mutate(
+      { assignmentId, groupId },
       {
-        text: t('assignments.deleteAssignment'),
-        style: 'destructive',
-        onPress: () => {
-          setError(null);
-          deleteMutation.mutate(
-            { assignmentId, groupId },
-            {
-              onSuccess: () => router.replace(`/group/${groupId}`),
-              onError: (err) => setError(getUserFacingError(err)),
-            }
-          );
-        },
-      },
-    ]);
+        onSuccess: () => router.replace(`/group/${groupId}`),
+        onError: (err) => setError(getUserFacingError(err)),
+      }
+    );
   };
 
   if (!groupId || !assignmentId) {

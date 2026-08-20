@@ -2,7 +2,6 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Pressable,
   ScrollView,
@@ -29,6 +28,7 @@ import {
 import { api, getUserFacingError, type ApiError, type Chat, type ChatFolder } from '@/lib/api';
 import { formatRelativeTime } from '@/lib/dates';
 import { t } from '@/lib/i18n';
+import { confirm, notify } from '@/lib/dialogs';
 import {
   colors,
   fontFamily,
@@ -215,14 +215,20 @@ export default function MessagesIndexScreen() {
               onSuccess: (chat) => router.push(`/messages/chat/${chat.id}`),
               onError: (err) => {
                 const msg = getUserFacingError(err);
-                Alert.alert(t('common.error'), msg);
+                void notify({
+                  title: t('common.error'),
+                  message: msg,
+                });
               },
             }
           );
         }
       } catch (err) {
         const msg = getUserFacingError(err as ApiError);
-        Alert.alert(t('common.error'), msg);
+        void notify({
+          title: t('common.error'),
+          message: msg,
+        });
       }
     },
     [userId, router, createChatMutation]
@@ -433,31 +439,32 @@ export default function MessagesIndexScreen() {
                   label: t('messages.deleteFolder'),
                   destructive: true,
                   accessibilityHint: t('messages.deleteFolderHint'),
-                  onPress: () => {
+                  onPress: async () => {
                     const fid = folderOptionsFolder.id;
                     setFolderOptionsFolder(null);
-                    Alert.alert(t('messages.deleteFolder'), t('messages.deleteFolderConfirm'), [
-                      { text: t('common.cancel'), style: 'cancel' },
+                    const confirmed = await confirm({
+                      title: t('messages.deleteFolder'),
+                      message: t('messages.deleteFolderConfirm'),
+                      confirmLabel: t('common.delete'),
+                      cancelLabel: t('common.cancel'),
+                      destructive: true,
+                    });
+                    if (!confirmed || !userId) return;
+                    deleteFolderMutation.mutate(
+                      { folderId: fid, userId },
                       {
-                        text: t('common.delete'),
-                        style: 'destructive',
-                        onPress: () => {
-                          if (!userId) return;
-                          deleteFolderMutation.mutate(
-                            { folderId: fid, userId },
-                            {
-                              onSuccess: () => {
-                                if (selectedFolderId === fid) {
-                                  setSelectedFolderId(undefined);
-                                }
-                              },
-                              onError: (err) =>
-                                Alert.alert(t('common.error'), getUserFacingError(err)),
-                            }
-                          );
+                        onSuccess: () => {
+                          if (selectedFolderId === fid) {
+                            setSelectedFolderId(undefined);
+                          }
                         },
-                      },
-                    ]);
+                        onError: (err) =>
+                          void notify({
+                            title: t('common.error'),
+                            message: getUserFacingError(err),
+                          }),
+                      }
+                    );
                   },
                 },
               ]
