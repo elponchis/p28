@@ -48,6 +48,7 @@ import {
   useJoinGroupMutation,
   useReactToPostMutation,
   useRemovePostReactionMutation,
+  useDeleteDiscussionPostMutation,
   useUpdateDiscussionPostMutation,
   useUploadDiscussionPostAttachmentMutation,
   useUploadDiscussionPostImageMutation,
@@ -82,7 +83,8 @@ import {
   messageLocalMinuteKey,
 } from '@/lib/dates';
 import { t } from '@/lib/i18n';
-import { notify } from '@/lib/dialogs';
+import { confirm, notify } from '@/lib/dialogs';
+import { downloadFileInBrowser } from '@/lib/downloadFile';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 function OriginalPostRow({
@@ -273,6 +275,8 @@ function ReplyRow({
               <MessageAttachmentsBlock
                 post={post}
                 isOwnMessage={isOwnPost}
+                // Discussion replies sit on a light card whoever wrote them.
+                onDarkSurface={false}
                 onImagePress={onImagePress}
                 onVideoPress={onVideoPress}
                 onFilePress={onFilePress}
@@ -435,6 +439,7 @@ export default function DiscussionDetailScreen() {
 
   const createPostMutation = useCreateDiscussionPostMutation();
   const updatePostMutation = useUpdateDiscussionPostMutation();
+  const deletePostMutation = useDeleteDiscussionPostMutation();
   const uploadImageMutation = useUploadDiscussionPostImageMutation();
   const uploadDiscussionAttachmentMutation = useUploadDiscussionPostAttachmentMutation();
   const joinMutation = useJoinGroupMutation();
@@ -798,6 +803,13 @@ export default function DiscussionDetailScreen() {
     if (!previewImageUrl || isDownloading) return;
     setIsDownloading(true);
     try {
+      const ext = previewImageUrl.match(/\.(jpe?g|png|gif|webp)/i)?.[1] ?? 'jpg';
+      const filename = `discussion-image-${Date.now()}.${ext}`;
+      if (Platform.OS === 'web') {
+        // expo-file-system / expo-media-library are native-only.
+        await downloadFileInBrowser(previewImageUrl, filename);
+        return;
+      }
       const { status } = await MediaLibrary.requestPermissionsAsync();
       if (status !== 'granted') {
         void notify({
@@ -806,8 +818,6 @@ export default function DiscussionDetailScreen() {
         });
         return;
       }
-      const ext = previewImageUrl.match(/\.(jpe?g|png|gif|webp)/i)?.[1] ?? 'jpg';
-      const filename = `discussion-image-${Date.now()}.${ext}`;
       const localUri = `${FileSystem.cacheDirectory}${filename}`;
       await FileSystem.downloadAsync(previewImageUrl, localUri);
       await MediaLibrary.createAssetAsync(localUri);
@@ -889,6 +899,30 @@ export default function DiscussionDetailScreen() {
     setPendingAttachments(storedMessageToPendingAttachments(post));
   }, []);
 
+  const handleDeletePost = useCallback(
+    async (post: DiscussionPost) => {
+      if (!userId) return;
+      const confirmed = await confirm({
+        title: t('discussions.deleteMessageConfirmTitle'),
+        message: t('discussions.deleteMessageConfirmBody'),
+        confirmLabel: t('discussions.sheetDelete'),
+        cancelLabel: t('common.cancel'),
+        destructive: true,
+      });
+      if (!confirmed) return;
+      deletePostMutation.mutate(
+        { postId: post.id, userId },
+        {
+          onError: (e) => {
+            console.error('[discussion] delete post failed', e);
+            void notify({ title: t('common.error'), message: getUserFacingError(e) });
+          },
+        }
+      );
+    },
+    [userId, deletePostMutation]
+  );
+
   const reactionSheetPrimaryActions = useMemo((): ReactionSheetPrimaryAction[] => {
     const post = reactionPost;
     if (!post || !userId || !canEngageInThread) return [];
@@ -910,6 +944,18 @@ export default function DiscussionDetailScreen() {
     ];
     if (post.userId === userId) {
       actions.push({
+        key: 'delete',
+        label: t('discussions.sheetDelete'),
+        icon: 'trash-outline',
+        destructive: true,
+        accessibilityLabel: t('discussions.sheetDelete'),
+        accessibilityHint: t('discussions.sheetDeleteHint'),
+        onPress: () => {
+          setReactionPost(null);
+          void handleDeletePost(post);
+        },
+      });
+      actions.push({
         key: 'edit',
         label: t('discussions.sheetEdit'),
         icon: 'pencil-outline',
@@ -922,7 +968,7 @@ export default function DiscussionDetailScreen() {
       });
     }
     return actions;
-  }, [reactionPost, userId, canEngageInThread, handleStartEditReply]);
+  }, [reactionPost, userId, canEngageInThread, handleStartEditReply, handleDeletePost]);
 
   const handleCancelEdit = useCallback(() => {
     setEditingPost(null);

@@ -338,9 +338,11 @@ export interface DataContract {
   // Reddit-style discussions (topics + replies)
   // groupId alone -> general group feed (excludes event/course/lesson-linked threads).
   // courseId alone -> that course's discussion board. courseId + lessonId -> that lesson's Q&A.
-  getDiscussions(
-    params?: { groupId?: string; courseId?: string; lessonId?: string }
-  ): Promise<Discussion[] | ApiError>;
+  getDiscussions(params?: {
+    groupId?: string;
+    courseId?: string;
+    lessonId?: string;
+  }): Promise<Discussion[] | ApiError>;
   getDiscussion(id: string): Promise<Discussion | ApiError>;
   createDiscussion(
     groupId: string,
@@ -363,6 +365,11 @@ export interface DataContract {
     userId: string,
     input: UpdateDiscussionPostInput
   ): Promise<DiscussionPost | ApiError>;
+  /** Delete a discussion post. Authors only; RLS rejects anyone else. */
+  deleteDiscussionPost(
+    postId: string,
+    userId: string
+  ): Promise<{ discussionId: string } | ApiError>;
   /** Add or replace reaction on a discussion post. One reaction per user per post. */
   reactToDiscussionPost(
     postId: string,

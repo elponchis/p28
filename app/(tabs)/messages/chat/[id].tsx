@@ -72,6 +72,7 @@ import type { ChatMessage, CreateChatMessageInput, PostReactionType } from '@/li
 import { formatDateHeader, isSameDay, messageLocalMinuteKey } from '@/lib/dates';
 import { t } from '@/lib/i18n';
 import { confirm, notify } from '@/lib/dialogs';
+import { downloadFileInBrowser } from '@/lib/downloadFile';
 
 import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
@@ -671,6 +672,13 @@ export default function ChatDetailScreen() {
     if (!previewImageUrl || isDownloading) return;
     setIsDownloading(true);
     try {
+      const ext = previewImageUrl.match(/\.(jpe?g|png|gif|webp)/i)?.[1] ?? 'jpg';
+      const filename = `chat-image-${Date.now()}.${ext}`;
+      if (Platform.OS === 'web') {
+        // expo-file-system / expo-media-library are native-only.
+        await downloadFileInBrowser(previewImageUrl, filename);
+        return;
+      }
       const { status } = await MediaLibrary.requestPermissionsAsync();
       if (status !== 'granted') {
         void notify({
@@ -679,8 +687,6 @@ export default function ChatDetailScreen() {
         });
         return;
       }
-      const ext = previewImageUrl.match(/\.(jpe?g|png|gif|webp)/i)?.[1] ?? 'jpg';
-      const filename = `chat-image-${Date.now()}.${ext}`;
       const localUri = `${FileSystem.cacheDirectory}${filename}`;
       await FileSystem.downloadAsync(previewImageUrl, localUri);
       await MediaLibrary.createAssetAsync(localUri);

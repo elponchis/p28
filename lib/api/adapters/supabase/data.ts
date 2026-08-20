@@ -3520,6 +3520,35 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
       }
     },
 
+    async deleteDiscussionPost(
+      postId: string,
+      userId: string
+    ): Promise<{ discussionId: string } | ApiError> {
+      try {
+        // Read the parent first: the caller needs it to invalidate the thread,
+        // and it doubles as the ownership check before the delete round-trip.
+        const { data: postMeta, error: metaErr } = await getClient()
+          .from('discussion_posts')
+          .select('discussion_id')
+          .eq('id', postId)
+          .eq('user_id', userId)
+          .maybeSingle();
+        if (metaErr) return toApiError(metaErr);
+        if (!postMeta) {
+          return { message: 'Post not found or not authorized to delete', code: 'NOT_FOUND' };
+        }
+        const { error } = await getClient()
+          .from('discussion_posts')
+          .delete()
+          .eq('id', postId)
+          .eq('user_id', userId);
+        if (error) return toApiError(error);
+        return { discussionId: postMeta.discussion_id as string };
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
     async updateDiscussionPost(
       postId: string,
       userId: string,

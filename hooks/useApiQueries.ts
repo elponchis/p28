@@ -825,7 +825,10 @@ export function useDeleteGroupRecurringMeetingMutation() {
 
 // LMS: courses + lessons
 
-export function useCoursesByGroupQuery(groupId: string | undefined, options?: { enabled?: boolean }) {
+export function useCoursesByGroupQuery(
+  groupId: string | undefined,
+  options?: { enabled?: boolean }
+) {
   const enabled = options?.enabled ?? true;
   return useQuery({
     queryKey: queryKeys.coursesByGroup(groupId ?? ''),
@@ -1350,9 +1353,12 @@ export function useCreateGroupDiscussionMutation() {
 
 // --- Reddit-style discussions ---
 
-export function useDiscussionsQuery(
-  params?: { groupId?: string; courseId?: string; lessonId?: string; enabled?: boolean }
-) {
+export function useDiscussionsQuery(params?: {
+  groupId?: string;
+  courseId?: string;
+  lessonId?: string;
+  enabled?: boolean;
+}) {
   const { groupId, courseId, lessonId, enabled = true } = params ?? {};
   return useQuery({
     queryKey: queryKeys.discussions({ groupId, courseId, lessonId }),
@@ -1541,6 +1547,19 @@ export function useUpdateDiscussionPostMutation() {
       qc.invalidateQueries({
         predicate: (q) =>
           q.queryKey[0] === 'discussionPosts' && q.queryKey[1] === updatedPost.discussionId,
+      });
+    },
+  });
+}
+
+export function useDeleteDiscussionPostMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ postId, userId }: { postId: string; userId: string }) =>
+      queryFn(api.data.deleteDiscussionPost(postId, userId)) as Promise<{ discussionId: string }>,
+    onSuccess: ({ discussionId }) => {
+      qc.invalidateQueries({
+        predicate: (q) => q.queryKey[0] === 'discussionPosts' && q.queryKey[1] === discussionId,
       });
     },
   });
