@@ -2,7 +2,6 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -19,6 +18,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfileQuery } from '@/hooks/useApiQueries';
 import { getUserFacingError } from '@/lib/api';
+import { confirm } from '@/lib/confirm';
 import { preferredLanguageDisplayLabel, t } from '@/lib/i18n';
 import { Avatar, Badge } from '@/components/primitives';
 import { TAB_BAR_HEIGHT } from '@/components/navigation/FloatingTabBar';
@@ -64,11 +64,20 @@ export default function ProfileScreen() {
   const isLegacyProfile = !!profile && (!profile.firstName || !profile.lastName);
   const [expanded, setExpanded] = useState(false);
 
-  const handleSignOutPress = useCallback(() => {
-    Alert.alert(t('auth.signOut'), t('auth.signOutConfirm'), [
-      { text: t('auth.cancel'), style: 'cancel' },
-      { text: t('auth.signOut'), style: 'destructive', onPress: signOut },
-    ]);
+  const handleSignOutPress = useCallback(async () => {
+    const confirmed = await confirm({
+      title: t('auth.signOut'),
+      message: t('auth.signOutConfirm'),
+      confirmLabel: t('auth.signOut'),
+      cancelLabel: t('auth.cancel'),
+      destructive: true,
+    });
+    if (!confirmed) return;
+    try {
+      await signOut();
+    } catch (e) {
+      console.error('[profile] sign out failed', e);
+    }
   }, [signOut]);
 
   if (loading && !profile) {
@@ -250,6 +259,7 @@ export default function ProfileScreen() {
             style={styles.menuItem}
             onPress={() => router.push('/profile/conduct')}
             accessibilityLabel={t('conduct.title')}
+            accessibilityHint={t('conduct.openHint')}
           >
             <Ionicons name="shield-checkmark-outline" size={20} color={colors.onSurfaceVariant} />
             <Text style={styles.menuItemText}>{t('conduct.title')}</Text>
