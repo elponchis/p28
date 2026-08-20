@@ -31,6 +31,7 @@ import {
 } from '@/components/messages';
 import { ComposeBar, type PendingComposeAttachment } from '@/components/patterns/ComposeBar';
 import { FadeActionSheet, FADE_SHEET_PICKER_DEFER_MS } from '@/components/patterns/FadeActionSheet';
+import { MessageVideoEmbed } from '@/components/patterns/MessageVideoEmbed';
 import {
   ReactionSheet,
   type ReactionSheetPrimaryAction,
@@ -119,6 +120,7 @@ function OriginalPostRow({
       <View style={styles.originalPostContent}>
         <Text style={styles.topicTitle}>{discussion.title}</Text>
         {discussion.body ? <Text style={styles.postBody}>{discussion.body}</Text> : null}
+        <MessageVideoEmbed body={discussion.body} accessibilityLabel={discussion.title} />
         <View style={styles.postHeader}>
           <Pressable onPress={onAuthorPress} accessibilityRole="link">
             <Text style={styles.authorName}>
@@ -292,6 +294,7 @@ function ReplyRow({
                 </View>
               ) : null}
               {post.body ? <Text style={styles.replyBody}>{post.body}</Text> : null}
+              <MessageVideoEmbed body={post.body} />
               <MessageAttachmentsBlock
                 post={post}
                 isOwnMessage={isOwnPost}

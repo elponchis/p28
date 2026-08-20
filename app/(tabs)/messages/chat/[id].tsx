@@ -52,7 +52,7 @@ import {
   useUploadChatImageMutation,
   useUploadChatMessageAttachmentMutation,
 } from '@/hooks/useApiQueries';
-import { api, getUserFacingError } from '@/lib/api';
+import { api, getUserFacingError, isApiError } from '@/lib/api';
 import { enqueueDocumentPick } from '@/lib/documentPickerLock';
 import {
   DOCUMENT_PICKER_MIME_WHITELIST,
@@ -73,6 +73,11 @@ import { formatDateHeader, isSameDay, messageLocalMinuteKey } from '@/lib/dates'
 import { t } from '@/lib/i18n';
 import { confirm, notify } from '@/lib/dialogs';
 import { downloadFileInBrowser } from '@/lib/downloadFile';
+import {
+  CLOUDINARY_MAX_VIDEO_BYTES,
+  isCloudinaryConfigured,
+  uploadVideoToCloudinary,
+} from '@/lib/cloudinaryVideo';
 
 import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
@@ -434,6 +439,7 @@ export default function ChatDetailScreen() {
     if (result.canceled || !result.assets.length) return;
     const slotsLeft = MAX_ATTACHMENTS - pendingAttachments.length;
     const toUpload = result.assets.slice(0, Math.max(0, slotsLeft));
+    let uploadError: string | null = null;
     for (const asset of toUpload) {
       if (!asset.uri) continue;
       const attId = newComposeAttachmentId();
@@ -455,9 +461,19 @@ export default function ChatDetailScreen() {
         setPendingAttachments((prev) =>
           prev.map((p) => (p.id === attId ? { ...p, uploadedUrl: url, uploading: false } : p))
         );
-      } catch {
+      } catch (e) {
+        console.error('[chat] image upload failed', e);
+        uploadError = isApiError(e)
+          ? getUserFacingError(e)
+          : e instanceof Error
+            ? e.message
+            : getUserFacingError(null);
         setPendingAttachments((prev) => prev.filter((p) => p.id !== attId));
       }
+    }
+    // One message for the batch, so picking five photos cannot stack five dialogs.
+    if (uploadError) {
+      void notify({ title: t('common.error'), message: uploadError });
     }
   }, [userId, pendingAttachments.length, uploadImageMutation]);
 
@@ -479,6 +495,20 @@ export default function ChatDetailScreen() {
     });
     if (result.canceled || !result.assets[0]?.uri) return;
     const asset = result.assets[0];
+    // Cloudinary rejects oversized video outright, so catch it before the wait.
+    if (
+      isCloudinaryConfigured() &&
+      asset.fileSize != null &&
+      asset.fileSize > CLOUDINARY_MAX_VIDEO_BYTES
+    ) {
+      void notify({
+        title: t('common.error'),
+        message: t('attachments.videoTooLarge', {
+          mb: Math.floor(CLOUDINARY_MAX_VIDEO_BYTES / (1024 * 1024)),
+        }),
+      });
+      return;
+    }
     const attachmentId = newComposeAttachmentId();
     const posterUri = await tryGetVideoPosterUri(asset.uri);
     const fileName = asset.fileName ?? `video-${Date.now()}.mp4`;
@@ -495,6 +525,29 @@ export default function ChatDetailScreen() {
       },
     ]);
     try {
+      if (isCloudinaryConfigured()) {
+        // Phone cameras produce HEVC, which no browser decodes — it plays as a
+        // black rectangle and yields no poster. Cloudinary re-encodes on ingest.
+        const file = (asset as { file?: File }).file;
+        const transcoded = await uploadVideoToCloudinary(
+          file ?? { uri: asset.uri, name: fileName, type: mime },
+          { folder: userId }
+        );
+        setPendingAttachments((prev) =>
+          prev.map((p) =>
+            p.id === attachmentId
+              ? {
+                  ...p,
+                  displayUri: transcoded.posterUrl,
+                  uploadedUrl: transcoded.url,
+                  uploadedThumbnailUrl: transcoded.posterUrl,
+                  uploading: false,
+                }
+              : p
+          )
+        );
+        return;
+      }
       const videoUrl = await uploadChatAttachmentMutation.mutateAsync({
         userId,
         localUri: asset.uri,
@@ -524,7 +577,16 @@ export default function ChatDetailScreen() {
             : p
         )
       );
-    } catch {
+    } catch (e) {
+      console.error('[chat] attachment upload failed', e);
+      void notify({
+        title: t('common.error'),
+        message: isApiError(e)
+          ? getUserFacingError(e)
+          : e instanceof Error
+            ? e.message
+            : getUserFacingError(null),
+      });
       setPendingAttachments((prev) => prev.filter((p) => p.id !== attachmentId));
     }
   }, [userId, pendingAttachments.length, uploadChatAttachmentMutation]);
@@ -589,7 +651,16 @@ export default function ChatDetailScreen() {
       setPendingAttachments((prev) =>
         prev.map((p) => (p.id === attachmentId ? { ...p, uploadedUrl: url, uploading: false } : p))
       );
-    } catch {
+    } catch (e) {
+      console.error('[chat] attachment upload failed', e);
+      void notify({
+        title: t('common.error'),
+        message: isApiError(e)
+          ? getUserFacingError(e)
+          : e instanceof Error
+            ? e.message
+            : getUserFacingError(null),
+      });
       setPendingAttachments((prev) => prev.filter((p) => p.id !== attachmentId));
     }
   }, [userId, pendingAttachments.length, uploadChatAttachmentMutation]);
@@ -627,7 +698,16 @@ export default function ChatDetailScreen() {
             p.id === attachmentId ? { ...p, uploadedUrl: url, uploading: false } : p
           )
         );
-      } catch {
+      } catch (e) {
+        console.error('[chat] attachment retry failed', e);
+        void notify({
+          title: t('common.error'),
+          message: isApiError(e)
+            ? getUserFacingError(e)
+            : e instanceof Error
+              ? e.message
+              : getUserFacingError(null),
+        });
         setPendingAttachments((prev) => prev.filter((p) => p.id !== attachmentId));
       }
     },

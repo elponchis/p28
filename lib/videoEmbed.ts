@@ -1,3 +1,5 @@
+import { extractUrlsFromText } from '@/lib/extractUrlsFromText';
+
 export type VideoEmbedProvider = 'youtube' | 'vimeo';
 
 export interface VideoEmbed {
@@ -53,5 +55,18 @@ export function parseVideoEmbedUrl(rawUrl: string): VideoEmbed | null {
     return { provider: 'vimeo', embedUrl: `https://player.vimeo.com/video/${id}` };
   }
 
+  return null;
+}
+
+/**
+ * First YouTube/Vimeo link in a block of text, or null.
+ *
+ * Message bodies are plain text, so a pasted video link is otherwise inert —
+ * this is what lets a post render a player for it.
+ */
+export function firstEmbeddableVideoUrl(text: string | null | undefined): string | null {
+  for (const url of extractUrlsFromText(text)) {
+    if (parseVideoEmbedUrl(url)) return url;
+  }
   return null;
 }

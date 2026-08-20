@@ -2,6 +2,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { Avatar } from '@/components/primitives';
+import { MessageVideoEmbed } from '@/components/patterns/MessageVideoEmbed';
 import type { MessageAttachment } from '@/lib/api';
 import { formatMessageSentClockTime } from '@/lib/dates';
 import { t } from '@/lib/i18n';
@@ -169,9 +170,7 @@ export function MessageRow({
                     accessibilityRole="button"
                   >
                     {isDeleted ? (
-                      <Text
-                        style={[styles.deletedLabel, isOwnMessage && styles.deletedLabelOwn]}
-                      >
+                      <Text style={[styles.deletedLabel, isOwnMessage && styles.deletedLabelOwn]}>
                         {t('discussions.messageDeleted')}
                       </Text>
                     ) : (
@@ -206,6 +205,8 @@ export function MessageRow({
                             {post.body}
                           </Text>
                         ) : null}
+
+                        <MessageVideoEmbed body={post.body} />
 
                         {isEdited ? (
                           <Text style={[styles.editedLabel, isOwnMessage && styles.editedLabelOwn]}>
