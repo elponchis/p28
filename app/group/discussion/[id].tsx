@@ -123,7 +123,7 @@ function OriginalPostRow({
           <View style={styles.postHeaderMeta}>
             <Text style={styles.date}>{formatRelativeTime(discussion.createdAt)}</Text>
             {discussion.updatedAt && discussion.updatedAt !== discussion.createdAt ? (
-              <Text style={styles.editedLabel}> [{t('discussions.edited')}]</Text>
+              <Text style={styles.editedLabel}>{t('discussions.edited')}</Text>
             ) : null}
           </View>
         </View>
@@ -244,9 +244,6 @@ function ReplyRow({
                           {post.authorDisplayName ?? t('common.loading')}
                         </Text>
                       </Pressable>
-                      {isEdited ? (
-                        <Text style={styles.replyEditedInline}> [{t('discussions.edited')}]</Text>
-                      ) : null}
                     </View>
                   </View>
                   <View style={styles.replyCardMetaRight}>
@@ -299,6 +296,9 @@ function ReplyRow({
                 onVideoPress={onVideoPress}
                 onFilePress={onFilePress}
               />
+              {isEdited ? (
+                <Text style={styles.replyEditedFooter}>{t('discussions.edited')}</Text>
+              ) : null}
               {showFailedOutbound ? (
                 <Text style={styles.replyFailedLabel}>{t('discussions.sendFailed')}</Text>
               ) : null}
@@ -1321,9 +1321,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   editedLabel: {
-    ...typography.caption,
+    ...typography.micro,
     color: colors.textSecondary,
-    fontStyle: 'italic',
+    marginLeft: spacing.xxs,
   },
   authorName: {
     ...typography.caption,
@@ -1499,10 +1499,10 @@ const styles = StyleSheet.create({
     ...typography.label,
     color: colors.primary,
   },
-  replyEditedInline: {
-    ...typography.caption,
+  replyEditedFooter: {
+    ...typography.micro,
     color: colors.textSecondary,
-    fontStyle: 'italic',
+    marginTop: spacing.xxs,
   },
   replySentClockTime: {
     ...typography.caption,
