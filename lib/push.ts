@@ -148,10 +148,13 @@ function navigateFromNotificationData(
   }
 }
 
-/** Handle cold start: user opened app from a notification. */
+/** Handle cold start: user opened app from a notification. No-ops on web. */
 export async function handleInitialNotificationResponse(
   router: NotificationRouterLike
 ): Promise<void> {
+  // The native module is absent on web, where this throws instead of returning
+  // null. Guard like `registerForPushNotificationsAsync` does.
+  if (Platform.OS === 'web') return;
   const last = await Notifications.getLastNotificationResponseAsync();
   if (!last) return;
   const data = last.notification.request.content.data as Record<string, unknown> | undefined;
@@ -160,11 +163,16 @@ export async function handleInitialNotificationResponse(
 
 /**
  * Subscribe to notification taps while app is running or in background.
- * Returns a subscription with `remove()` for cleanup.
+ * Returns a subscription with `remove()` for cleanup. No-ops on web.
  */
 export function subscribeToNotificationResponses(
   router: NotificationRouterLike
 ): ReturnType<typeof Notifications.addNotificationResponseReceivedListener> {
+  if (Platform.OS === 'web') {
+    return { remove: () => {} } as ReturnType<
+      typeof Notifications.addNotificationResponseReceivedListener
+    >;
+  }
   return Notifications.addNotificationResponseReceivedListener((response) => {
     const data = response.notification.request.content.data as Record<string, unknown> | undefined;
     navigateFromNotificationData(router, data);
