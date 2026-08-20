@@ -1,5 +1,6 @@
 import {
   formatGroupEventCalendarBlock,
+  formatMessageSentDateTime,
   isGroupEventDiscussionReadOnly,
   isGroupEventPast,
   messageLocalMinuteKey,
@@ -60,5 +61,22 @@ describe('isGroupEventPast', () => {
 
   it('returns true when start is in the past', () => {
     expect(isGroupEventPast('2000-01-01T00:00:00.000Z')).toBe(true);
+  });
+});
+
+describe('formatMessageSentDateTime', () => {
+  it('includes the day and the clock time', () => {
+    const thisYear = new Date().getFullYear();
+    const out = formatMessageSentDateTime(new Date(thisYear, 7, 20, 14, 52).toISOString());
+    expect(out).toContain('20');
+    expect(out).toMatch(/52/);
+  });
+
+  it('omits the year for the current year and keeps it for older posts', () => {
+    const thisYear = new Date().getFullYear();
+    const current = formatMessageSentDateTime(new Date(thisYear, 7, 20, 14, 52).toISOString());
+    const older = formatMessageSentDateTime(new Date(thisYear - 3, 7, 20, 14, 52).toISOString());
+    expect(current).not.toContain(String(thisYear));
+    expect(older).toContain(String(thisYear - 3));
   });
 });

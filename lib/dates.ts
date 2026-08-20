@@ -32,6 +32,37 @@ export function formatMessageSentClockTime(isoDate: string): string {
   return messageSentClockFormatter.format(new Date(isoDate));
 }
 
+const messageSentDateTimeFormatter = new Intl.DateTimeFormat(undefined, {
+  month: 'numeric',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+});
+
+const messageSentDateTimeWithYearFormatter = new Intl.DateTimeFormat(undefined, {
+  year: 'numeric',
+  month: 'numeric',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+});
+
+/**
+ * Sent date + clock time, for threads that have no day separators and so cannot
+ * rely on position to say when something was posted.
+ *
+ * The year is only shown when it is not the current one, so this year's replies
+ * stay short and older ones are still unambiguous.
+ */
+export function formatMessageSentDateTime(isoDate: string): string {
+  const d = new Date(isoDate);
+  const formatter =
+    d.getFullYear() === new Date().getFullYear()
+      ? messageSentDateTimeFormatter
+      : messageSentDateTimeWithYearFormatter;
+  return formatter.format(d);
+}
+
 /** Local calendar minute bucket for grouping consecutive message timestamps. */
 export function messageLocalMinuteKey(isoDate: string): string {
   const d = new Date(isoDate);

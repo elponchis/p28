@@ -77,7 +77,7 @@ import type {
   PostReactionType,
 } from '@/lib/api';
 import {
-  formatMessageSentClockTime,
+  formatMessageSentDateTime,
   formatRelativeTime,
   isGroupEventDiscussionReadOnly,
   messageLocalMinuteKey,
@@ -200,7 +200,7 @@ function ReplyRow({
         : t('discussions.messageRowLongPressHintOther')
       : undefined;
 
-  const sentClock = formatMessageSentClockTime(post.createdAt);
+  const sentAt = formatMessageSentDateTime(post.createdAt);
 
   return (
     <View style={[styles.replyRowOuter, extraGapAfterPeerChange && styles.replyRowOuterPeerChange]}>
@@ -345,8 +345,8 @@ function ReplyRow({
               </View>
             ) : null}
             {showSentClockTime ? (
-              <Text style={styles.replySentClockTime} accessibilityLabel={sentClock}>
-                {sentClock}
+              <Text style={styles.replySentClockTime} accessibilityLabel={sentAt}>
+                {sentAt}
               </Text>
             ) : null}
           </View>
