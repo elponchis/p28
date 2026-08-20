@@ -30,9 +30,44 @@ export function isCloudinaryConfigured(): boolean {
   return CLOUD_NAME.length > 0 && UPLOAD_PRESET.length > 0;
 }
 
-/** `f_auto` picks the codec per browser; `q_auto` picks the bitrate. */
+/**
+ * H.264/AAC MP4, which every browser and both native players decode.
+ *
+ * Deliberately pinned rather than `f_auto`: `f_auto` derives a *different* file
+ * per requesting browser, so each new viewer's browser would be the first to ask
+ * for its variant and would get the 423 described on `waitUntilPlayable`. One
+ * pinned variant is derived once, at upload, and then served to everyone.
+ */
 export function cloudinaryPlaybackUrl(publicId: string): string {
-  return `https://res.cloudinary.com/${CLOUD_NAME}/video/upload/f_auto,q_auto/${publicId}.mp4`;
+  return `https://res.cloudinary.com/${CLOUD_NAME}/video/upload/vc_h264,ac_aac,q_auto/${publicId}.mp4`;
+}
+
+/**
+ * Blocks until a derived asset actually exists.
+ *
+ * Cloudinary builds derived videos lazily, on first request, and answers
+ * `423 Locked` with `X-Cld-Error: Processing continued in the background` until
+ * the encode finishes. A `<video>` handed that URL too early just fails to play,
+ * so the upload is not finished until the file is really there. The first
+ * request is also what starts the encode.
+ *
+ * Best effort: returns false on timeout rather than throwing, since the asset
+ * does become playable eventually.
+ */
+export async function waitUntilPlayable(url: string, timeoutMs = 120_000): Promise<boolean> {
+  const startedAt = Date.now();
+  let delayMs = 1_000;
+  for (;;) {
+    try {
+      const res = await fetch(url, { method: 'HEAD' });
+      if (res.status !== 423 && res.ok) return true;
+    } catch {
+      // Network hiccup — treat as not ready and retry until the deadline.
+    }
+    if (Date.now() - startedAt >= timeoutMs) return false;
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+    delayMs = Math.min(delayMs * 1.5, 8_000);
+  }
 }
 
 /** Poster frame one second in — the very first frame is often black. */
@@ -56,6 +91,8 @@ export interface UploadOptions {
 interface CloudinaryUploadResponse {
   public_id?: string;
   duration?: number;
+  /** Present when the upload preset defines eager transformations. */
+  eager?: { secure_url?: string }[];
   error?: { message?: string };
 }
 
@@ -91,8 +128,16 @@ export async function uploadVideoToCloudinary(
   const publicId = parsed.public_id;
   if (!publicId) throw new Error('Cloudinary did not return a public_id');
 
+  // An eager transformation in the preset means the encode already ran during
+  // upload; otherwise trigger it now and wait, so the URL we hand back plays.
+  const eagerUrl = parsed.eager?.[0]?.secure_url;
+  const url = eagerUrl ?? cloudinaryPlaybackUrl(publicId);
+  if (!eagerUrl) {
+    await waitUntilPlayable(url);
+  }
+
   return {
-    url: cloudinaryPlaybackUrl(publicId),
+    url,
     posterUrl: cloudinaryPosterUrl(publicId),
     publicId,
     durationSec: typeof parsed.duration === 'number' ? parsed.duration : undefined,
