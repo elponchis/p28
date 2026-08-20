@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -24,6 +25,7 @@ import type { ChatSharedContentMessage, MessageAttachment } from '@/lib/api';
 import { extractUrlsFromText } from '@/lib/extractUrlsFromText';
 import { t } from '@/lib/i18n';
 import { notify } from '@/lib/dialogs';
+import { downloadFileInBrowser } from '@/lib/downloadFile';
 import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
 type MediaGridItem = {
@@ -157,6 +159,13 @@ export default function ChatMediaAndLinksScreen() {
     if (!previewImageUrl || isDownloadingImage) return;
     setIsDownloadingImage(true);
     try {
+      const ext = previewImageUrl.match(/\.(jpe?g|png|gif|webp)/i)?.[1] ?? 'jpg';
+      const filename = `chat-image-${Date.now()}.${ext}`;
+      if (Platform.OS === 'web') {
+        // expo-file-system / expo-media-library are native-only.
+        await downloadFileInBrowser(previewImageUrl, filename);
+        return;
+      }
       const { status } = await MediaLibrary.requestPermissionsAsync();
       if (status !== 'granted') {
         void notify({
@@ -165,8 +174,6 @@ export default function ChatMediaAndLinksScreen() {
         });
         return;
       }
-      const ext = previewImageUrl.match(/\.(jpe?g|png|gif|webp)/i)?.[1] ?? 'jpg';
-      const filename = `chat-image-${Date.now()}.${ext}`;
       const localUri = `${FileSystem.cacheDirectory}${filename}`;
       await FileSystem.downloadAsync(previewImageUrl, localUri);
       await MediaLibrary.createAssetAsync(localUri);

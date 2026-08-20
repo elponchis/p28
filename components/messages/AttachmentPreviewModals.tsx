@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -14,6 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
+import { downloadFileInBrowser } from '@/lib/downloadFile';
 import { getMediaViewerSize } from '@/lib/mediaViewerBounds';
 import { t } from '@/lib/i18n';
 import { notify } from '@/lib/dialogs';
@@ -65,6 +67,12 @@ function VideoModalInner({
       const ext = suggestedFileName?.includes('.')
         ? suggestedFileName.split('.').pop()
         : (fromUrl ?? 'mp4');
+      const name = suggestedFileName?.trim() || `video-${Date.now()}.${ext ?? 'mp4'}`;
+      if (Platform.OS === 'web') {
+        // expo-file-system / expo-sharing are native-only; hand it to the browser.
+        await downloadFileInBrowser(videoUrl, name);
+        return;
+      }
       const localUri = `${FileSystem.cacheDirectory}video-share-${Date.now()}.${ext ?? 'mp4'}`;
       await FileSystem.downloadAsync(videoUrl, localUri);
       const canShare = await Sharing.isAvailableAsync();
@@ -204,6 +212,11 @@ export function FileAttachmentModal({
     setBusy(true);
     try {
       const safeExt = fileName.includes('.') ? fileName.split('.').pop() : 'bin';
+      if (Platform.OS === 'web') {
+        await downloadFileInBrowser(fileUrl, fileName);
+        onRequestClose();
+        return;
+      }
       const localUri = `${FileSystem.cacheDirectory}share-${Date.now()}.${safeExt ?? 'bin'}`;
       await FileSystem.downloadAsync(fileUrl, localUri);
       const canShare = await Sharing.isAvailableAsync();

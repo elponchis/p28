@@ -18,6 +18,13 @@ export function messageLikeToAttachments(post: MessageLike): MessageAttachment[]
 export interface MessageAttachmentsBlockProps {
   post: MessageLike;
   isOwnMessage: boolean;
+  /**
+   * Whether the surrounding bubble is dark, which decides the file card's contrast.
+   * Defaults to `isOwnMessage` because chat paints own messages on the primary
+   * colour — but group discussion replies sit on a light card whoever wrote them,
+   * so that screen passes `false` explicitly.
+   */
+  onDarkSurface?: boolean;
   onImagePress?: (url: string) => void;
   onVideoPress?: (att: MessageAttachment) => void;
   onFilePress?: (att: MessageAttachment) => void;
@@ -33,6 +40,7 @@ function fileExtension(fileName?: string, url?: string): string {
 export function MessageAttachmentsBlock({
   post,
   isOwnMessage,
+  onDarkSurface,
   onImagePress,
   onVideoPress,
   onFilePress,
@@ -40,8 +48,9 @@ export function MessageAttachmentsBlock({
   const attachments = messageLikeToAttachments(post);
   if (attachments.length === 0) return null;
 
-  const labelColor = isOwnMessage ? styles.fileLabelOwn : styles.fileLabelOther;
-  const subColor = isOwnMessage ? styles.fileSubOwn : styles.fileSubOther;
+  const dark = onDarkSurface ?? isOwnMessage;
+  const labelColor = dark ? styles.fileLabelOwn : styles.fileLabelOther;
+  const subColor = dark ? styles.fileSubOwn : styles.fileSubOther;
 
   return (
     <View style={styles.row}>
@@ -100,7 +109,7 @@ export function MessageAttachmentsBlock({
           <Pressable
             key={key}
             onPress={() => onFilePress?.(att)}
-            style={[styles.fileCard, isOwnMessage ? styles.fileCardOwn : styles.fileCardOther]}
+            style={[styles.fileCard, dark ? styles.fileCardOwn : styles.fileCardOther]}
             accessibilityLabel={t('attachments.openFile')}
             accessibilityHint={name}
             accessibilityRole="button"
