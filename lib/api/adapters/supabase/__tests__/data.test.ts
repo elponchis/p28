@@ -288,6 +288,53 @@ describe('Supabase data adapter', () => {
       const uploadedBody = (bucketMock.upload as jest.Mock).mock.calls[0][1];
       expect(uploadedBody.byteLength).toBeGreaterThan(0);
     });
+
+    it('detects the real image type from the bytes, not the URI', async () => {
+      const bucketMock = {
+        upload: jest.fn().mockResolvedValue({ error: null }),
+        getPublicUrl: jest.fn().mockReturnValue({
+          data: { publicUrl: 'https://example.com/avatars/user-1/avatar.png' },
+        }),
+      };
+      const getClient = (() => ({
+        storage: { from: jest.fn().mockReturnValue(bucketMock) },
+      })) as unknown as GetClient;
+      const adapter = createSupabaseDataAdapter(getClient);
+      // PNG magic number, behind a blob: URL — what expo-image-picker returns on web,
+      // where there is no extension to infer the type from.
+      const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00]);
+      await adapter.uploadProfileImage(
+        'user-1',
+        'blob:https://example.com/6e6f2b9a-1111-2222-3333-444455556666',
+        png.toString('base64')
+      );
+      expect(bucketMock.upload).toHaveBeenCalledWith(
+        'user-1/avatar.png',
+        expect.any(ArrayBuffer),
+        expect.objectContaining({ contentType: 'image/png' })
+      );
+    });
+
+    it('falls back to the URI hint when the bytes are not a known image', async () => {
+      const bucketMock = {
+        upload: jest.fn().mockResolvedValue({ error: null }),
+        getPublicUrl: jest.fn().mockReturnValue({ data: { publicUrl: 'https://example.com/x' } }),
+      };
+      const getClient = (() => ({
+        storage: { from: jest.fn().mockReturnValue(bucketMock) },
+      })) as unknown as GetClient;
+      const adapter = createSupabaseDataAdapter(getClient);
+      await adapter.uploadProfileImage(
+        'user-1',
+        'file:///photo.webp',
+        Buffer.from('not-an-image').toString('base64')
+      );
+      expect(bucketMock.upload).toHaveBeenCalledWith(
+        'user-1/avatar.webp',
+        expect.any(ArrayBuffer),
+        expect.objectContaining({ contentType: 'image/webp' })
+      );
+    });
   });
 
   describe('getNotificationPreferences', () => {

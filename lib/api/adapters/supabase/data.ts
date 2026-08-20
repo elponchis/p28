@@ -128,13 +128,63 @@ function toApiError(err: unknown): ApiError {
 /** Supabase storage URL path segment for the avatars bucket (public or authenticated). */
 const AVATARS_BUCKET_SEGMENT = '/avatars/';
 
-/** Infer image extension/content type from URI (e.g. .png -> image/png). */
+/**
+ * Infer image content type from a URI's extension.
+ *
+ * Only a hint: on web the picker hands back `blob:<origin>/<uuid>` URLs, which carry
+ * no extension at all, so everything falls through to jpeg here. Prefer
+ * `sniffImageContentType` on the decoded bytes whenever they are available.
+ */
 function contentTypeFromUri(uri: string): string {
   const lower = uri.toLowerCase();
   if (lower.includes('.png')) return 'image/png';
   if (lower.includes('.gif')) return 'image/gif';
   if (lower.includes('.webp')) return 'image/webp';
   return 'image/jpeg';
+}
+
+/**
+ * Identify an image from its magic number. Authoritative where a file extension is
+ * only a guess — a mislabelled upload can be rejected by a bucket's allowed_mime_types
+ * and reaches viewers with the wrong type.
+ */
+function sniffImageContentType(bytes: Uint8Array): string | null {
+  const at = (i: number) => bytes[i];
+  if (bytes.length >= 3 && at(0) === 0xff && at(1) === 0xd8 && at(2) === 0xff) {
+    return 'image/jpeg';
+  }
+  if (
+    bytes.length >= 8 &&
+    at(0) === 0x89 &&
+    at(1) === 0x50 &&
+    at(2) === 0x4e &&
+    at(3) === 0x47 &&
+    at(4) === 0x0d &&
+    at(5) === 0x0a &&
+    at(6) === 0x1a &&
+    at(7) === 0x0a
+  ) {
+    return 'image/png';
+  }
+  // "GIF87a" / "GIF89a"
+  if (bytes.length >= 6 && at(0) === 0x47 && at(1) === 0x49 && at(2) === 0x46) {
+    return 'image/gif';
+  }
+  // "RIFF" .... "WEBP"
+  if (
+    bytes.length >= 12 &&
+    at(0) === 0x52 &&
+    at(1) === 0x49 &&
+    at(2) === 0x46 &&
+    at(3) === 0x46 &&
+    at(8) === 0x57 &&
+    at(9) === 0x45 &&
+    at(10) === 0x42 &&
+    at(11) === 0x50
+  ) {
+    return 'image/webp';
+  }
+  return null;
 }
 
 /** Decode base64 image data to ArrayBuffer. Use this for upload in React Native (Blob from ArrayBuffer is not supported). */
@@ -145,7 +195,8 @@ function base64ToArrayBuffer(
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return { body: bytes.buffer, contentType };
+  // The caller's content type is inferred from the URI, which is extensionless on web.
+  return { body: bytes.buffer, contentType: sniffImageContentType(bytes) ?? contentType };
 }
 
 /** Result type for image read: body is ArrayBuffer or Blob (Supabase accepts both). */
@@ -2367,7 +2418,9 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
       try {
         const { data: rows, error } = await getClient()
           .from('lessons')
-          .select('id, course_id, title, description, video_url, sort_order, created_at, updated_at')
+          .select(
+            'id, course_id, title, description, video_url, sort_order, created_at, updated_at'
+          )
           .eq('course_id', courseId)
           .order('sort_order', { ascending: true });
         if (error) return toApiError(error);
@@ -2381,7 +2434,9 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
       try {
         const { data, error } = await getClient()
           .from('lessons')
-          .select('id, course_id, title, description, video_url, sort_order, created_at, updated_at')
+          .select(
+            'id, course_id, title, description, video_url, sort_order, created_at, updated_at'
+          )
           .eq('id', lessonId)
           .single();
         if (error) return toApiError(error);
@@ -2411,7 +2466,9 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
             video_url: videoUrl,
             sort_order: input.sortOrder,
           })
-          .select('id, course_id, title, description, video_url, sort_order, created_at, updated_at')
+          .select(
+            'id, course_id, title, description, video_url, sort_order, created_at, updated_at'
+          )
           .single();
         if (error) return toApiError(error);
         return mapLessonRow(row as LessonRow);
@@ -2439,7 +2496,9 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
             sort_order: input.sortOrder,
           })
           .eq('id', lessonId)
-          .select('id, course_id, title, description, video_url, sort_order, created_at, updated_at')
+          .select(
+            'id, course_id, title, description, video_url, sort_order, created_at, updated_at'
+          )
           .single();
         if (error) return toApiError(error);
         return mapLessonRow(row as LessonRow);
@@ -2660,9 +2719,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
         // upload never leaves the student with no file at all (no orphaned file either,
         // since the old path is removed right after the new row/file are both in place).
         if (existingRow?.file_path && existingRow.file_path !== path) {
-          await getClient()
-            .storage.from('assignment-submissions')
-            .remove([existingRow.file_path]);
+          await getClient().storage.from('assignment-submissions').remove([existingRow.file_path]);
         }
 
         const payload = {
@@ -3213,7 +3270,9 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
         const { data: row, error } = await getClient()
           .from('discussions')
           .insert(payload)
-          .select('id, group_id, user_id, title, body, created_at, updated_at, course_id, lesson_id')
+          .select(
+            'id, group_id, user_id, title, body, created_at, updated_at, course_id, lesson_id'
+          )
           .single();
         if (error) return toApiError(error);
         if (!row) return { message: 'Failed to create discussion', code: 'NOT_FOUND' };
