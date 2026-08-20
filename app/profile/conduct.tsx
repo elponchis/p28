@@ -16,44 +16,44 @@ export default function ConductScreen() {
       accessibilityHint={t('conduct.openHint')}
     >
       <DesktopContentContainer maxWidth={600}>
-      <View style={styles.card}>
-        <Text
-          style={styles.title}
-          accessibilityRole="header"
-          accessibilityLabel={t('conduct.title')}
-        >
-          {t('conduct.title')}
-        </Text>
-        <Text style={styles.intro}>{t('conduct.intro')}</Text>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle} accessibilityRole="header">
-            {t('conduct.respectTitle')}
+        <View style={styles.card}>
+          <Text
+            style={styles.title}
+            accessibilityRole="header"
+            accessibilityLabel={t('conduct.title')}
+          >
+            {t('conduct.title')}
           </Text>
-          <Text style={styles.body}>{t('conduct.respectBody')}</Text>
-        </View>
+          <Text style={styles.intro}>{t('conduct.intro')}</Text>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle} accessibilityRole="header">
-            {t('conduct.safetyTitle')}
-          </Text>
-          <Text style={styles.body}>{t('conduct.safetyBody')}</Text>
-        </View>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle} accessibilityRole="header">
+              {t('conduct.respectTitle')}
+            </Text>
+            <Text style={styles.body}>{t('conduct.respectBody')}</Text>
+          </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle} accessibilityRole="header">
-            {t('conduct.privacyTitle')}
-          </Text>
-          <Text style={styles.body}>{t('conduct.privacyBody')}</Text>
-        </View>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle} accessibilityRole="header">
+              {t('conduct.safetyTitle')}
+            </Text>
+            <Text style={styles.body}>{t('conduct.safetyBody')}</Text>
+          </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle} accessibilityRole="header">
-            {t('conduct.boundariesTitle')}
-          </Text>
-          <Text style={styles.body}>{t('conduct.boundariesBody')}</Text>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle} accessibilityRole="header">
+              {t('conduct.privacyTitle')}
+            </Text>
+            <Text style={styles.body}>{t('conduct.privacyBody')}</Text>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle} accessibilityRole="header">
+              {t('conduct.boundariesTitle')}
+            </Text>
+            <Text style={styles.body}>{t('conduct.boundariesBody')}</Text>
+          </View>
         </View>
-      </View>
       </DesktopContentContainer>
     </ScrollView>
   );
