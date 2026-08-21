@@ -50,6 +50,8 @@ import {
   useReactToPostMutation,
   useRemovePostReactionMutation,
   useDeleteDiscussionPostMutation,
+  useCourseQuery,
+  useLessonQuery,
   useUpdateDiscussionPostMutation,
   useUploadDiscussionPostAttachmentMutation,
   useUploadDiscussionPostImageMutation,
@@ -465,6 +467,28 @@ export default function DiscussionDetailScreen() {
 
   const createPostMutation = useCreateDiscussionPostMutation();
   const updatePostMutation = useUpdateDiscussionPostMutation();
+
+  // A course-board or lesson-Q&A thread reached from a notification or a shared
+  // link has no visible connection to the video it is about; these give it one.
+  const { data: lmsCourse } = useCourseQuery(discussion?.courseId, {
+    enabled: !!discussion?.courseId,
+  });
+  const { data: lmsLesson } = useLessonQuery(discussion?.lessonId, {
+    enabled: !!discussion?.lessonId,
+  });
+  const lmsParent = useMemo(() => {
+    if (!discussion?.groupId || !discussion.courseId) return null;
+    if (discussion.lessonId) {
+      return {
+        label: lmsLesson?.title ?? t('common.loading'),
+        href: `/group/${discussion.groupId}/course/${discussion.courseId}/lesson/${discussion.lessonId}`,
+      };
+    }
+    return {
+      label: lmsCourse?.title ?? t('common.loading'),
+      href: `/group/${discussion.groupId}/course/${discussion.courseId}`,
+    };
+  }, [discussion?.groupId, discussion?.courseId, discussion?.lessonId, lmsLesson, lmsCourse]);
   const deletePostMutation = useDeleteDiscussionPostMutation();
   const uploadImageMutation = useUploadDiscussionPostImageMutation();
   const uploadDiscussionAttachmentMutation = useUploadDiscussionPostAttachmentMutation();
@@ -1092,6 +1116,20 @@ export default function DiscussionDetailScreen() {
           keyboardShouldPersistTaps="handled"
           onContentSizeChange={onDiscussionScrollContentSizeChange}
         >
+          {lmsParent ? (
+            <Pressable
+              onPress={() => router.push(lmsParent.href as Parameters<typeof router.push>[0])}
+              style={({ pressed }) => [styles.lmsBackLink, pressed && styles.lmsBackLinkPressed]}
+              accessibilityRole="link"
+              accessibilityLabel={lmsParent.label}
+            >
+              <Ionicons name="chevron-back" size={16} color={colors.primary} />
+              <Text style={styles.lmsBackLinkText} numberOfLines={1}>
+                {lmsParent.label}
+              </Text>
+            </Pressable>
+          ) : null}
+
           <OriginalPostRow
             discussion={discussion}
             onAuthorPress={() => router.push(`/profile/${discussion.userId}`)}
@@ -1389,6 +1427,23 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.textSecondary,
     lineHeight: 22,
+  },
+  lmsBackLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xxs,
+    alignSelf: 'flex-start',
+    paddingVertical: spacing.xs,
+    paddingRight: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  lmsBackLinkPressed: {
+    opacity: 0.7,
+  },
+  lmsBackLinkText: {
+    ...typography.caption,
+    color: colors.primary,
+    flexShrink: 1,
   },
   repliesSection: {
     paddingTop: spacing.lg,
