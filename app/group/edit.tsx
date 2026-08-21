@@ -154,8 +154,10 @@ export default function EditGroupScreen() {
         groupId,
         params: {
           name: trimmedName,
-          description: description.trim() || undefined,
-          bannerImageUrl: bannerImageUrl ?? undefined,
+          // null, not undefined: the adapter skips undefined fields, so clearing
+          // either of these used to leave the old value in place.
+          description: description.trim() || null,
+          bannerImageUrl,
           preferredLanguage,
           country,
         },

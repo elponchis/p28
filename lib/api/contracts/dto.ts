@@ -443,8 +443,10 @@ export interface CreateGroupInput {
 /** Input for updating a group (partial). */
 export interface UpdateGroupInput {
   name?: string;
-  description?: string;
-  bannerImageUrl?: string;
+  /** null clears the description; undefined leaves it alone. */
+  description?: string | null;
+  /** null removes the banner; undefined leaves it alone. */
+  bannerImageUrl?: string | null;
   preferredLanguage?: string;
   country?: string;
 }
