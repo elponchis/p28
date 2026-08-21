@@ -1112,7 +1112,10 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
         const merged: Profile = {
           userId,
           displayName: updates.displayName ?? current?.displayName,
-          avatarUrl: updates.avatarUrl ?? current?.avatarUrl,
+          // `??` would treat an explicit null as "unset" and restore the old
+          // photo, so removal has to be told apart from absence.
+          avatarUrl:
+            updates.avatarUrl === undefined ? current?.avatarUrl : (updates.avatarUrl ?? undefined),
           bio: updates.bio ?? current?.bio,
           preferredLanguage: updates.preferredLanguage ?? current?.preferredLanguage,
           title: updates.title ?? current?.title,

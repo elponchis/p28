@@ -46,7 +46,8 @@ export interface Profile {
 
 export interface ProfileUpdates {
   displayName?: string;
-  avatarUrl?: string;
+  /** null removes the photo; undefined leaves it alone. */
+  avatarUrl?: string | null;
   bio?: string;
   preferredLanguage?: string;
   title?: string;

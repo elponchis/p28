@@ -81,5 +81,70 @@ export async function centerCropToAspect(
   }
 }
 
+/** Natural pixel size of an image, or null if it cannot be read (or off web). */
+export async function getImageSize(
+  sourceUri: string
+): Promise<{ width: number; height: number } | null> {
+  if (Platform.OS !== 'web' || typeof document === 'undefined') return null;
+  try {
+    const img = await loadImage(sourceUri);
+    if (!img.naturalWidth || !img.naturalHeight) return null;
+    return { width: img.naturalWidth, height: img.naturalHeight };
+  } catch {
+    return null;
+  }
+}
+
+export interface CropRegion {
+  /** Left edge in source pixels. */
+  sx: number;
+  /** Top edge in source pixels. */
+  sy: number;
+  /** Width in source pixels. */
+  sw: number;
+  /** Height in source pixels. */
+  sh: number;
+}
+
+/**
+ * Crops an explicit region, for when the person framed it themselves.
+ *
+ * The region is clamped to the image, so a rounding error at the edge trims the
+ * rectangle instead of producing a transparent margin.
+ */
+export async function cropImageRegion(
+  sourceUri: string,
+  region: CropRegion
+): Promise<CroppedImage | null> {
+  if (Platform.OS !== 'web' || typeof document === 'undefined') return null;
+  try {
+    const img = await loadImage(sourceUri);
+    const { naturalWidth: w, naturalHeight: h } = img;
+    if (!w || !h) return null;
+
+    const sw = Math.max(1, Math.min(Math.round(region.sw), w));
+    const sh = Math.max(1, Math.min(Math.round(region.sh), h));
+    const sx = Math.max(0, Math.min(Math.round(region.sx), w - sw));
+    const sy = Math.max(0, Math.min(Math.round(region.sy), h - sh));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = sw;
+    canvas.height = sh;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+
+    const uri = canvas.toDataURL('image/jpeg', CROP_JPEG_QUALITY);
+    const comma = uri.indexOf(',');
+    if (comma < 0) return null;
+    return { uri, base64: uri.slice(comma + 1) };
+  } catch {
+    return null;
+  }
+}
+
 /** Banners render in 16:9 frames throughout the app. */
 export const BANNER_ASPECT = 16 / 9;
+
+/** Avatars render in circles, so they are cropped square. */
+export const AVATAR_ASPECT = 1;

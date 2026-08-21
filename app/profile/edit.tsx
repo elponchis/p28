@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { getUserFacingError } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -14,8 +14,10 @@ import { useLocale } from '@/contexts/LocaleContext';
 import { t } from '@/lib/i18n';
 import { Avatar, Button, Input, ListItem } from '@/components/primitives';
 import { DesktopContentContainer } from '@/components/layout/DesktopContentContainer';
+import { ImageCropModal } from '@/components/patterns/ImageCropModal';
 import { colors, radius, spacing, typography, shadow } from '@/theme/tokens';
 import type { ProfileUpdates } from '@/lib/api';
+import { AVATAR_ASPECT } from '@/lib/cropImage';
 
 const LANGUAGE_OPTIONS: {
   value: string;
@@ -120,7 +122,8 @@ export default function ProfileEditScreen() {
   const [tagsInput, setTagsInput] = useState('');
   const [bio, setBio] = useState('');
   const [preferredLanguage, setPreferredLanguage] = useState<string | undefined>(undefined);
-  const [avatarUrl, setAvatarUrl] = useState<string | undefined>();
+  const [avatarUrl, setAvatarUrl] = useState<string | null | undefined>();
+  const [cropUri, setCropUri] = useState<string | null>(null);
   const [localPreviewUri, setLocalPreviewUri] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -161,19 +164,32 @@ export default function ProfileEditScreen() {
     });
     if (result.canceled || !result.assets[0]?.uri) return;
     const asset = result.assets[0];
-    setLocalPreviewUri(asset.uri);
     setError(null);
+    if (Platform.OS === 'web') {
+      // The web picker ignores allowsEditing/aspect, so ask here instead of
+      // centre-cropping on the uploader's behalf.
+      setCropUri(asset.uri);
+      return;
+    }
+    uploadAvatar(asset.uri, asset.base64 ?? undefined);
+  };
+
+  const uploadAvatar = (imageUri: string, base64Data?: string) => {
+    if (!userId) return;
+    setLocalPreviewUri(imageUri);
     uploadMutation.mutate(
-      {
-        userId,
-        imageUri: asset.uri,
-        base64Data: asset.base64 ?? undefined,
-      },
+      { userId, imageUri, base64Data },
       {
         onSuccess: (url) => setAvatarUrl(url),
         onError: (err) => setError(getUserFacingError(err)),
       }
     );
+  };
+
+  const removePhoto = () => {
+    setLocalPreviewUri(null);
+    setAvatarUrl(null);
+    setError(null);
   };
 
   const hasChanges =
@@ -196,7 +212,8 @@ export default function ProfileEditScreen() {
       bio: bio || undefined,
       preferredLanguage: preferredLanguage || undefined,
     };
-    if (avatarUrl) updates.avatarUrl = avatarUrl;
+    // null removes the photo, so only an untouched (undefined) value is skipped.
+    if (avatarUrl !== undefined) updates.avatarUrl = avatarUrl;
     updateMutation.mutate(
       { userId, updates },
       {
@@ -219,116 +236,141 @@ export default function ProfileEditScreen() {
       showsVerticalScrollIndicator={false}
     >
       <DesktopContentContainer maxWidth={600}>
-      {/* Avatar card */}
-      <View style={styles.avatarCard}>
-        <View style={styles.avatarInner}>
-          <Avatar
-            source={
-              localPreviewUri ? { uri: localPreviewUri } : avatarUrl ? { uri: avatarUrl } : null
-            }
-            fallbackText={displayName || profile?.displayName || session?.user?.email}
-            size="xl"
-            accessibilityLabel={t('profile.profilePhoto')}
-            key={localPreviewUri ?? avatarUrl ?? 'fallback'}
+        {/* Avatar card */}
+        <View style={styles.avatarCard}>
+          <View style={styles.avatarInner}>
+            <Avatar
+              source={
+                localPreviewUri ? { uri: localPreviewUri } : avatarUrl ? { uri: avatarUrl } : null
+              }
+              fallbackText={displayName || profile?.displayName || session?.user?.email}
+              size="xl"
+              accessibilityLabel={t('profile.profilePhoto')}
+              key={localPreviewUri ?? avatarUrl ?? 'fallback'}
+            />
+            <Pressable
+              onPress={pickImage}
+              disabled={isSubmitting}
+              style={({ pressed }) => [styles.editPhotoBtn, pressed && styles.editPhotoBtnPressed]}
+              accessibilityLabel={t('profile.changePhoto')}
+              accessibilityHint={t('profile.changePhotoHint')}
+            >
+              <Ionicons name="pencil" size={14} color={colors.textPrimary} />
+            </Pressable>
+          </View>
+          <Text style={styles.changePhotoText}>{t('profile.changePhoto')}</Text>
+          {localPreviewUri || avatarUrl ? (
+            <Pressable
+              onPress={removePhoto}
+              disabled={isSubmitting}
+              style={({ pressed }) => [styles.removePhotoBtn, pressed && { opacity: 0.7 }]}
+              accessibilityRole="button"
+              accessibilityLabel={t('profile.removePhoto')}
+              accessibilityHint={t('profile.removePhotoHint')}
+            >
+              <Ionicons name="trash-outline" size={14} color={colors.error} />
+              <Text style={styles.removePhotoText}>{t('profile.removePhoto')}</Text>
+            </Pressable>
+          ) : null}
+        </View>
+
+        <ImageCropModal
+          visible={!!cropUri}
+          sourceUri={cropUri}
+          aspect={AVATAR_ASPECT}
+          circular
+          onCancel={() => setCropUri(null)}
+          onConfirm={(cropped) => {
+            setCropUri(null);
+            uploadAvatar(cropped.uri, cropped.base64);
+          }}
+        />
+
+        {/* Form fields */}
+        <View style={styles.section}>
+          <Input
+            label={t('profile.displayName')}
+            value={displayName}
+            onChangeText={setDisplayName}
+            placeholder={t('profile.displayNamePlaceholder')}
+            accessibilityLabel={t('profile.displayName')}
           />
-          <Pressable
-            onPress={pickImage}
+        </View>
+
+        <View style={styles.section}>
+          <Input
+            label={t('profile.roleTitle')}
+            value={roleTitle}
+            onChangeText={setRoleTitle}
+            placeholder={t('profile.roleTitlePlaceholder')}
+            accessibilityLabel={t('profile.roleTitle')}
+          />
+        </View>
+
+        <View style={styles.section}>
+          <Input
+            label={t('profile.organization')}
+            value={organization}
+            onChangeText={setOrganization}
+            placeholder={t('profile.organizationPlaceholder')}
+            accessibilityLabel={t('profile.organization')}
+          />
+        </View>
+
+        <View style={styles.section}>
+          <Input
+            label={t('profile.tags')}
+            value={tagsInput}
+            onChangeText={setTagsInput}
+            placeholder={t('profile.tagsPlaceholder')}
+            autoCapitalize="none"
+            accessibilityLabel={t('profile.tags')}
+            accessibilityHint={t('profile.tagsHint')}
+          />
+        </View>
+
+        <View style={styles.section}>
+          <Input
+            label={t('profile.bio')}
+            value={bio}
+            onChangeText={setBio}
+            placeholder={t('profile.bioPlaceholderEdit')}
+            multiline
+            numberOfLines={5}
+            inputStyle={styles.bioInput}
+            textAlignVertical="top"
+            accessibilityLabel={t('profile.bio')}
+          />
+        </View>
+
+        <View style={styles.section}>
+          <LanguageSelector
+            value={preferredLanguage ?? null}
+            onChange={setPreferredLanguage}
             disabled={isSubmitting}
-            style={({ pressed }) => [styles.editPhotoBtn, pressed && styles.editPhotoBtnPressed]}
-            accessibilityLabel={t('profile.changePhoto')}
-            accessibilityHint={t('profile.changePhotoHint')}
-          >
-            <Ionicons name="pencil" size={14} color={colors.textPrimary} />
-          </Pressable>
+          />
         </View>
-        <Text style={styles.changePhotoText}>{t('profile.changePhoto')}</Text>
-      </View>
 
-      {/* Form fields */}
-      <View style={styles.section}>
-        <Input
-          label={t('profile.displayName')}
-          value={displayName}
-          onChangeText={setDisplayName}
-          placeholder={t('profile.displayNamePlaceholder')}
-          accessibilityLabel={t('profile.displayName')}
+        {error || (mutationError && 'message' in mutationError) ? (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorText}>
+              {error ??
+                (mutationError && 'message' in mutationError
+                  ? getUserFacingError(mutationError)
+                  : '')}
+            </Text>
+          </View>
+        ) : null}
+
+        <Button
+          title={isSubmitting ? t('profile.saving') : t('common.save')}
+          onPress={handleSave}
+          disabled={isSubmitting || !hasChanges}
+          fullWidth
+          style={styles.saveBtn}
+          accessibilityLabel={t('common.save')}
+          accessibilityHint={hasChanges ? t('profile.saveHint') : t('profile.saveHintDisabled')}
         />
-      </View>
-
-      <View style={styles.section}>
-        <Input
-          label={t('profile.roleTitle')}
-          value={roleTitle}
-          onChangeText={setRoleTitle}
-          placeholder={t('profile.roleTitlePlaceholder')}
-          accessibilityLabel={t('profile.roleTitle')}
-        />
-      </View>
-
-      <View style={styles.section}>
-        <Input
-          label={t('profile.organization')}
-          value={organization}
-          onChangeText={setOrganization}
-          placeholder={t('profile.organizationPlaceholder')}
-          accessibilityLabel={t('profile.organization')}
-        />
-      </View>
-
-      <View style={styles.section}>
-        <Input
-          label={t('profile.tags')}
-          value={tagsInput}
-          onChangeText={setTagsInput}
-          placeholder={t('profile.tagsPlaceholder')}
-          autoCapitalize="none"
-          accessibilityLabel={t('profile.tags')}
-          accessibilityHint={t('profile.tagsHint')}
-        />
-      </View>
-
-      <View style={styles.section}>
-        <Input
-          label={t('profile.bio')}
-          value={bio}
-          onChangeText={setBio}
-          placeholder={t('profile.bioPlaceholderEdit')}
-          multiline
-          numberOfLines={5}
-          inputStyle={styles.bioInput}
-          textAlignVertical="top"
-          accessibilityLabel={t('profile.bio')}
-        />
-      </View>
-
-      <View style={styles.section}>
-        <LanguageSelector
-          value={preferredLanguage ?? null}
-          onChange={setPreferredLanguage}
-          disabled={isSubmitting}
-        />
-      </View>
-
-      {error || (mutationError && 'message' in mutationError) ? (
-        <View style={styles.errorBanner}>
-          <Text style={styles.errorText}>
-            {error ??
-              (mutationError && 'message' in mutationError
-                ? getUserFacingError(mutationError)
-                : '')}
-          </Text>
-        </View>
-      ) : null}
-
-      <Button
-        title={isSubmitting ? t('profile.saving') : t('common.save')}
-        onPress={handleSave}
-        disabled={isSubmitting || !hasChanges}
-        fullWidth
-        style={styles.saveBtn}
-        accessibilityLabel={t('common.save')}
-        accessibilityHint={hasChanges ? t('profile.saveHint') : t('profile.saveHintDisabled')}
-      />
       </DesktopContentContainer>
     </ScrollView>
   );
@@ -378,6 +420,18 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   editPhotoBtnPressed: { opacity: 0.75 },
+  removePhotoBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xxs,
+    marginTop: spacing.xs,
+    paddingVertical: spacing.xxs,
+    paddingHorizontal: spacing.sm,
+  },
+  removePhotoText: {
+    ...typography.caption,
+    color: colors.error,
+  },
   changePhotoText: {
     ...typography.caption,
     color: colors.primary,
