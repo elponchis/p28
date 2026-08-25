@@ -13,6 +13,7 @@ import {
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { Avatar } from '@/components/primitives';
+import { UploadProgressBar } from '@/components/patterns/UploadProgressBar';
 import { useAuth } from '@/hooks/useAuth';
 import {
   useChatQuery,
@@ -34,6 +35,7 @@ export default function ChatEditScreen() {
   const [description, setDescription] = useState('');
   const [pendingImageUri, setPendingImageUri] = useState<string | null>(null);
   const [pendingImageBase64, setPendingImageBase64] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const { data: chat, isLoading: loadingChat } = useChatQuery(id);
   const updateMutation = useUpdateChatMutation();
@@ -66,11 +68,13 @@ export default function ChatEditScreen() {
     try {
       let imageUrl: string | undefined;
       if (pendingImageUri) {
+        setUploadProgress(0);
         imageUrl = await uploadMutation.mutateAsync({
           userId,
           imageUri: pendingImageUri,
           base64Data: pendingImageBase64 ?? undefined,
           chatId: id,
+          onProgress: setUploadProgress,
         });
       }
       const trimmedName = name.trim();
@@ -159,6 +163,11 @@ export default function ChatEditScreen() {
             </View>
           )}
         </Pressable>
+        {uploadMutation.isPending ? (
+          <View style={styles.uploadProgressWrap}>
+            <UploadProgressBar progress={uploadProgress} />
+          </View>
+        ) : null}
       </View>
 
       <Pressable
@@ -208,6 +217,10 @@ const styles = StyleSheet.create({
   imagePlaceholderText: {
     ...typography.caption,
     color: colors.textSecondary,
+    marginTop: spacing.sm,
+  },
+  uploadProgressWrap: {
+    width: 120,
     marginTop: spacing.sm,
   },
   saveButton: {

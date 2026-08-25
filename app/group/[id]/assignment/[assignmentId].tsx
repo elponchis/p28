@@ -1,28 +1,43 @@
-import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { Button } from '@/components/primitives';
 import { FileAttachmentModal } from '@/components/messages';
+import { QuizAnswerForm } from '@/components/patterns/QuizAnswerForm';
+import { UploadProgressBar } from '@/components/patterns/UploadProgressBar';
 import { useAuth } from '@/hooks/useAuth';
 import {
   useAssignmentQuery,
+  useAssignmentQuestionsQuery,
   useMySubmissionQuery,
   useSubmissionDownloadUrlMutation,
   useUpsertSubmissionMutation,
   useUserIsGroupAdminQuery,
 } from '@/hooks/useApiQueries';
 import { getUserFacingError } from '@/lib/api';
+import type { QuizAnswer } from '@/lib/api';
+import { answersById, findUnansweredRequired, toSubmittableAnswers } from '@/lib/quiz';
 import {
   isAllowedSubmissionMimeType,
   MAX_SUBMISSION_FILE_BYTES,
+  MAX_SUBMISSION_FILES,
   SUBMISSION_PICKER_MIME_WHITELIST,
 } from '@/lib/api/assignmentSubmissions';
 import { normalizeMimeTypeForAllowlist } from '@/lib/api/messageAttachments';
 import { enqueueDocumentPick } from '@/lib/documentPickerLock';
 import { formatGroupEventDateTime, formatRelativeTime, isGroupEventPast } from '@/lib/dates';
+import { formatFileSize } from '@/lib/formatFileSize';
+import { getPublicStorageUrl } from '@/lib/supabasePublicUrl';
 import { t } from '@/lib/i18n';
 import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
@@ -54,12 +69,28 @@ export default function AssignmentSubmissionScreen() {
   const { data: isGroupAdmin = false } = useUserIsGroupAdminQuery(groupId, userId, {
     enabled: !!groupId && !!userId,
   });
+  const isQuiz = assignment?.assignmentType === 'quiz';
+  const { data: questions = [], isLoading: questionsLoading } = useAssignmentQuestionsQuery(
+    assignmentId,
+    { enabled: !!assignmentId && isQuiz }
+  );
   const upsertMutation = useUpsertSubmissionMutation();
   const downloadUrlMutation = useSubmissionDownloadUrlMutation();
 
-  const [pendingFile, setPendingFile] = useState<PendingFile | null>(null);
+  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [viewingFile, setViewingFile] = useState<{ url: string; fileName: string } | null>(null);
+  const [answers, setAnswers] = useState<Record<string, QuizAnswer>>({});
+  // Seeded once from whatever was submitted before, so reopening a quiz shows the previous
+  // answers to edit rather than a blank form.
+  const [answersSeeded, setAnswersSeeded] = useState(false);
+
+  useEffect(() => {
+    if (answersSeeded || !isQuiz || !mySubmission) return;
+    setAnswers(answersById(mySubmission.answers));
+    setAnswersSeeded(true);
+  }, [answersSeeded, isQuiz, mySubmission]);
 
   const handleEditAssignment = useCallback(() => {
     if (groupId && assignmentId) router.push(`/group/${groupId}/assignment/${assignmentId}/edit`);
@@ -96,7 +127,7 @@ export default function AssignmentSubmissionScreen() {
       result = await enqueueDocumentPick(() =>
         DocumentPicker.getDocumentAsync({
           type: SUBMISSION_PICKER_MIME_WHITELIST,
-          multiple: false,
+          multiple: true,
           copyToCacheDirectory: true,
         })
       );
@@ -104,37 +135,59 @@ export default function AssignmentSubmissionScreen() {
       setError(e instanceof Error ? e.message : t('common.error'));
       return;
     }
-    if (result.canceled || !result.assets?.[0]) return;
-    const doc = result.assets[0];
-    const mime = normalizeMimeTypeForAllowlist(doc.mimeType ?? 'application/octet-stream');
-    if (!isAllowedSubmissionMimeType(mime)) {
-      setError(t('attachments.unsupportedFileType'));
-      return;
+    if (result.canceled || !result.assets?.length) return;
+
+    const next: PendingFile[] = [...pendingFiles];
+    for (const doc of result.assets) {
+      const mime = normalizeMimeTypeForAllowlist(doc.mimeType ?? 'application/octet-stream');
+      if (!isAllowedSubmissionMimeType(mime)) {
+        setError(t('attachments.unsupportedFileType'));
+        continue;
+      }
+      if (doc.size != null && doc.size > MAX_SUBMISSION_FILE_BYTES) {
+        setError(t('attachments.fileTooLarge'));
+        continue;
+      }
+      if (next.length >= MAX_SUBMISSION_FILES) {
+        setError(t('attachments.tooManyFiles'));
+        break;
+      }
+      next.push({
+        uri: doc.uri,
+        name: doc.name || 'file',
+        size: doc.size ?? undefined,
+        mimeType: mime,
+      });
     }
-    if (doc.size != null && doc.size > MAX_SUBMISSION_FILE_BYTES) {
-      setError(t('attachments.fileTooLarge'));
-      return;
-    }
-    setPendingFile({ uri: doc.uri, name: doc.name || 'file', size: doc.size ?? undefined, mimeType: mime });
+    setPendingFiles(next);
+  };
+
+  const handleRemovePendingFile = (index: number) => {
+    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = () => {
-    if (!userId || !assignmentId || !pendingFile || isPastDue) return;
+    if (!userId || !assignmentId || pendingFiles.length === 0 || isPastDue) return;
     setError(null);
+    setUploadProgress(0);
     upsertMutation.mutate(
       {
         assignmentId,
         userId,
         input: {
-          fileUri: pendingFile.uri,
-          fileName: pendingFile.name,
-          fileSize: pendingFile.size,
-          mimeType: pendingFile.mimeType,
+          files: pendingFiles.map((f) => ({
+            fileUri: f.uri,
+            fileName: f.name,
+            fileSize: f.size,
+            mimeType: f.mimeType,
+          })),
         },
+        onProgress: setUploadProgress,
       },
       {
         onSuccess: () => {
-          setPendingFile(null);
+          setPendingFiles([]);
+          setUploadProgress(0);
           refetchMySubmission();
         },
         onError: (err) => setError(getUserFacingError(err)),
@@ -142,13 +195,40 @@ export default function AssignmentSubmissionScreen() {
     );
   };
 
-  const handleViewMyFile = () => {
-    if (!mySubmission) return;
+  const handleSubmitQuiz = () => {
+    if (!userId || !assignmentId || isPastDue) return;
+    const missing = findUnansweredRequired(questions, answers);
+    if (missing.length > 0) {
+      setError(t('submissions.answerRequiredQuestions', { count: missing.length }));
+      return;
+    }
+    setError(null);
+    upsertMutation.mutate(
+      {
+        assignmentId,
+        userId,
+        input: { answers: toSubmittableAnswers(questions, answers) },
+      },
+      {
+        onSuccess: () => refetchMySubmission(),
+        onError: (err) => setError(getUserFacingError(err)),
+      }
+    );
+  };
+
+  const handleRetrySubmit = () => {
+    if (!upsertMutation.variables) return;
+    setError(null);
+    setUploadProgress(0);
+    upsertMutation.mutate(upsertMutation.variables);
+  };
+
+  const handleViewFile = (file: { path: string; name: string }) => {
     setError(null);
     downloadUrlMutation.mutate(
-      { filePath: mySubmission.filePath },
+      { filePath: file.path },
       {
-        onSuccess: (url) => setViewingFile({ url, fileName: mySubmission.fileName }),
+        onSuccess: (url) => setViewingFile({ url, fileName: file.name }),
         onError: (err) => setError(getUserFacingError(err)),
       }
     );
@@ -158,7 +238,11 @@ export default function AssignmentSubmissionScreen() {
     return null;
   }
 
-  if ((assignmentLoading && !assignment) || (submissionLoading && userId && !mySubmission)) {
+  if (
+    (assignmentLoading && !assignment) ||
+    (submissionLoading && userId && !mySubmission) ||
+    (isQuiz && questionsLoading && questions.length === 0)
+  ) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -218,29 +302,72 @@ export default function AssignmentSubmissionScreen() {
         </View>
       ) : null}
 
+      {assignment && assignment.materials.length > 0 ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('submissions.materialsTitle')}</Text>
+          <View style={styles.submissionCard}>
+            {assignment.materials.map((material) => (
+              <Pressable
+                key={material.path}
+                style={styles.fileListRow}
+                onPress={() =>
+                  setViewingFile({
+                    url: getPublicStorageUrl('assignment-materials', material.path),
+                    fileName: material.name,
+                  })
+                }
+                accessibilityLabel={material.name}
+                accessibilityHint={t('submissions.viewFileHint')}
+                accessibilityRole="button"
+              >
+                <Ionicons name="document-text-outline" size={20} color={colors.primary} />
+                <Text style={styles.fileListName} numberOfLines={1}>
+                  {material.name}
+                </Text>
+                {material.size ? (
+                  <Text style={styles.fileListSize}>{formatFileSize(material.size)}</Text>
+                ) : null}
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      ) : null}
+
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t('submissions.mySubmissionTitle')}</Text>
         {mySubmission ? (
           <View style={styles.submissionCard}>
-            <View style={styles.submissionFileRow}>
-              <Ionicons name="document-text-outline" size={22} color={colors.primary} />
-              <View style={styles.submissionFileTextCol}>
-                <Text style={styles.submissionFileName} numberOfLines={2}>
-                  {mySubmission.fileName}
+            {mySubmission.files.map((file) => (
+              <Pressable
+                key={file.path}
+                style={styles.fileListRow}
+                onPress={() => handleViewFile(file)}
+                disabled={downloadUrlMutation.isPending}
+                accessibilityLabel={file.name}
+                accessibilityHint={t('submissions.viewFileHint')}
+                accessibilityRole="button"
+              >
+                <Ionicons name="document-text-outline" size={20} color={colors.primary} />
+                <Text style={styles.fileListName} numberOfLines={1}>
+                  {file.name}
                 </Text>
-                <Text style={styles.submissionMeta}>
-                  {t('submissions.submittedAtLabel')}: {formatRelativeTime(mySubmission.submittedAt)}
-                </Text>
-              </View>
-            </View>
-            <Button
-              title={t('submissions.viewFile')}
-              variant="secondary"
-              onPress={handleViewMyFile}
-              disabled={downloadUrlMutation.isPending}
-              accessibilityLabel={t('submissions.viewFile')}
-              accessibilityHint={t('submissions.viewFileHint')}
-            />
+                {file.size ? (
+                  <Text style={styles.fileListSize}>{formatFileSize(file.size)}</Text>
+                ) : null}
+              </Pressable>
+            ))}
+            <Text style={styles.submissionMeta}>
+              {t('submissions.submittedAtLabel')}: {formatRelativeTime(mySubmission.submittedAt)}
+            </Text>
+
+            {/* Only shown when the quiz actually has an answer key; written questions are
+                excluded from both numbers, so this is never a zero for an unread essay. */}
+            {mySubmission.autoScoreMax ? (
+              <Text style={styles.autoScoreText}>
+                {t('submissions.autoScoreLabel')}: {mySubmission.autoScore ?? 0} /{' '}
+                {mySubmission.autoScoreMax}
+              </Text>
+            ) : null}
 
             {isReviewed ? (
               <View style={styles.feedbackBlock}>
@@ -261,7 +388,58 @@ export default function AssignmentSubmissionScreen() {
         )}
       </View>
 
-      {isPastDue ? (
+      {isQuiz ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('submissions.quizSectionTitle')}</Text>
+          {questions.length === 0 ? (
+            <Text style={styles.notSubmittedText}>{t('submissions.quizNoQuestions')}</Text>
+          ) : (
+            <View style={styles.quizBlock}>
+              <QuizAnswerForm
+                questions={questions}
+                answers={answers}
+                onChange={setAnswers}
+                disabled={isSubmitting}
+                readOnly={isPastDue}
+              />
+
+              {isPastDue ? (
+                <View style={styles.errorBanner}>
+                  <Text style={styles.errorText}>
+                    {mySubmission
+                      ? t('submissions.pastDueCannotResubmit')
+                      : t('submissions.pastDueCannotSubmit')}
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.actions}>
+                  {error ? (
+                    <View style={styles.errorBanner}>
+                      <Text style={styles.errorText}>{error}</Text>
+                    </View>
+                  ) : null}
+                  <Button
+                    title={
+                      isSubmitting
+                        ? t('submissions.submitting')
+                        : mySubmission
+                          ? t('submissions.resubmit')
+                          : t('submissions.submit')
+                    }
+                    onPress={handleSubmitQuiz}
+                    disabled={isSubmitting}
+                    fullWidth
+                    accessibilityLabel={
+                      mySubmission ? t('submissions.resubmit') : t('submissions.submit')
+                    }
+                    accessibilityHint={t('submissions.submitQuizHint')}
+                  />
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+      ) : isPastDue ? (
         <View style={styles.errorBanner}>
           <Text style={styles.errorText}>
             {mySubmission
@@ -271,27 +449,60 @@ export default function AssignmentSubmissionScreen() {
         </View>
       ) : (
         <View style={styles.section}>
-          {pendingFile ? (
-            <View style={styles.selectedFileRow}>
-              <Ionicons name="document-attach-outline" size={20} color={colors.primary} />
-              <Text style={styles.selectedFileText} numberOfLines={2}>
-                {t('submissions.selectedFileLabel')}: {pendingFile.name}
-              </Text>
+          {pendingFiles.length > 0 ? (
+            <View style={styles.pendingFilesList}>
+              {pendingFiles.map((f, index) => (
+                <View key={`${f.uri}-${index}`} style={styles.selectedFileRow}>
+                  <Ionicons name="document-attach-outline" size={20} color={colors.primary} />
+                  <Text style={styles.selectedFileText} numberOfLines={1}>
+                    {f.name}
+                  </Text>
+                  <Pressable
+                    onPress={() => handleRemovePendingFile(index)}
+                    disabled={isSubmitting}
+                    accessibilityLabel={t('submissions.removeFile')}
+                    accessibilityHint={t('submissions.removeFileHint')}
+                    accessibilityRole="button"
+                  >
+                    <Ionicons name="close-circle" size={20} color={colors.onSurfaceVariant} />
+                  </Pressable>
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          {isSubmitting ? (
+            <View style={styles.progressRow}>
+              <UploadProgressBar progress={uploadProgress} />
             </View>
           ) : null}
 
           {error ? (
             <View style={styles.errorBanner}>
               <Text style={styles.errorText}>{error}</Text>
+              {upsertMutation.isError ? (
+                <Button
+                  title={t('attachments.retryUpload')}
+                  variant="text"
+                  onPress={handleRetrySubmit}
+                  accessibilityLabel={t('attachments.retryUpload')}
+                  accessibilityHint={t('attachments.retryUploadHint')}
+                  style={styles.retryButton}
+                />
+              ) : null}
             </View>
           ) : null}
 
           <View style={styles.actions}>
             <Button
-              title={pendingFile ? t('submissions.changeFile') : t('submissions.pickFile')}
+              title={
+                pendingFiles.length > 0
+                  ? t('submissions.addAnotherFile')
+                  : t('submissions.pickFile')
+              }
               variant="secondary"
               onPress={handlePickFile}
-              disabled={isSubmitting}
+              disabled={isSubmitting || pendingFiles.length >= MAX_SUBMISSION_FILES}
               fullWidth
               accessibilityLabel={t('submissions.pickFile')}
               accessibilityHint={t('submissions.pickFileHint')}
@@ -305,9 +516,11 @@ export default function AssignmentSubmissionScreen() {
                     : t('submissions.submit')
               }
               onPress={handleSubmit}
-              disabled={!pendingFile || isSubmitting}
+              disabled={pendingFiles.length === 0 || isSubmitting}
               fullWidth
-              accessibilityLabel={mySubmission ? t('submissions.resubmit') : t('submissions.submit')}
+              accessibilityLabel={
+                mySubmission ? t('submissions.resubmit') : t('submissions.submit')
+              }
               accessibilityHint={
                 mySubmission ? t('submissions.resubmitHint') : t('submissions.submitHint')
               }
@@ -431,10 +644,43 @@ const styles = StyleSheet.create({
     ...typography.bodyStrong,
     color: colors.textPrimary,
   },
+  fileListRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  fileListName: {
+    ...typography.bodyMd,
+    color: colors.textPrimary,
+    flex: 1,
+    minWidth: 0,
+  },
+  fileListSize: {
+    ...typography.caption,
+    color: colors.onSurfaceVariant,
+  },
+  pendingFilesList: {
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  progressRow: {
+    marginBottom: spacing.md,
+  },
+  retryButton: {
+    marginTop: spacing.xs,
+    alignSelf: 'flex-start',
+  },
   submissionMeta: {
     ...typography.caption,
     color: colors.onSurfaceVariant,
     marginTop: 2,
+  },
+  autoScoreText: {
+    ...typography.bodyStrong,
+    color: colors.primary,
+  },
+  quizBlock: {
+    gap: spacing.md,
   },
   feedbackBlock: {
     marginTop: spacing.sm,

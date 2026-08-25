@@ -1,5 +1,5 @@
 export type { AuthContract, AuthStateListener } from './auth';
-export type { DataContract } from './data';
+export type { DataContract, OnUploadProgress } from './data';
 export type { RealtimeContract, RealtimeChannelId, RealtimeHandlers } from './realtime';
 export type { ApiError } from './errors';
 export { isApiError } from './guards';
@@ -61,6 +61,12 @@ export type {
   MessageAttachmentKind,
   Profile,
   ProfileUpdates,
+  AssignmentType,
+  QuizAnswer,
+  QuizOption,
+  QuizQuestion,
+  QuizQuestionInput,
+  QuizQuestionType,
   Submission,
   UpdateAssignmentInput,
   UpdateChatInput,
@@ -73,6 +79,7 @@ export type {
   UpdateGroupInput,
   UpdateLessonInput,
   UpdateSubmissionFeedbackInput,
+  UploadedFile,
   UpsertSubmissionInput,
   User,
   Session,

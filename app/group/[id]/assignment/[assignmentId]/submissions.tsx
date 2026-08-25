@@ -30,10 +30,12 @@ export default function AssignmentSubmissionsListScreen() {
     isLoading: isRoleLoading,
     isError: isRoleError,
   } = useUserIsGroupAdminQuery(groupId, userId, { enabled: !!groupId && !!userId });
-  const { data: submissions = [], isLoading: submissionsLoading } =
-    useSubmissionsByAssignmentQuery(assignmentId, {
+  const { data: submissions = [], isLoading: submissionsLoading } = useSubmissionsByAssignmentQuery(
+    assignmentId,
+    {
       enabled: !!assignmentId && isGroupAdmin === true,
-    });
+    }
+  );
 
   useLayoutEffect(() => {
     navigation.setOptions({ title: t('submissions.listTitle') });
@@ -115,7 +117,16 @@ export default function AssignmentSubmissionsListScreen() {
                     {submission.authorDisplayName ?? t('common.loading')}
                   </Text>
                   <Text style={styles.fileName} numberOfLines={1}>
-                    {submission.fileName}
+                    {submission.files.length > 0
+                      ? `${submission.files[0].name}${
+                          submission.files.length > 1
+                            ? ` ${t('submissions.moreFilesCount', {
+                                count: submission.files.length - 1,
+                              })}`
+                            : ''
+                        }`
+                      : // A quiz submission has no files; summarise it by what was answered.
+                        t('submissions.answeredCount', { count: submission.answers.length })}
                   </Text>
                   <Text style={styles.meta}>{formatRelativeTime(submission.submittedAt)}</Text>
                 </View>

@@ -18,8 +18,8 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { Button } from '@/components/primitives/Button';
 import { Input } from '@/components/primitives/Input';
+import { UploadProgressBar } from '@/components/patterns/UploadProgressBar';
 import { DesktopContentContainer } from '@/components/layout/DesktopContentContainer';
-import { ImageCropModal } from '@/components/patterns/ImageCropModal';
 import { COUNTRIES } from '@/constants/countries';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -32,7 +32,6 @@ import {
 } from '@/hooks/useApiQueries';
 import { getUserFacingError } from '@/lib/api';
 import { t } from '@/lib/i18n';
-import { BANNER_ASPECT, centerCropToAspect, getImageSize } from '@/lib/cropImage';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 const LANGUAGES = [
@@ -62,7 +61,7 @@ export default function EditGroupScreen() {
   const [error, setError] = useState<string | null>(null);
   const [bannerImageUrl, setBannerImageUrl] = useState<string | null>(null);
   const [localBannerUri, setLocalBannerUri] = useState<string | null>(null);
-  const [cropUri, setCropUri] = useState<string | null>(null);
+  const [bannerUploadProgress, setBannerUploadProgress] = useState(0);
 
   const updateMutation = useUpdateGroupMutation();
   const deleteMutation = useDeleteGroupMutation();
@@ -119,30 +118,31 @@ export default function EditGroupScreen() {
     });
     if (result.canceled || !result.assets[0]?.uri) return;
     const asset = result.assets[0];
+    setLocalBannerUri(asset.uri);
     setError(null);
-    // Banners render in 16:9 frames. Native honoured `aspect` above and already
-    // handed back that shape; the web picker ignores it, so ask which part to
-    // keep. If the browser cannot even read the file the modal would be a dead
-    // end, so fall back to the centre crop there.
-    if (Platform.OS === 'web' && (await getImageSize(asset.uri))) {
-      setCropUri(asset.uri);
-      return;
-    }
-    const cropped = await centerCropToAspect(asset.uri, BANNER_ASPECT);
-    uploadBanner(cropped?.uri ?? asset.uri, cropped?.base64 ?? asset.base64 ?? undefined);
-  };
-
-  const uploadBanner = (imageUri: string, base64Data?: string) => {
-    const userId = session?.user?.id;
-    if (!userId) return;
-    setLocalBannerUri(imageUri);
+    setBannerUploadProgress(0);
     uploadMutation.mutate(
-      { userId, imageUri, base64Data },
+      {
+        userId,
+        imageUri: asset.uri,
+        base64Data: asset.base64 ?? undefined,
+        onProgress: setBannerUploadProgress,
+      },
       {
         onSuccess: (url) => setBannerImageUrl(url),
         onError: (err) => setError(getUserFacingError(err)),
       }
     );
+  };
+
+  const retryBannerUpload = () => {
+    if (!uploadMutation.variables) return;
+    setError(null);
+    setBannerUploadProgress(0);
+    uploadMutation.mutate(uploadMutation.variables, {
+      onSuccess: (url) => setBannerImageUrl(url),
+      onError: (err) => setError(getUserFacingError(err)),
+    });
   };
 
   const removeBannerImage = () => {
@@ -160,10 +160,8 @@ export default function EditGroupScreen() {
         groupId,
         params: {
           name: trimmedName,
-          // null, not undefined: the adapter skips undefined fields, so clearing
-          // either of these used to leave the old value in place.
-          description: description.trim() || null,
-          bannerImageUrl,
+          description: description.trim() || undefined,
+          bannerImageUrl: bannerImageUrl ?? undefined,
           preferredLanguage,
           country,
         },
@@ -214,16 +212,6 @@ export default function EditGroupScreen() {
             accessibilityLabel={t('groups.addBannerImage')}
             accessibilityHint={t('groups.addBannerImageHint')}
           >
-            <ImageCropModal
-              visible={!!cropUri}
-              sourceUri={cropUri}
-              aspect={BANNER_ASPECT}
-              onCancel={() => setCropUri(null)}
-              onConfirm={(cropped) => {
-                setCropUri(null);
-                uploadBanner(cropped.uri, cropped.base64);
-              }}
-            />
             {bannerImageUrl || localBannerUri ? (
               <>
                 <Image
@@ -244,7 +232,9 @@ export default function EditGroupScreen() {
             ) : (
               <View style={styles.bannerPlaceholder}>
                 {isUploadingBanner ? (
-                  <Text style={styles.bannerPlaceholderText}>{t('common.loading')}</Text>
+                  <View style={styles.bannerProgressWrap}>
+                    <UploadProgressBar progress={bannerUploadProgress} />
+                  </View>
                 ) : (
                   <>
                     <Ionicons name="image-outline" size={40} color={colors.ink300} />
@@ -254,6 +244,16 @@ export default function EditGroupScreen() {
               </View>
             )}
           </Pressable>
+          {uploadMutation.isError ? (
+            <Button
+              title={t('attachments.retryUpload')}
+              variant="text"
+              onPress={retryBannerUpload}
+              accessibilityLabel={t('attachments.retryUpload')}
+              accessibilityHint={t('attachments.retryUploadHint')}
+              style={styles.retryButton}
+            />
+          ) : null}
 
           <Input
             label={t('groups.groupName')}
@@ -506,6 +506,13 @@ const styles = StyleSheet.create({
   bannerPlaceholderText: {
     ...typography.label,
     color: colors.ink300,
+  },
+  bannerProgressWrap: {
+    width: '80%',
+  },
+  retryButton: {
+    alignSelf: 'flex-start',
+    marginBottom: spacing.sm,
   },
   removeBannerButton: {
     position: 'absolute',

@@ -4,10 +4,16 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { Button, Input } from '@/components/primitives';
 import { AssignmentDueDateField } from '@/components/patterns/AssignmentDueDateField';
+import { AssignmentMaterialsField } from '@/components/patterns/AssignmentMaterialsField';
+import { AssignmentTypeField } from '@/components/patterns/AssignmentTypeField';
+import { QuizBuilder } from '@/components/patterns/QuizBuilder';
 import { DesktopContentContainer } from '@/components/layout/DesktopContentContainer';
 import { useAuth } from '@/hooks/useAuth';
 import { useCreateAssignmentMutation } from '@/hooks/useApiQueries';
 import { getUserFacingError } from '@/lib/api';
+import type { AssignmentType, QuizQuestionInput, UploadedFile } from '@/lib/api';
+import { describeQuizDraftProblem } from '@/lib/quizMessages';
+import { findQuizDraftProblem } from '@/lib/quiz';
 import { t } from '@/lib/i18n';
 import { colors, spacing, typography } from '@/theme/tokens';
 
@@ -20,16 +26,27 @@ export default function CreateAssignmentScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState<Date | null>(null);
+  const [materials, setMaterials] = useState<UploadedFile[]>([]);
+  const [assignmentType, setAssignmentType] = useState<AssignmentType>('file');
+  const [questions, setQuestions] = useState<QuizQuestionInput[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const createMutation = useCreateAssignmentMutation();
   const isSubmitting = createMutation.isPending;
+  const isQuiz = assignmentType === 'quiz';
 
   const handleSubmit = () => {
     const trimmedTitle = title.trim();
     if (!trimmedTitle) {
       setError(t('assignments.fieldsRequired'));
       return;
+    }
+    if (isQuiz) {
+      const problem = findQuizDraftProblem(questions);
+      if (problem) {
+        setError(describeQuizDraftProblem(problem));
+        return;
+      }
     }
     setError(null);
     createMutation.mutate(
@@ -41,6 +58,9 @@ export default function CreateAssignmentScreen() {
           description: description.trim() || undefined,
           dueDate: dueDate ? dueDate.toISOString() : undefined,
           sortOrder: 0,
+          materials,
+          assignmentType,
+          questions: isQuiz ? questions : undefined,
         },
       },
       {
@@ -92,7 +112,27 @@ export default function CreateAssignmentScreen() {
             accessibilityLabel={t('assignments.descriptionLabel')}
           />
 
+          <AssignmentTypeField
+            value={assignmentType}
+            onChange={setAssignmentType}
+            disabled={isSubmitting}
+          />
+
+          {isQuiz ? (
+            <QuizBuilder questions={questions} onChange={setQuestions} disabled={isSubmitting} />
+          ) : null}
+
           <AssignmentDueDateField value={dueDate} onChange={setDueDate} disabled={isSubmitting} />
+
+          {userId ? (
+            <AssignmentMaterialsField
+              groupId={groupId}
+              userId={userId}
+              materials={materials}
+              onChange={setMaterials}
+              disabled={isSubmitting}
+            />
+          ) : null}
 
           {error ? (
             <View style={styles.errorBanner}>

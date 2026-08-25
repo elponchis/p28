@@ -46,8 +46,7 @@ export interface Profile {
 
 export interface ProfileUpdates {
   displayName?: string;
-  /** null removes the photo; undefined leaves it alone. */
-  avatarUrl?: string | null;
+  avatarUrl?: string;
   bio?: string;
   preferredLanguage?: string;
   title?: string;
@@ -285,6 +284,72 @@ export interface UpdateLessonInput {
 }
 
 /** Assignment belonging to a group; access follows group membership/admin RLS. */
+/** One file within a submission's `files` array or an assignment's `materials` array. */
+export interface UploadedFile {
+  path: string;
+  name: string;
+  size?: number;
+}
+
+/**
+ * What a student is asked to hand in: a file upload (the original behaviour, and the
+ * default for every assignment created before quizzes existed) or a set of questions.
+ */
+export type AssignmentType = 'file' | 'quiz';
+
+/**
+ * How one quiz question is answered. `multiple_choice` picks from `options`;
+ * `short_answer` and `essay` are both free text and differ only in the size of the
+ * input a student is given, since neither can be machine-graded either way.
+ */
+export type QuizQuestionType = 'multiple_choice' | 'short_answer' | 'essay';
+
+/** One selectable choice. `id` is client-generated and stable across edits. */
+export interface QuizOption {
+  id: string;
+  text: string;
+}
+
+export interface QuizQuestion {
+  id: string;
+  assignmentId: string;
+  prompt: string;
+  questionType: QuizQuestionType;
+  /** Empty for the free-text question types. */
+  options: QuizOption[];
+  /** Multiple choice only: whether more than one option may be picked. */
+  allowMultiple: boolean;
+  points: number;
+  required: boolean;
+  sortOrder: number;
+  /**
+   * Which options are correct. Group admins only: the answer key lives in a separate,
+   * admin-readable table, so this is always `undefined` for a student — not merely
+   * hidden by the UI.
+   */
+  correctOptionIds?: string[];
+}
+
+/** One question as authored in the quiz builder. `id` absent means a newly added question. */
+export interface QuizQuestionInput {
+  id?: string;
+  prompt: string;
+  questionType: QuizQuestionType;
+  options: QuizOption[];
+  allowMultiple: boolean;
+  points: number;
+  required: boolean;
+  sortOrder: number;
+  correctOptionIds?: string[];
+}
+
+/** One student's answer to one question: chosen options, free text, or neither if skipped. */
+export interface QuizAnswer {
+  questionId: string;
+  optionIds?: string[];
+  text?: string;
+}
+
 export interface Assignment {
   id: string;
   groupId: string;
@@ -296,6 +361,9 @@ export interface Assignment {
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
+  /** Reference material an instructor attached to the assignment (public bucket). */
+  materials: UploadedFile[];
+  assignmentType: AssignmentType;
 }
 
 export interface CreateAssignmentInput {
@@ -303,6 +371,11 @@ export interface CreateAssignmentInput {
   description?: string;
   dueDate?: string;
   sortOrder: number;
+  materials?: UploadedFile[];
+  /** Defaults to `'file'` when omitted. */
+  assignmentType?: AssignmentType;
+  /** Written in the same call for a quiz assignment; ignored for a file assignment. */
+  questions?: QuizQuestionInput[];
 }
 
 export interface UpdateAssignmentInput {
@@ -310,23 +383,36 @@ export interface UpdateAssignmentInput {
   description?: string;
   dueDate?: string;
   sortOrder: number;
+  materials?: UploadedFile[];
+  assignmentType?: AssignmentType;
+  /** undefined leaves the existing questions alone; an array replaces the whole set. */
+  questions?: QuizQuestionInput[];
 }
 
 /**
  * A student's submission for an assignment. One row per (assignment, user) — resubmitting
- * replaces the file and row in place rather than creating a new one. `feedback`/`score`/
+ * replaces the files and row in place rather than creating a new one. `feedback`/`score`/
  * `reviewedByUserId`/`reviewedAt` are set only by group admins (server-enforced).
  */
 export interface Submission {
   id: string;
   assignmentId: string;
   userId: string;
-  filePath: string;
-  fileName: string;
-  fileSize?: number;
+  /** Always empty for a quiz submission. */
+  files: UploadedFile[];
+  /** Always empty for a file submission. */
+  answers: QuizAnswer[];
   submittedAt: string;
   feedback?: string;
   score?: number;
+  /**
+   * Points scored on the machine-gradable (multiple-choice) questions, out of
+   * `autoScoreMax`. Computed server-side on every write; undefined for file
+   * assignments and for quizzes with no answer key. Written questions are excluded
+   * from both numbers, so this never reads as a zero for an ungraded essay.
+   */
+  autoScore?: number;
+  autoScoreMax?: number;
   reviewedByUserId?: string;
   reviewedAt?: string;
   /** Enriched when fetched by a group admin viewing all submissions. */
@@ -334,12 +420,13 @@ export interface Submission {
   authorAvatarUrl?: string;
 }
 
-/** Input for submitting/resubmitting: uploads fileUri, replacing any existing file for this user. */
+/**
+ * Input for submitting/resubmitting, replacing whatever this user had before.
+ * A file assignment sends `files`; a quiz sends `answers`.
+ */
 export interface UpsertSubmissionInput {
-  fileUri: string;
-  fileName: string;
-  fileSize?: number;
-  mimeType: string;
+  files?: { fileUri: string; fileName: string; fileSize?: number; mimeType: string }[];
+  answers?: QuizAnswer[];
 }
 
 /** Group-admin-only: grade/feedback update for a submission. */
@@ -444,10 +531,8 @@ export interface CreateGroupInput {
 /** Input for updating a group (partial). */
 export interface UpdateGroupInput {
   name?: string;
-  /** null clears the description; undefined leaves it alone. */
-  description?: string | null;
-  /** null removes the banner; undefined leaves it alone. */
-  bannerImageUrl?: string | null;
+  description?: string;
+  bannerImageUrl?: string;
   preferredLanguage?: string;
   country?: string;
 }

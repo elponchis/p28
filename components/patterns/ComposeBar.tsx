@@ -16,8 +16,14 @@ export interface PendingComposeAttachment {
   uploadedUrl?: string;
   uploadedThumbnailUrl?: string;
   uploading: boolean;
+  /** True when the upload failed; the attachment stays in the list with a retry affordance. */
+  failed?: boolean;
   /** Duration in seconds (voice messages). */
   durationSec?: number;
+  /** Original local file URI to re-upload from on retry (undefined for audio, which isn't retryable here). */
+  sourceUri?: string;
+  /** Base64 data captured at pick time, so retry doesn't need to re-read the file. */
+  sourceBase64?: string | null;
 }
 
 function formatDurationLabel(seconds?: number): string {
@@ -47,6 +53,7 @@ export interface ComposeBarProps {
 
   pendingAttachments: PendingComposeAttachment[];
   onRemoveAttachment: (id: string) => void;
+  onRetryAttachment?: (id: string) => void;
   onOpenAttachmentMenu: () => void;
   isUploadingAttachment: boolean;
   maxAttachments?: number;
@@ -67,6 +74,7 @@ export function ComposeBar({
   sendLabel,
   pendingAttachments,
   onRemoveAttachment,
+  onRetryAttachment,
   onOpenAttachmentMenu,
   isUploadingAttachment,
   maxAttachments = 5,
@@ -167,14 +175,18 @@ export function ComposeBar({
                   ) : null}
                 </View>
               ) : att.kind === 'file' ? (
-                <View
+                <Pressable
                   style={isChat ? chatStyles.filePreview : styles.filePreview}
+                  onPress={() => att.failed && onRetryAttachment?.(att.id)}
+                  disabled={!att.failed}
                   accessibilityLabel={att.fileName ?? t('attachments.file')}
                 >
                   <Ionicons
-                    name="document-text-outline"
+                    name={att.failed ? 'refresh-outline' : 'document-text-outline'}
                     size={22}
-                    color={isChat ? colors.onSurfaceVariant : colors.primary}
+                    color={
+                      att.failed ? colors.error : isChat ? colors.onSurfaceVariant : colors.primary
+                    }
                   />
                   <Text
                     style={isChat ? chatStyles.filePreviewName : styles.filePreviewName}
@@ -188,14 +200,18 @@ export function ComposeBar({
                       color={colors.primary}
                       style={styles.previewSpinner}
                     />
+                  ) : att.failed ? (
+                    <Text style={styles.retryLabel}>{t('attachments.retryUpload')}</Text>
                   ) : null}
-                </View>
+                </Pressable>
               ) : att.kind === 'video' && !att.displayUri.trim() ? (
-                <View
+                <Pressable
                   style={[
                     styles.thumbWrap,
                     isChat ? chatStyles.videoPosterPlaceholder : styles.videoPosterPlaceholder,
                   ]}
+                  onPress={() => att.failed && onRetryAttachment?.(att.id)}
+                  disabled={!att.failed}
                 >
                   <Ionicons
                     name="videocam-outline"
@@ -210,10 +226,18 @@ export function ComposeBar({
                     <View style={styles.uploadingOverlay}>
                       <ActivityIndicator size="small" color={colors.primary} />
                     </View>
+                  ) : att.failed ? (
+                    <View style={styles.uploadingOverlay}>
+                      <Ionicons name="refresh-outline" size={22} color={colors.error} />
+                    </View>
                   ) : null}
-                </View>
+                </Pressable>
               ) : (
-                <View style={styles.thumbWrap}>
+                <Pressable
+                  style={styles.thumbWrap}
+                  onPress={() => att.failed && onRetryAttachment?.(att.id)}
+                  disabled={!att.failed}
+                >
                   <Image
                     source={{ uri: att.displayUri }}
                     style={isChat ? chatStyles.attachedImage : styles.attachedImage}
@@ -231,8 +255,12 @@ export function ComposeBar({
                     <View style={styles.uploadingOverlay}>
                       <ActivityIndicator size="small" color={colors.primary} />
                     </View>
+                  ) : att.failed ? (
+                    <View style={styles.uploadingOverlay}>
+                      <Ionicons name="refresh-outline" size={22} color={colors.error} />
+                    </View>
                   ) : null}
-                </View>
+                </Pressable>
               )}
               <Pressable
                 style={styles.removeAttachedButton}
@@ -407,6 +435,12 @@ const styles = StyleSheet.create({
     lineHeight: 13,
   },
   previewSpinner: {
+    marginTop: spacing.xxs,
+  },
+  retryLabel: {
+    ...typography.caption,
+    fontSize: 10,
+    color: colors.error,
     marginTop: spacing.xxs,
   },
   playIconOverlay: {

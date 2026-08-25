@@ -74,6 +74,7 @@ export const queryKeys = {
   lesson: (id: string) => ['lesson', id] as const,
   assignmentsByGroup: (groupId: string) => ['assignmentsByGroup', groupId] as const,
   assignment: (id: string) => ['assignment', id] as const,
+  assignmentQuestions: (assignmentId: string) => ['assignmentQuestions', assignmentId] as const,
   submissionsByAssignment: (assignmentId: string) =>
     ['submissionsByAssignment', assignmentId] as const,
   mySubmission: (assignmentId: string, userId: string) =>

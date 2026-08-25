@@ -1,3 +1,4 @@
+import { isApiError } from './api/contracts/guards';
 import type { ApiError } from './api/contracts/errors';
 
 /**
@@ -21,4 +22,17 @@ export function getUserFacingError(error: ApiError | null | undefined): string {
     return 'Please check your email to confirm your account.';
   }
   return error.message || 'Something went wrong. Please try again.';
+}
+
+/**
+ * Maps an unknown thrown value to a user-facing message.
+ *
+ * React Query mutations reject with the raw `ApiError` (see `queryFn` in
+ * hooks/useApiQueries), so a `catch` binding is `unknown` and cannot be passed
+ * to `getUserFacingError` directly. Use this at `catch` sites.
+ */
+export function describeError(e: unknown): string {
+  if (isApiError(e)) return getUserFacingError(e);
+  if (e instanceof Error) return e.message;
+  return getUserFacingError(null);
 }

@@ -100,11 +100,16 @@ export function useUploadProfileImageMutation() {
       userId,
       imageUri,
       base64Data,
+      onProgress,
     }: {
       userId: string;
       imageUri: string;
       base64Data?: string | null;
-    }) => queryFn(api.data.uploadProfileImage(userId, imageUri, base64Data)) as Promise<string>,
+      onProgress?: (fraction: number) => void;
+    }) =>
+      queryFn(
+        api.data.uploadProfileImage(userId, imageUri, base64Data, onProgress)
+      ) as Promise<string>,
     onSuccess: (_, { userId }) => {
       qc.invalidateQueries({ queryKey: queryKeys.profile(userId) });
     },
@@ -987,6 +992,21 @@ export function useAssignmentQuery(
   });
 }
 
+export function useAssignmentQuestionsQuery(
+  assignmentId: string | undefined,
+  options?: { enabled?: boolean }
+) {
+  const enabled = options?.enabled ?? true;
+  return useQuery({
+    queryKey: queryKeys.assignmentQuestions(assignmentId ?? ''),
+    queryFn: () =>
+      queryFn(api.data.getAssignmentQuestions(assignmentId!)) as Promise<
+        import('@/lib/api').QuizQuestion[]
+      >,
+    enabled: !!assignmentId && enabled,
+  });
+}
+
 export function useCreateAssignmentMutation() {
   const qc = useQueryClient();
   return useMutation({
@@ -1018,6 +1038,7 @@ export function useUpdateAssignmentMutation() {
     onSuccess: (assignment) => {
       qc.invalidateQueries({ queryKey: queryKeys.assignment(assignment.id) });
       qc.invalidateQueries({ queryKey: queryKeys.assignmentsByGroup(assignment.groupId) });
+      qc.invalidateQueries({ queryKey: queryKeys.assignmentQuestions(assignment.id) });
     },
   });
 }
@@ -1071,11 +1092,13 @@ export function useUpsertSubmissionMutation() {
       assignmentId,
       userId,
       input,
+      onProgress,
     }: {
       assignmentId: string;
       userId: string;
       input: import('@/lib/api').UpsertSubmissionInput;
-    }) => queryFn(api.data.upsertSubmission(assignmentId, userId, input)),
+      onProgress?: (fraction: number) => void;
+    }) => queryFn(api.data.upsertSubmission(assignmentId, userId, input, onProgress)),
     onSuccess: (submission) => {
       qc.invalidateQueries({
         queryKey: queryKeys.mySubmission(submission.assignmentId, submission.userId),
@@ -1760,11 +1783,16 @@ export function useUploadGroupBannerImageMutation() {
       userId,
       imageUri,
       base64Data,
+      onProgress,
     }: {
       userId: string;
       imageUri: string;
       base64Data?: string | null;
-    }) => queryFn(api.data.uploadGroupBannerImage(userId, imageUri, base64Data)) as Promise<string>,
+      onProgress?: (fraction: number) => void;
+    }) =>
+      queryFn(
+        api.data.uploadGroupBannerImage(userId, imageUri, base64Data, onProgress)
+      ) as Promise<string>,
   });
 }
 
@@ -1774,12 +1802,16 @@ export function useUploadDiscussionPostImageMutation() {
       userId,
       imageUri,
       base64Data,
+      onProgress,
     }: {
       userId: string;
       imageUri: string;
       base64Data?: string | null;
+      onProgress?: (fraction: number) => void;
     }) =>
-      queryFn(api.data.uploadDiscussionPostImage(userId, imageUri, base64Data)) as Promise<string>,
+      queryFn(
+        api.data.uploadDiscussionPostImage(userId, imageUri, base64Data, onProgress)
+      ) as Promise<string>,
   });
 }
 
@@ -2285,14 +2317,16 @@ export function useUploadChatImageMutation() {
       imageUri,
       base64Data,
       chatId,
+      onProgress,
     }: {
       userId: string;
       imageUri: string;
       base64Data?: string | null;
       chatId?: string;
+      onProgress?: (fraction: number) => void;
     }) =>
       queryFn(
-        api.data.uploadChatImage(userId, imageUri, base64Data, chatId ? { chatId } : undefined)
+        api.data.uploadChatImage(userId, imageUri, base64Data, { chatId, onProgress })
       ) as Promise<string>,
   });
 }
@@ -2306,6 +2340,7 @@ export function useUploadChatMessageAttachmentMutation() {
       fileName: string;
       base64Data?: string | null;
       objectKind: 'message' | 'thumbnail';
+      onProgress?: (fraction: number) => void;
     }) =>
       queryFn(
         api.data.uploadChatMessageAttachment(params.userId, params.localUri, {
@@ -2313,6 +2348,7 @@ export function useUploadChatMessageAttachmentMutation() {
           fileName: params.fileName,
           base64Data: params.base64Data,
           objectKind: params.objectKind,
+          onProgress: params.onProgress,
         })
       ) as Promise<string>,
   });
@@ -2327,6 +2363,7 @@ export function useUploadDiscussionPostAttachmentMutation() {
       fileName: string;
       base64Data?: string | null;
       objectKind: 'post' | 'thumbnail';
+      onProgress?: (fraction: number) => void;
     }) =>
       queryFn(
         api.data.uploadDiscussionPostAttachment(params.userId, params.localUri, {
@@ -2334,7 +2371,28 @@ export function useUploadDiscussionPostAttachmentMutation() {
           fileName: params.fileName,
           base64Data: params.base64Data,
           objectKind: params.objectKind,
+          onProgress: params.onProgress,
         })
       ) as Promise<string>,
+  });
+}
+
+export function useUploadAssignmentMaterialMutation() {
+  return useMutation({
+    mutationFn: async (params: {
+      groupId: string;
+      userId: string;
+      localUri: string;
+      contentType: string;
+      fileName: string;
+      onProgress?: (fraction: number) => void;
+    }) =>
+      queryFn(
+        api.data.uploadAssignmentMaterial(params.groupId, params.userId, params.localUri, {
+          contentType: params.contentType,
+          fileName: params.fileName,
+          onProgress: params.onProgress,
+        })
+      ) as Promise<import('@/lib/api').UploadedFile>,
   });
 }

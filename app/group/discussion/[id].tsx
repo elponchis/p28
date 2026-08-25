@@ -31,7 +31,6 @@ import {
 } from '@/components/messages';
 import { ComposeBar, type PendingComposeAttachment } from '@/components/patterns/ComposeBar';
 import { FadeActionSheet, FADE_SHEET_PICKER_DEFER_MS } from '@/components/patterns/FadeActionSheet';
-import { MessageVideoEmbed } from '@/components/patterns/MessageVideoEmbed';
 import {
   ReactionSheet,
   type ReactionSheetPrimaryAction,
@@ -50,8 +49,6 @@ import {
   useReactToPostMutation,
   useRemovePostReactionMutation,
   useDeleteDiscussionPostMutation,
-  useCourseQuery,
-  useLessonQuery,
   useUpdateDiscussionPostMutation,
   useUploadDiscussionPostAttachmentMutation,
   useUploadDiscussionPostImageMutation,
@@ -69,7 +66,7 @@ import {
   MAX_MESSAGE_ATTACHMENT_BYTES,
   normalizeMimeTypeForAllowlist,
 } from '@/lib/api/messageAttachments';
-import { api, getUserFacingError, isApiError } from '@/lib/api';
+import { api, describeError, getUserFacingError } from '@/lib/api';
 import { enqueueDocumentPick } from '@/lib/documentPickerLock';
 import { queryKeys } from '@/lib/api/queryKeys';
 import type {
@@ -80,7 +77,7 @@ import type {
   PostReactionType,
 } from '@/lib/api';
 import {
-  formatMessageSentDateTime,
+  formatMessageSentClockTime,
   formatRelativeTime,
   isGroupEventDiscussionReadOnly,
   messageLocalMinuteKey,
@@ -88,11 +85,6 @@ import {
 import { t } from '@/lib/i18n';
 import { confirm, notify } from '@/lib/dialogs';
 import { downloadFileInBrowser } from '@/lib/downloadFile';
-import {
-  CLOUDINARY_MAX_VIDEO_BYTES,
-  isCloudinaryConfigured,
-  uploadVideoToCloudinary,
-} from '@/lib/cloudinaryVideo';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 function OriginalPostRow({
@@ -122,7 +114,6 @@ function OriginalPostRow({
       <View style={styles.originalPostContent}>
         <Text style={styles.topicTitle}>{discussion.title}</Text>
         {discussion.body ? <Text style={styles.postBody}>{discussion.body}</Text> : null}
-        <MessageVideoEmbed body={discussion.body} accessibilityLabel={discussion.title} />
         <View style={styles.postHeader}>
           <Pressable onPress={onAuthorPress} accessibilityRole="link">
             <Text style={styles.authorName}>
@@ -132,7 +123,7 @@ function OriginalPostRow({
           <View style={styles.postHeaderMeta}>
             <Text style={styles.date}>{formatRelativeTime(discussion.createdAt)}</Text>
             {discussion.updatedAt && discussion.updatedAt !== discussion.createdAt ? (
-              <Text style={styles.editedLabel}>{t('discussions.edited')}</Text>
+              <Text style={styles.editedLabel}> [{t('discussions.edited')}]</Text>
             ) : null}
           </View>
         </View>
@@ -208,7 +199,7 @@ function ReplyRow({
         : t('discussions.messageRowLongPressHintOther')
       : undefined;
 
-  const sentAt = formatMessageSentDateTime(post.createdAt);
+  const sentClock = formatMessageSentClockTime(post.createdAt);
 
   return (
     <View style={[styles.replyRowOuter, extraGapAfterPeerChange && styles.replyRowOuterPeerChange]}>
@@ -253,6 +244,9 @@ function ReplyRow({
                           {post.authorDisplayName ?? t('common.loading')}
                         </Text>
                       </Pressable>
+                      {isEdited ? (
+                        <Text style={styles.replyEditedInline}> [{t('discussions.edited')}]</Text>
+                      ) : null}
                     </View>
                   </View>
                   <View style={styles.replyCardMetaRight}>
@@ -262,24 +256,6 @@ function ReplyRow({
                         color={colors.textSecondary}
                         style={styles.replySendingSpinner}
                       />
-                    ) : null}
-                    {canReact && !outboundStatus && onLongPress ? (
-                      // Long-press opens the same sheet, but that gesture is invisible
-                      // on desktop web — this is the discoverable way in.
-                      <Pressable
-                        onPress={onLongPress}
-                        style={styles.replyMenuButton}
-                        hitSlop={8}
-                        accessibilityRole="button"
-                        accessibilityLabel={t('common.options')}
-                        accessibilityHint={longPressHint}
-                      >
-                        <Ionicons
-                          name="ellipsis-horizontal"
-                          size={16}
-                          color={colors.textSecondary}
-                        />
-                      </Pressable>
                     ) : null}
                   </View>
                 </View>
@@ -296,7 +272,6 @@ function ReplyRow({
                 </View>
               ) : null}
               {post.body ? <Text style={styles.replyBody}>{post.body}</Text> : null}
-              <MessageVideoEmbed body={post.body} />
               <MessageAttachmentsBlock
                 post={post}
                 isOwnMessage={isOwnPost}
@@ -306,9 +281,6 @@ function ReplyRow({
                 onVideoPress={onVideoPress}
                 onFilePress={onFilePress}
               />
-              {isEdited ? (
-                <Text style={styles.replyEditedFooter}>{t('discussions.edited')}</Text>
-              ) : null}
               {showFailedOutbound ? (
                 <Text style={styles.replyFailedLabel}>{t('discussions.sendFailed')}</Text>
               ) : null}
@@ -354,8 +326,8 @@ function ReplyRow({
               </View>
             ) : null}
             {showSentClockTime ? (
-              <Text style={styles.replySentClockTime} accessibilityLabel={sentAt}>
-                {sentAt}
+              <Text style={styles.replySentClockTime} accessibilityLabel={sentClock}>
+                {sentClock}
               </Text>
             ) : null}
           </View>
@@ -467,28 +439,6 @@ export default function DiscussionDetailScreen() {
 
   const createPostMutation = useCreateDiscussionPostMutation();
   const updatePostMutation = useUpdateDiscussionPostMutation();
-
-  // A course-board or lesson-Q&A thread reached from a notification or a shared
-  // link has no visible connection to the video it is about; these give it one.
-  const { data: lmsCourse } = useCourseQuery(discussion?.courseId, {
-    enabled: !!discussion?.courseId,
-  });
-  const { data: lmsLesson } = useLessonQuery(discussion?.lessonId, {
-    enabled: !!discussion?.lessonId,
-  });
-  const lmsParent = useMemo(() => {
-    if (!discussion?.groupId || !discussion.courseId) return null;
-    if (discussion.lessonId) {
-      return {
-        label: lmsLesson?.title ?? t('common.loading'),
-        href: `/group/${discussion.groupId}/course/${discussion.courseId}/lesson/${discussion.lessonId}`,
-      };
-    }
-    return {
-      label: lmsCourse?.title ?? t('common.loading'),
-      href: `/group/${discussion.groupId}/course/${discussion.courseId}`,
-    };
-  }, [discussion?.groupId, discussion?.courseId, discussion?.lessonId, lmsLesson, lmsCourse]);
   const deletePostMutation = useDeleteDiscussionPostMutation();
   const uploadImageMutation = useUploadDiscussionPostImageMutation();
   const uploadDiscussionAttachmentMutation = useUploadDiscussionPostAttachmentMutation();
@@ -640,7 +590,14 @@ export default function DiscussionDetailScreen() {
       const attId = newComposeAttachmentId();
       setPendingAttachments((prev) => [
         ...prev,
-        { id: attId, kind: 'image', displayUri: asset.uri, uploading: true },
+        {
+          id: attId,
+          kind: 'image',
+          displayUri: asset.uri,
+          sourceUri: asset.uri,
+          sourceBase64: asset.base64 ?? undefined,
+          uploading: true,
+        },
       ]);
       try {
         const url = await uploadImageMutation.mutateAsync({
@@ -653,17 +610,15 @@ export default function DiscussionDetailScreen() {
         );
       } catch (e) {
         console.error('[discussion] image upload failed', e);
-        uploadError = isApiError(e)
-          ? getUserFacingError(e)
-          : e instanceof Error
-            ? e.message
-            : getUserFacingError(null);
-        setPendingAttachments((prev) => prev.filter((p) => p.id !== attId));
+        uploadError = describeError(e);
+        setPendingAttachments((prev) =>
+          prev.map((p) => (p.id === attId ? { ...p, uploading: false, failed: true } : p))
+        );
       }
     }
     // One message for the batch, so picking five photos can't stack five dialogs.
     if (uploadError) {
-      void notify({ title: t('common.error'), message: uploadError });
+      void notify({ title: t('attachments.uploadFailed'), message: uploadError });
     }
   }, [userId, pendingAttachments.length, uploadImageMutation]);
 
@@ -685,21 +640,6 @@ export default function DiscussionDetailScreen() {
     });
     if (result.canceled || !result.assets[0]?.uri) return;
     const asset = result.assets[0];
-    // Cloudinary rejects oversized video outright, so catch it here rather than
-    // after the user has waited through the upload.
-    if (
-      isCloudinaryConfigured() &&
-      asset.fileSize != null &&
-      asset.fileSize > CLOUDINARY_MAX_VIDEO_BYTES
-    ) {
-      void notify({
-        title: t('common.error'),
-        message: t('attachments.videoTooLarge', {
-          mb: Math.floor(CLOUDINARY_MAX_VIDEO_BYTES / (1024 * 1024)),
-        }),
-      });
-      return;
-    }
     const attachmentId = newComposeAttachmentId();
     const posterUri = await tryGetVideoPosterUri(asset.uri);
     const fileName = asset.fileName ?? `video-${Date.now()}.mp4`;
@@ -712,34 +652,11 @@ export default function DiscussionDetailScreen() {
         displayUri: posterUri ?? '',
         fileName,
         mimeType: mime,
+        sourceUri: asset.uri,
         uploading: true,
       },
     ]);
     try {
-      if (isCloudinaryConfigured()) {
-        // Phone cameras produce HEVC, which no browser decodes — it plays as a
-        // black rectangle and yields no poster. Cloudinary re-encodes on ingest
-        // and serves a codec the viewer's browser understands, plus a poster.
-        const file = (asset as { file?: File }).file;
-        const transcoded = await uploadVideoToCloudinary(
-          file ?? { uri: asset.uri, name: fileName, type: mime },
-          { folder: userId }
-        );
-        setPendingAttachments((prev) =>
-          prev.map((p) =>
-            p.id === attachmentId
-              ? {
-                  ...p,
-                  displayUri: transcoded.posterUrl,
-                  uploadedUrl: transcoded.url,
-                  uploadedThumbnailUrl: transcoded.posterUrl,
-                  uploading: false,
-                }
-              : p
-          )
-        );
-        return;
-      }
       const videoUrl = await uploadDiscussionAttachmentMutation.mutateAsync({
         userId,
         localUri: asset.uri,
@@ -771,15 +688,10 @@ export default function DiscussionDetailScreen() {
       );
     } catch (e) {
       console.error('[discussion] video upload failed', e);
-      void notify({
-        title: t('common.error'),
-        message: isApiError(e)
-          ? getUserFacingError(e)
-          : e instanceof Error
-            ? e.message
-            : getUserFacingError(null),
-      });
-      setPendingAttachments((prev) => prev.filter((p) => p.id !== attachmentId));
+      void notify({ title: t('attachments.uploadFailed'), message: describeError(e) });
+      setPendingAttachments((prev) =>
+        prev.map((p) => (p.id === attachmentId ? { ...p, uploading: false, failed: true } : p))
+      );
     }
   }, [userId, pendingAttachments.length, uploadDiscussionAttachmentMutation]);
 
@@ -829,6 +741,7 @@ export default function DiscussionDetailScreen() {
         fileName: name,
         mimeType: mime,
         displayUri: doc.uri,
+        sourceUri: doc.uri,
         uploading: true,
       },
     ]);
@@ -845,21 +758,61 @@ export default function DiscussionDetailScreen() {
       );
     } catch (e) {
       console.error('[discussion] file upload failed', e);
-      void notify({
-        title: t('common.error'),
-        message: isApiError(e)
-          ? getUserFacingError(e)
-          : e instanceof Error
-            ? e.message
-            : getUserFacingError(null),
-      });
-      setPendingAttachments((prev) => prev.filter((p) => p.id !== attachmentId));
+      void notify({ title: t('attachments.uploadFailed'), message: describeError(e) });
+      setPendingAttachments((prev) =>
+        prev.map((p) => (p.id === attachmentId ? { ...p, uploading: false, failed: true } : p))
+      );
     }
   }, [userId, pendingAttachments.length, uploadDiscussionAttachmentMutation]);
 
   const removePendingAttachment = useCallback((attachmentId: string) => {
     setPendingAttachments((prev) => prev.filter((p) => p.id !== attachmentId));
   }, []);
+
+  const retryPendingAttachment = useCallback(
+    async (attachmentId: string) => {
+      if (!userId) return;
+      const att = pendingAttachments.find((p) => p.id === attachmentId);
+      if (!att || !att.sourceUri) return;
+      setPendingAttachments((prev) =>
+        prev.map((p) => (p.id === attachmentId ? { ...p, uploading: true, failed: false } : p))
+      );
+      try {
+        if (att.kind === 'image') {
+          const url = await uploadImageMutation.mutateAsync({
+            userId,
+            imageUri: att.sourceUri,
+            base64Data: att.sourceBase64 ?? undefined,
+          });
+          setPendingAttachments((prev) =>
+            prev.map((p) =>
+              p.id === attachmentId ? { ...p, uploadedUrl: url, uploading: false } : p
+            )
+          );
+        } else {
+          const url = await uploadDiscussionAttachmentMutation.mutateAsync({
+            userId,
+            localUri: att.sourceUri,
+            contentType: att.mimeType ?? 'application/octet-stream',
+            fileName: att.fileName ?? 'file',
+            objectKind: 'post',
+          });
+          setPendingAttachments((prev) =>
+            prev.map((p) =>
+              p.id === attachmentId ? { ...p, uploadedUrl: url, uploading: false } : p
+            )
+          );
+        }
+      } catch (e) {
+        console.error('[discussion] attachment retry failed', e);
+        void notify({ title: t('attachments.uploadFailed'), message: describeError(e) });
+        setPendingAttachments((prev) =>
+          prev.map((p) => (p.id === attachmentId ? { ...p, uploading: false, failed: true } : p))
+        );
+      }
+    },
+    [userId, pendingAttachments, uploadImageMutation, uploadDiscussionAttachmentMutation]
+  );
 
   const attachmentMenuOptions = useMemo(
     () => [
@@ -1004,7 +957,7 @@ export default function DiscussionDetailScreen() {
         {
           onError: (e) => {
             console.error('[discussion] delete post failed', e);
-            void notify({ title: t('common.error'), message: getUserFacingError(e) });
+            void notify({ title: t('common.error'), message: describeError(e) });
           },
         }
       );
@@ -1116,20 +1069,6 @@ export default function DiscussionDetailScreen() {
           keyboardShouldPersistTaps="handled"
           onContentSizeChange={onDiscussionScrollContentSizeChange}
         >
-          {lmsParent ? (
-            <Pressable
-              onPress={() => router.push(lmsParent.href as Parameters<typeof router.push>[0])}
-              style={({ pressed }) => [styles.lmsBackLink, pressed && styles.lmsBackLinkPressed]}
-              accessibilityRole="link"
-              accessibilityLabel={lmsParent.label}
-            >
-              <Ionicons name="chevron-back" size={16} color={colors.primary} />
-              <Text style={styles.lmsBackLinkText} numberOfLines={1}>
-                {lmsParent.label}
-              </Text>
-            </Pressable>
-          ) : null}
-
           <OriginalPostRow
             discussion={discussion}
             onAuthorPress={() => router.push(`/profile/${discussion.userId}`)}
@@ -1261,6 +1200,7 @@ export default function DiscussionDetailScreen() {
               sendLabel={isEditing ? t('discussions.updateReply') : t('discussions.postReply')}
               pendingAttachments={pendingAttachments}
               onRemoveAttachment={removePendingAttachment}
+              onRetryAttachment={retryPendingAttachment}
               onOpenAttachmentMenu={() => setAttachmentMenuVisible(true)}
               isUploadingAttachment={isUploadingAttachment}
               maxAttachments={MAX_ATTACHMENTS}
@@ -1406,9 +1346,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   editedLabel: {
-    ...typography.micro,
+    ...typography.caption,
     color: colors.textSecondary,
-    marginLeft: spacing.xxs,
+    fontStyle: 'italic',
   },
   authorName: {
     ...typography.caption,
@@ -1427,23 +1367,6 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.textSecondary,
     lineHeight: 22,
-  },
-  lmsBackLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xxs,
-    alignSelf: 'flex-start',
-    paddingVertical: spacing.xs,
-    paddingRight: spacing.sm,
-    marginBottom: spacing.xs,
-  },
-  lmsBackLinkPressed: {
-    opacity: 0.7,
-  },
-  lmsBackLinkText: {
-    ...typography.caption,
-    color: colors.primary,
-    flexShrink: 1,
   },
   repliesSection: {
     paddingTop: spacing.lg,
@@ -1566,10 +1489,6 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.textSecondary,
   },
-  replyMenuButton: {
-    paddingHorizontal: spacing.xxs,
-    paddingVertical: spacing.xxs,
-  },
   replyCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1601,10 +1520,10 @@ const styles = StyleSheet.create({
     ...typography.label,
     color: colors.primary,
   },
-  replyEditedFooter: {
-    ...typography.micro,
+  replyEditedInline: {
+    ...typography.caption,
     color: colors.textSecondary,
-    marginTop: spacing.xxs,
+    fontStyle: 'italic',
   },
   replySentClockTime: {
     ...typography.caption,

@@ -11,7 +11,7 @@ export const realtime = supabaseAdapter.realtime;
 /** Facade object for app usage: api.auth, api.data, api.realtime */
 export const api = { auth, data, realtime };
 
-export { getUserFacingError } from '../errors';
+export { describeError, getUserFacingError } from '../errors';
 
 export { isApiError } from './contracts';
 export type {
@@ -62,9 +62,16 @@ export type {
   Assignment,
   CreateAssignmentInput,
   UpdateAssignmentInput,
+  AssignmentType,
+  QuizAnswer,
+  QuizOption,
+  QuizQuestion,
+  QuizQuestionInput,
+  QuizQuestionType,
   Submission,
   UpsertSubmissionInput,
   UpdateSubmissionFeedbackInput,
+  UploadedFile,
   Discussion,
   CreateDiscussionInput,
   UpdateDiscussionInput,

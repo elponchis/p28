@@ -9,7 +9,6 @@ import {
   StyleSheet,
   Text,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -329,13 +328,7 @@ function SelectField({
   icon?: React.ComponentProps<typeof Ionicons>['name'];
 }) {
   const [open, setOpen] = useState(false);
-  const { height: windowHeight } = useWindowDimensions();
   const { sheetSlideAnim, sheetFadeAnim } = useFadeSheetAnimation(open);
-  // Cap the list itself rather than leaning on the sheet's percentage maxHeight
-  // reaching it through two levels of flex. A definite height is what makes an
-  // overflow container scrollable; without one the 130-odd countries simply
-  // overflowed and were clipped, with no scrollbar and no way to reach them.
-  const listMaxHeight = Math.max(200, Math.round(windowHeight * 0.5));
   const selectedLabel = options.find((o) => o.value === value)?.label;
   return (
     <>
@@ -373,7 +366,7 @@ function SelectField({
           <RNAnimated.View
             style={[styles.sheetContainer, { transform: [{ translateY: sheetSlideAnim }] }]}
           >
-            <Pressable onPress={(e) => e.stopPropagation()}>
+            <Pressable style={styles.sheetContent} onPress={(e) => e.stopPropagation()}>
               <View style={styles.sheetHandle} />
               <View style={styles.sheetHeader}>
                 <Text style={styles.sheetTitle}>{label}</Text>
@@ -384,10 +377,7 @@ function SelectField({
                   accessibilityLabel={doneLabel ?? t('common.done')}
                 />
               </View>
-              <ScrollView
-                contentContainerStyle={styles.sheetList}
-                style={[styles.sheetScroll, { maxHeight: listMaxHeight }]}
-              >
+              <ScrollView contentContainerStyle={styles.sheetList} style={styles.sheetScroll}>
                 {options.map((opt) => {
                   const active = opt.value === value;
                   return (
@@ -735,6 +725,10 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     paddingBottom: Platform.OS === 'ios' ? 40 : spacing.xl,
     maxHeight: '65%',
+    overflow: 'hidden',
+  },
+  sheetContent: {
+    flexShrink: 1,
   },
   sheetHandle: {
     width: 36,
@@ -753,7 +747,8 @@ const styles = StyleSheet.create({
   },
   sheetTitle: { ...typography.titleLg, color: colors.onSurface },
   sheetScroll: {
-    flexGrow: 0,
+    flexGrow: 1,
+    flexShrink: 1,
   },
   sheetList: { paddingHorizontal: spacing.lg, paddingBottom: spacing.lg, gap: spacing.sm },
   sheetItem: {

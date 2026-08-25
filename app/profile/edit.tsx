@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { getUserFacingError } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -13,11 +13,10 @@ import {
 import { useLocale } from '@/contexts/LocaleContext';
 import { t } from '@/lib/i18n';
 import { Avatar, Button, Input, ListItem } from '@/components/primitives';
+import { UploadProgressBar } from '@/components/patterns/UploadProgressBar';
 import { DesktopContentContainer } from '@/components/layout/DesktopContentContainer';
-import { ImageCropModal } from '@/components/patterns/ImageCropModal';
 import { colors, radius, spacing, typography, shadow } from '@/theme/tokens';
 import type { ProfileUpdates } from '@/lib/api';
-import { AVATAR_ASPECT } from '@/lib/cropImage';
 
 const LANGUAGE_OPTIONS: {
   value: string;
@@ -122,9 +121,9 @@ export default function ProfileEditScreen() {
   const [tagsInput, setTagsInput] = useState('');
   const [bio, setBio] = useState('');
   const [preferredLanguage, setPreferredLanguage] = useState<string | undefined>(undefined);
-  const [avatarUrl, setAvatarUrl] = useState<string | null | undefined>();
-  const [cropUri, setCropUri] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>();
   const [localPreviewUri, setLocalPreviewUri] = useState<string | null>(null);
+  const [avatarUploadProgress, setAvatarUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const syncedRef = useRef<string | null>(null);
@@ -164,21 +163,16 @@ export default function ProfileEditScreen() {
     });
     if (result.canceled || !result.assets[0]?.uri) return;
     const asset = result.assets[0];
+    setLocalPreviewUri(asset.uri);
     setError(null);
-    if (Platform.OS === 'web') {
-      // The web picker ignores allowsEditing/aspect, so ask here instead of
-      // centre-cropping on the uploader's behalf.
-      setCropUri(asset.uri);
-      return;
-    }
-    uploadAvatar(asset.uri, asset.base64 ?? undefined);
-  };
-
-  const uploadAvatar = (imageUri: string, base64Data?: string) => {
-    if (!userId) return;
-    setLocalPreviewUri(imageUri);
+    setAvatarUploadProgress(0);
     uploadMutation.mutate(
-      { userId, imageUri, base64Data },
+      {
+        userId,
+        imageUri: asset.uri,
+        base64Data: asset.base64 ?? undefined,
+        onProgress: setAvatarUploadProgress,
+      },
       {
         onSuccess: (url) => setAvatarUrl(url),
         onError: (err) => setError(getUserFacingError(err)),
@@ -186,10 +180,14 @@ export default function ProfileEditScreen() {
     );
   };
 
-  const removePhoto = () => {
-    setLocalPreviewUri(null);
-    setAvatarUrl(null);
+  const retryAvatarUpload = () => {
+    if (!uploadMutation.variables) return;
     setError(null);
+    setAvatarUploadProgress(0);
+    uploadMutation.mutate(uploadMutation.variables, {
+      onSuccess: (url) => setAvatarUrl(url),
+      onError: (err) => setError(getUserFacingError(err)),
+    });
   };
 
   const hasChanges =
@@ -212,8 +210,7 @@ export default function ProfileEditScreen() {
       bio: bio || undefined,
       preferredLanguage: preferredLanguage || undefined,
     };
-    // null removes the photo, so only an untouched (undefined) value is skipped.
-    if (avatarUrl !== undefined) updates.avatarUrl = avatarUrl;
+    if (avatarUrl) updates.avatarUrl = avatarUrl;
     updateMutation.mutate(
       { userId, updates },
       {
@@ -259,32 +256,21 @@ export default function ProfileEditScreen() {
             </Pressable>
           </View>
           <Text style={styles.changePhotoText}>{t('profile.changePhoto')}</Text>
-          {localPreviewUri || avatarUrl ? (
-            <Pressable
-              onPress={removePhoto}
-              disabled={isSubmitting}
-              style={({ pressed }) => [styles.removePhotoBtn, pressed && { opacity: 0.7 }]}
-              accessibilityRole="button"
-              accessibilityLabel={t('profile.removePhoto')}
-              accessibilityHint={t('profile.removePhotoHint')}
-            >
-              <Ionicons name="trash-outline" size={14} color={colors.error} />
-              <Text style={styles.removePhotoText}>{t('profile.removePhoto')}</Text>
-            </Pressable>
+          {uploadMutation.isPending ? (
+            <View style={styles.avatarProgressRow}>
+              <UploadProgressBar progress={avatarUploadProgress} />
+            </View>
+          ) : null}
+          {uploadMutation.isError ? (
+            <Button
+              title={t('attachments.retryUpload')}
+              variant="text"
+              onPress={retryAvatarUpload}
+              accessibilityLabel={t('attachments.retryUpload')}
+              accessibilityHint={t('attachments.retryUploadHint')}
+            />
           ) : null}
         </View>
-
-        <ImageCropModal
-          visible={!!cropUri}
-          sourceUri={cropUri}
-          aspect={AVATAR_ASPECT}
-          circular
-          onCancel={() => setCropUri(null)}
-          onConfirm={(cropped) => {
-            setCropUri(null);
-            uploadAvatar(cropped.uri, cropped.base64);
-          }}
-        />
 
         {/* Form fields */}
         <View style={styles.section}>
@@ -420,21 +406,14 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   editPhotoBtnPressed: { opacity: 0.75 },
-  removePhotoBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xxs,
-    marginTop: spacing.xs,
-    paddingVertical: spacing.xxs,
-    paddingHorizontal: spacing.sm,
-  },
-  removePhotoText: {
-    ...typography.caption,
-    color: colors.error,
-  },
   changePhotoText: {
     ...typography.caption,
     color: colors.primary,
+  },
+  avatarProgressRow: {
+    width: '100%',
+    maxWidth: 220,
+    marginTop: spacing.sm,
   },
 
   // Form sections

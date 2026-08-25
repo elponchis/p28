@@ -44,6 +44,7 @@ import type {
   PostReactionType,
   Profile,
   ProfileUpdates,
+  QuizQuestion,
   Submission,
   UpdateAssignmentInput,
   UpdateChatInput,
@@ -56,11 +57,15 @@ import type {
   UpdateGroupInput,
   UpdateLessonInput,
   UpdateSubmissionFeedbackInput,
+  UploadedFile,
   UpsertSubmissionInput,
   PushToken,
   InAppNotification,
   MarkInAppNotificationsReadInput,
 } from './dto';
+
+/** Fraction 0..1 of bytes sent so far. Called from an XHR `upload.onprogress` handler. */
+export type OnUploadProgress = (fraction: number) => void;
 
 /**
  * Data contract: domain operations. No backend-specific types.
@@ -77,30 +82,37 @@ export interface DataContract {
    * admin of a group that still has other members (see the Edge Function's own docs).
    */
   deleteAccount(): Promise<void | ApiError>;
-  /** When base64Data is provided (e.g. from picker with base64: true), it is used for upload and imageUri is only for fallback/logging. */
+  /**
+   * When base64Data is provided (e.g. from picker with base64: true), it is used for upload and
+   * imageUri is only for fallback/logging. Image is auto-compressed/resized before upload
+   * (see readImageFile in the Supabase adapter). onProgress reports 0..1 upload progress.
+   */
   uploadProfileImage(
     userId: string,
     imageUri: string,
-    base64Data?: string | null
+    base64Data?: string | null,
+    onProgress?: OnUploadProgress
   ): Promise<string | ApiError>;
   /** Upload group banner image. Returns public URL. Used when creating/editing groups. */
   uploadGroupBannerImage(
     userId: string,
     imageUri: string,
-    base64Data?: string | null
+    base64Data?: string | null,
+    onProgress?: OnUploadProgress
   ): Promise<string | ApiError>;
   /** Upload discussion post image. Returns public URL. Used when replying with attachments. */
   uploadDiscussionPostImage(
     userId: string,
     imageUri: string,
-    base64Data?: string | null
+    base64Data?: string | null,
+    onProgress?: OnUploadProgress
   ): Promise<string | ApiError>;
   /** Upload chat avatar or chat message image. Returns public URL. */
   uploadChatImage(
     userId: string,
     imageUri: string,
     base64Data?: string | null,
-    options?: { chatId?: string }
+    options?: { chatId?: string; onProgress?: OnUploadProgress }
   ): Promise<string | ApiError>;
   /** Upload chat message file/video (or thumbnail JPEG under messages/{userId}/thumbs/). */
   uploadChatMessageAttachment(
@@ -111,6 +123,7 @@ export interface DataContract {
       fileName: string;
       base64Data?: string | null;
       objectKind: 'message' | 'thumbnail';
+      onProgress?: OnUploadProgress;
     }
   ): Promise<string | ApiError>;
   /** Upload discussion post file/video (or thumbnail under {userId}/thumbs/). */
@@ -122,8 +135,20 @@ export interface DataContract {
       fileName: string;
       base64Data?: string | null;
       objectKind: 'post' | 'thumbnail';
+      onProgress?: OnUploadProgress;
     }
   ): Promise<string | ApiError>;
+  /**
+   * Upload one instructor-provided assignment reference material file to the public
+   * assignment-materials bucket (path keyed by groupId/userId so it can be uploaded before
+   * the assignment row exists — see 00073_upload_enhancements.sql). Returns the stored file.
+   */
+  uploadAssignmentMaterial(
+    groupId: string,
+    userId: string,
+    localUri: string,
+    options: { contentType: string; fileName: string; onProgress?: OnUploadProgress }
+  ): Promise<UploadedFile | ApiError>;
 
   getNotificationPreferences(userId: string): Promise<NotificationPreferences | ApiError>;
   updateNotificationPreferences(
@@ -293,15 +318,22 @@ export interface DataContract {
     input: UpdateAssignmentInput
   ): Promise<Assignment | ApiError>;
   deleteAssignment(assignmentId: string): Promise<void | ApiError>;
+  /**
+   * Questions for a quiz assignment, in sort order. `correctOptionIds` is populated only
+   * for group admins — the answer key is a separate, admin-only table, so a student's
+   * fetch simply returns no key rows rather than relying on the UI to hide them.
+   */
+  getAssignmentQuestions(assignmentId: string): Promise<QuizQuestion[] | ApiError>;
   /** Admin-only: all students' submissions for an assignment, enriched with author info. */
   getSubmissionsByAssignment(assignmentId: string): Promise<Submission[] | ApiError>;
   /** The caller's own submission for this assignment, or null if not yet submitted. */
   getMySubmission(assignmentId: string, userId: string): Promise<Submission | null | ApiError>;
-  /** Submit or resubmit: replaces any existing file + row for this (assignment, user). */
+  /** Submit or resubmit: replaces any existing files + row for this (assignment, user). */
   upsertSubmission(
     assignmentId: string,
     userId: string,
-    input: UpsertSubmissionInput
+    input: UpsertSubmissionInput,
+    onProgress?: OnUploadProgress
   ): Promise<Submission | ApiError>;
   /** Group-admin-only: set feedback/score on a submission. */
   updateSubmissionFeedback(

@@ -14,13 +14,21 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { Button, Input } from '@/components/primitives';
 import { AssignmentDueDateField } from '@/components/patterns/AssignmentDueDateField';
+import { AssignmentMaterialsField } from '@/components/patterns/AssignmentMaterialsField';
+import { AssignmentTypeField } from '@/components/patterns/AssignmentTypeField';
+import { QuizBuilder } from '@/components/patterns/QuizBuilder';
 import { DesktopContentContainer } from '@/components/layout/DesktopContentContainer';
+import { useAuth } from '@/hooks/useAuth';
 import {
   useAssignmentQuery,
+  useAssignmentQuestionsQuery,
   useDeleteAssignmentMutation,
   useUpdateAssignmentMutation,
 } from '@/hooks/useApiQueries';
 import { getUserFacingError } from '@/lib/api';
+import type { QuizQuestionInput, UploadedFile } from '@/lib/api';
+import { findQuizDraftProblem, toQuizQuestionInput } from '@/lib/quiz';
+import { describeQuizDraftProblem } from '@/lib/quizMessages';
 import { t } from '@/lib/i18n';
 import { confirm } from '@/lib/dialogs';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
@@ -31,12 +39,18 @@ export default function EditAssignmentScreen() {
     assignmentId: string;
   }>();
   const router = useRouter();
+  const { session } = useAuth();
+  const userId = session?.user?.id;
 
   const {
     data: assignment,
     isLoading: assignmentLoading,
     isError: isAssignmentError,
   } = useAssignmentQuery(assignmentId, { enabled: !!assignmentId });
+  const isQuiz = assignment?.assignmentType === 'quiz';
+  const { data: existingQuestions } = useAssignmentQuestionsQuery(assignmentId, {
+    enabled: !!assignmentId && isQuiz,
+  });
   const updateMutation = useUpdateAssignmentMutation();
   const deleteMutation = useDeleteAssignmentMutation();
   const isSubmitting = updateMutation.isPending;
@@ -45,6 +59,8 @@ export default function EditAssignmentScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState<Date | null>(null);
+  const [materials, setMaterials] = useState<UploadedFile[]>([]);
+  const [questions, setQuestions] = useState<QuizQuestionInput[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -52,7 +68,13 @@ export default function EditAssignmentScreen() {
     setTitle(assignment.title);
     setDescription(assignment.description ?? '');
     setDueDate(assignment.dueDate ? new Date(assignment.dueDate) : null);
+    setMaterials(assignment.materials);
   }, [assignment]);
+
+  useEffect(() => {
+    if (!existingQuestions) return;
+    setQuestions(existingQuestions.map(toQuizQuestionInput));
+  }, [existingQuestions]);
 
   useEffect(() => {
     if (assignmentId && isAssignmentError) {
@@ -66,6 +88,13 @@ export default function EditAssignmentScreen() {
       setError(t('assignments.fieldsRequired'));
       return;
     }
+    if (isQuiz) {
+      const problem = findQuizDraftProblem(questions);
+      if (problem) {
+        setError(describeQuizDraftProblem(problem));
+        return;
+      }
+    }
     setError(null);
     updateMutation.mutate(
       {
@@ -75,6 +104,8 @@ export default function EditAssignmentScreen() {
           description: description.trim() || undefined,
           dueDate: dueDate ? dueDate.toISOString() : undefined,
           sortOrder: assignment?.sortOrder ?? 0,
+          materials,
+          questions: isQuiz ? questions : undefined,
         },
       },
       {
@@ -150,11 +181,37 @@ export default function EditAssignmentScreen() {
             accessibilityLabel={t('assignments.descriptionLabel')}
           />
 
+          {/* The type is fixed once students can submit — switching it would strand every
+              submission already made in the other format. */}
+          <AssignmentTypeField
+            value={assignment?.assignmentType ?? 'file'}
+            onChange={() => {}}
+            locked
+          />
+
+          {isQuiz ? (
+            <QuizBuilder
+              questions={questions}
+              onChange={setQuestions}
+              disabled={isSubmitting || isDeleting}
+            />
+          ) : null}
+
           <AssignmentDueDateField
             value={dueDate}
             onChange={setDueDate}
             disabled={isSubmitting || isDeleting}
           />
+
+          {userId && groupId ? (
+            <AssignmentMaterialsField
+              groupId={groupId}
+              userId={userId}
+              materials={materials}
+              onChange={setMaterials}
+              disabled={isSubmitting || isDeleting}
+            />
+          ) : null}
 
           {error ? (
             <View style={styles.errorBanner}>

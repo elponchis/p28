@@ -14,9 +14,10 @@ import {
 import {
   isAllowedSubmissionMimeType,
   MAX_SUBMISSION_FILE_BYTES,
+  MAX_SUBMISSION_FILES,
 } from '@/lib/api/assignmentSubmissions';
 import { parseMeetingLinkInput } from '@/lib/meetingLink';
-import type { DataContract } from '../../contracts';
+import type { DataContract, OnUploadProgress } from '../../contracts';
 import type { ApiError } from '../../contracts/errors';
 import { isApiError } from '../../contracts/guards';
 import type {
@@ -68,6 +69,11 @@ import type {
   Profile,
   ProfileUpdates,
   PushToken,
+  QuizAnswer,
+  QuizOption,
+  QuizQuestion,
+  QuizQuestionInput,
+  QuizQuestionType,
   Submission,
   UpdateAssignmentInput,
   UpdateChatInput,
@@ -80,6 +86,7 @@ import type {
   UpdateGroupInput,
   UpdateLessonInput,
   UpdateSubmissionFeedbackInput,
+  UploadedFile,
   UpsertSubmissionInput,
 } from '../../contracts/dto';
 
@@ -128,13 +135,7 @@ function toApiError(err: unknown): ApiError {
 /** Supabase storage URL path segment for the avatars bucket (public or authenticated). */
 const AVATARS_BUCKET_SEGMENT = '/avatars/';
 
-/**
- * Infer image content type from a URI's extension.
- *
- * Only a hint: on web the picker hands back `blob:<origin>/<uuid>` URLs, which carry
- * no extension at all, so everything falls through to jpeg here. Prefer
- * `sniffImageContentType` on the decoded bytes whenever they are available.
- */
+/** Infer image extension/content type from URI (e.g. .png -> image/png). */
 function contentTypeFromUri(uri: string): string {
   const lower = uri.toLowerCase();
   if (lower.includes('.png')) return 'image/png';
@@ -202,12 +203,56 @@ function base64ToArrayBuffer(
 /** Result type for image read: body is ArrayBuffer or Blob (Supabase accepts both). */
 type ImageUploadBody = { body: ArrayBuffer | Blob; contentType: string };
 
+/** Max longest-edge dimension for auto-resized images (matches typical in-app display sizes). */
+const IMAGE_MAX_DIMENSION = 1600;
+/** JPEG/WebP compression quality (0..1) applied to auto-resized images. */
+const IMAGE_COMPRESS_QUALITY = 0.8;
+
 /**
- * Reads an image file from a local URI. Uses expo-file-system/legacy on React Native when available;
- * returns ArrayBuffer to avoid Blob-from-ArrayBuffer in RN. Falls back to fetch for web/Node tests.
+ * Resizes/compresses an image URI in place before upload, when it's a raster type we can safely
+ * re-encode (jpeg/png/webp — not gif, to preserve animation). No-ops (and never throws) when
+ * expo-image-manipulator isn't available (e.g. web/Node tests) or manipulation fails, so a
+ * compression bug never blocks an upload — it just skips straight to the original file.
+ */
+async function compressImageIfNeeded(uri: string, contentType: string): Promise<string> {
+  if (contentType !== 'image/jpeg' && contentType !== 'image/png' && contentType !== 'image/webp') {
+    return uri;
+  }
+  try {
+    const Manipulator = require('expo-image-manipulator') as {
+      manipulateAsync?: (
+        uri: string,
+        actions: { resize: { width?: number; height?: number } }[],
+        options: { compress: number; format: unknown }
+      ) => Promise<{ uri: string }>;
+      SaveFormat?: { JPEG: unknown; PNG: unknown; WEBP: unknown };
+    };
+    if (!Manipulator?.manipulateAsync || !Manipulator.SaveFormat) return uri;
+    const format =
+      contentType === 'image/png'
+        ? Manipulator.SaveFormat.PNG
+        : contentType === 'image/webp'
+          ? Manipulator.SaveFormat.WEBP
+          : Manipulator.SaveFormat.JPEG;
+    const result = await Manipulator.manipulateAsync(
+      uri,
+      [{ resize: { width: IMAGE_MAX_DIMENSION } }],
+      { compress: IMAGE_COMPRESS_QUALITY, format }
+    );
+    return result.uri;
+  } catch {
+    return uri;
+  }
+}
+
+/**
+ * Reads an image file from a local URI, auto-resizing/compressing it first (see
+ * compressImageIfNeeded). Uses expo-file-system/legacy on React Native when available; returns
+ * ArrayBuffer to avoid Blob-from-ArrayBuffer in RN. Falls back to fetch for web/Node tests.
  */
 async function readImageFile(imageUri: string): Promise<ImageUploadBody> {
   const contentType = contentTypeFromUri(imageUri);
+  const uri = await compressImageIfNeeded(imageUri, contentType);
 
   try {
     const LegacyFS = require('expo-file-system/legacy') as {
@@ -216,7 +261,7 @@ async function readImageFile(imageUri: string): Promise<ImageUploadBody> {
     };
     if (LegacyFS?.readAsStringAsync) {
       const encoding = LegacyFS.EncodingType?.Base64 ?? 'base64';
-      const base64 = await LegacyFS.readAsStringAsync(imageUri, { encoding });
+      const base64 = await LegacyFS.readAsStringAsync(uri, { encoding });
       const { body } = base64ToArrayBuffer(base64, contentType);
       return { body, contentType };
     }
@@ -224,13 +269,96 @@ async function readImageFile(imageUri: string): Promise<ImageUploadBody> {
     // Fall through to fetch (e.g. web or Node tests)
   }
 
-  const response = await fetch(imageUri);
+  const response = await fetch(uri);
   if (!response.ok) {
     throw new Error('Failed to fetch image');
   }
   const blob = await response.blob();
   const type = blob.type || contentType;
   return { body: blob, contentType: type };
+}
+
+/** Reads env Supabase URL/anon key the same way lib/api/adapters/supabase/index.ts does. */
+function getSupabaseRestConfig(): { url: string; anonKey: string } {
+  return {
+    url: process.env.EXPO_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? '',
+    anonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY ?? '',
+  };
+}
+
+/**
+ * Uploads a file to Supabase Storage, optionally reporting 0..1 progress via XMLHttpRequest's
+ * `upload.onprogress` (fetch, which supabase-js's storage client uses internally, does not
+ * expose upload progress in React Native). Falls back to the plain supabase-js upload when no
+ * onProgress is given, or when the session/env isn't available for the XHR path.
+ */
+async function uploadToStorage(
+  getClient: () => SupabaseClient,
+  bucket: string,
+  path: string,
+  body: ArrayBuffer | Blob,
+  contentType: string,
+  upsert: boolean,
+  onProgress?: OnUploadProgress
+): Promise<ApiError | null> {
+  const client = getClient();
+
+  if (!onProgress) {
+    const { error } = await client.storage.from(bucket).upload(path, body, { upsert, contentType });
+    return error ? toApiError(error) : null;
+  }
+
+  const { url: supabaseUrl, anonKey } = getSupabaseRestConfig();
+  const { data: sessionData } = await client.auth.getSession();
+  const token = sessionData.session?.access_token;
+  if (!supabaseUrl || !anonKey || !token) {
+    const { error } = await client.storage.from(bucket).upload(path, body, { upsert, contentType });
+    return error ? toApiError(error) : null;
+  }
+
+  const encodedPath = path
+    .split('/')
+    .map((segment) => encodeURIComponent(segment))
+    .join('/');
+  const objectUrl = `${supabaseUrl.replace(/\/$/, '')}/storage/v1/object/${bucket}/${encodedPath}`;
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', objectUrl, true);
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      xhr.setRequestHeader('apikey', anonKey);
+      xhr.setRequestHeader('Content-Type', contentType);
+      xhr.setRequestHeader('x-upsert', String(upsert));
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable && event.total > 0) {
+          onProgress(Math.min(1, event.loaded / event.total));
+        }
+      };
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          onProgress(1);
+          resolve();
+        } else {
+          // The body carries Storage's actual explanation (e.g. an RLS denial or a
+          // rejected mime type); without it a failed upload is undiagnosable.
+          const detail = (xhr.responseText ?? '').trim().slice(0, 500);
+          reject(
+            new Error(
+              detail
+                ? `Upload failed (${xhr.status}): ${detail}`
+                : `Upload failed with status ${xhr.status}`
+            )
+          );
+        }
+      };
+      xhr.onerror = () => reject(new Error('Network error during upload'));
+      xhr.send(body as XMLHttpRequestBodyInit);
+    });
+    return null;
+  } catch (e) {
+    return toApiError(e);
+  }
 }
 
 async function getUriSizeBytes(uri: string): Promise<number | undefined> {
@@ -696,6 +824,16 @@ function mapLessonRow(row: LessonRow): Lesson {
   };
 }
 
+/** Raw shape stored in a `files`/`materials` JSONB array column. */
+type UploadedFileRow = { path: string; name: string; size?: number | null };
+
+function mapUploadedFileRows(rows: unknown): UploadedFile[] {
+  if (!Array.isArray(rows)) return [];
+  return rows
+    .filter((r): r is UploadedFileRow => !!r && typeof r === 'object' && 'path' in r && 'name' in r)
+    .map((r) => ({ path: r.path, name: r.name, size: r.size ?? undefined }));
+}
+
 type AssignmentRow = {
   id: string;
   group_id: string;
@@ -706,6 +844,8 @@ type AssignmentRow = {
   sort_order: number;
   created_at: string;
   updated_at: string;
+  materials: unknown;
+  assignment_type: string | null;
 };
 
 function mapAssignmentRow(row: AssignmentRow): Assignment {
@@ -719,19 +859,171 @@ function mapAssignmentRow(row: AssignmentRow): Assignment {
     sortOrder: row.sort_order,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    materials: mapUploadedFileRows(row.materials),
+    assignmentType: row.assignment_type === 'quiz' ? 'quiz' : 'file',
   };
+}
+
+const ASSIGNMENT_ROW_COLUMNS =
+  'id, group_id, title, description, due_date, created_by_user_id, sort_order, created_at, updated_at, materials, assignment_type';
+
+type QuizQuestionRow = {
+  id: string;
+  assignment_id: string;
+  prompt: string;
+  question_type: string;
+  options: unknown;
+  allow_multiple: boolean;
+  points: number;
+  required: boolean;
+  sort_order: number;
+};
+
+const QUIZ_QUESTION_ROW_COLUMNS =
+  'id, assignment_id, prompt, question_type, options, allow_multiple, points, required, sort_order';
+
+function mapQuizOptionRows(value: unknown): QuizOption[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((o): o is Record<string, unknown> => !!o && typeof o === 'object')
+    .map((o) => ({ id: String(o.id ?? ''), text: String(o.text ?? '') }))
+    .filter((o) => !!o.id);
+}
+
+function mapQuizQuestionRow(row: QuizQuestionRow, correctOptionIds?: string[]): QuizQuestion {
+  const questionType: QuizQuestionType =
+    row.question_type === 'multiple_choice' || row.question_type === 'essay'
+      ? row.question_type
+      : 'short_answer';
+  return {
+    id: row.id,
+    assignmentId: row.assignment_id,
+    prompt: row.prompt,
+    questionType,
+    options: mapQuizOptionRows(row.options),
+    allowMultiple: !!row.allow_multiple,
+    points: row.points,
+    required: !!row.required,
+    sortOrder: row.sort_order,
+    correctOptionIds,
+  };
+}
+
+/**
+ * Writes the quiz builder's question list over whatever the assignment currently has.
+ *
+ * Questions carry their id through an edit rather than being dropped and recreated, so a
+ * student who already answered question 3 still has an answer attached to question 3
+ * afterwards — answers are stored as a JSONB snapshot keyed by question id, and recreating
+ * the rows would orphan every one of them.
+ */
+async function syncAssignmentQuestions(
+  getClient: () => SupabaseClient,
+  assignmentId: string,
+  questions: QuizQuestionInput[]
+): Promise<ApiError | null> {
+  const client = getClient();
+
+  const { data: existingRows, error: existingError } = await client
+    .from('assignment_questions')
+    .select('id')
+    .eq('assignment_id', assignmentId);
+  if (existingError) return toApiError(existingError);
+
+  const existingIds = new Set(((existingRows ?? []) as { id: string }[]).map((r) => r.id));
+  const keptIds = new Set(questions.map((q) => q.id).filter((id): id is string => !!id));
+
+  const removed = [...existingIds].filter((id) => !keptIds.has(id));
+  if (removed.length > 0) {
+    // The key rows cascade with the question, so they need no separate delete.
+    const { error } = await client.from('assignment_questions').delete().in('id', removed);
+    if (error) return toApiError(error);
+  }
+
+  for (const q of questions) {
+    const prompt = q.prompt?.trim();
+    if (!prompt) return { message: 'Question text is required', code: 'VALIDATION_ERROR' };
+
+    const isChoice = q.questionType === 'multiple_choice';
+    const options = isChoice
+      ? q.options.map((o) => ({ id: o.id, text: o.text.trim() })).filter((o) => !!o.text)
+      : [];
+    if (isChoice && options.length < 2) {
+      return {
+        message: 'A multiple-choice question needs at least two options',
+        code: 'VALIDATION_ERROR',
+      };
+    }
+
+    const payload = {
+      assignment_id: assignmentId,
+      prompt,
+      question_type: q.questionType,
+      options,
+      allow_multiple: isChoice ? q.allowMultiple : false,
+      points: Number.isFinite(q.points) ? Math.max(0, Math.round(q.points)) : 1,
+      required: q.required,
+      sort_order: q.sortOrder,
+    };
+
+    let questionId = q.id;
+    if (questionId && existingIds.has(questionId)) {
+      const { error } = await client
+        .from('assignment_questions')
+        .update(payload)
+        .eq('id', questionId);
+      if (error) return toApiError(error);
+    } else {
+      const { data: inserted, error } = await client
+        .from('assignment_questions')
+        .insert(payload)
+        .select('id')
+        .single();
+      if (error) return toApiError(error);
+      questionId = (inserted as { id: string }).id;
+    }
+
+    // Only options that still exist can be correct — dropping an option in the builder
+    // must not leave it silently marked as the answer.
+    const optionIds = new Set(options.map((o) => o.id));
+    const correct = isChoice ? (q.correctOptionIds ?? []).filter((id) => optionIds.has(id)) : [];
+    const { error: keyError } = await client.from('assignment_question_keys').upsert(
+      {
+        question_id: questionId,
+        assignment_id: assignmentId,
+        correct_option_ids: correct,
+      },
+      { onConflict: 'question_id' }
+    );
+    if (keyError) return toApiError(keyError);
+  }
+
+  return null;
+}
+
+function mapQuizAnswerRows(value: unknown): QuizAnswer[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((a): a is Record<string, unknown> => !!a && typeof a === 'object')
+    .map((a) => ({
+      questionId: String(a.questionId ?? ''),
+      optionIds: Array.isArray(a.optionIds) ? a.optionIds.map(String) : undefined,
+      text: typeof a.text === 'string' ? a.text : undefined,
+    }))
+    .filter((a) => !!a.questionId);
 }
 
 type SubmissionRow = {
   id: string;
   assignment_id: string;
   user_id: string;
-  file_path: string;
-  file_name: string;
-  file_size: number | null;
+  files: unknown;
+  answers: unknown;
   submitted_at: string;
   feedback: string | null;
   score: number | null;
+  auto_score: number | null;
+  auto_score_max: number | null;
   reviewed_by_user_id: string | null;
   reviewed_at: string | null;
 };
@@ -744,12 +1036,13 @@ function mapSubmissionRow(
     id: row.id,
     assignmentId: row.assignment_id,
     userId: row.user_id,
-    filePath: row.file_path,
-    fileName: row.file_name,
-    fileSize: row.file_size ?? undefined,
+    files: mapUploadedFileRows(row.files),
+    answers: mapQuizAnswerRows(row.answers),
     submittedAt: row.submitted_at,
     feedback: row.feedback ?? undefined,
     score: row.score ?? undefined,
+    autoScore: row.auto_score ?? undefined,
+    autoScoreMax: row.auto_score_max ?? undefined,
     reviewedByUserId: row.reviewed_by_user_id ?? undefined,
     reviewedAt: row.reviewed_at ?? undefined,
     authorDisplayName: profile?.displayName,
@@ -758,7 +1051,7 @@ function mapSubmissionRow(
 }
 
 const SUBMISSION_ROW_COLUMNS =
-  'id, assignment_id, user_id, file_path, file_name, file_size, submitted_at, feedback, score, reviewed_by_user_id, reviewed_at';
+  'id, assignment_id, user_id, files, answers, submitted_at, feedback, score, auto_score, auto_score_max, reviewed_by_user_id, reviewed_at';
 
 function validateRecurringMeetingWrite(
   input: CreateGroupRecurringMeetingInput | UpdateGroupRecurringMeetingInput
@@ -1112,10 +1405,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
         const merged: Profile = {
           userId,
           displayName: updates.displayName ?? current?.displayName,
-          // `??` would treat an explicit null as "unset" and restore the old
-          // photo, so removal has to be told apart from absence.
-          avatarUrl:
-            updates.avatarUrl === undefined ? current?.avatarUrl : (updates.avatarUrl ?? undefined),
+          avatarUrl: updates.avatarUrl ?? current?.avatarUrl,
           bio: updates.bio ?? current?.bio,
           preferredLanguage: updates.preferredLanguage ?? current?.preferredLanguage,
           title: updates.title ?? current?.title,
@@ -1253,7 +1543,8 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
     async uploadProfileImage(
       userId: string,
       imageUri: string,
-      base64Data?: string | null
+      base64Data?: string | null,
+      onProgress?: OnUploadProgress
     ): Promise<string | ApiError> {
       try {
         const { body, contentType } =
@@ -1270,11 +1561,16 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
                 : 'jpg';
         const path = `${userId}/avatar.${ext}`;
 
-        const { error } = await getClient().storage.from('avatars').upload(path, body, {
-          upsert: true,
+        const err = await uploadToStorage(
+          getClient,
+          'avatars',
+          path,
+          body,
           contentType,
-        });
-        if (error) return toApiError(error);
+          true,
+          onProgress
+        );
+        if (err) return err;
 
         const { data } = getClient().storage.from('avatars').getPublicUrl(path);
         return data.publicUrl;
@@ -1286,7 +1582,8 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
     async uploadGroupBannerImage(
       userId: string,
       imageUri: string,
-      base64Data?: string | null
+      base64Data?: string | null,
+      onProgress?: OnUploadProgress
     ): Promise<string | ApiError> {
       try {
         const { body, contentType } =
@@ -1304,10 +1601,16 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
         const timestamp = Date.now();
         const path = `${userId}/${timestamp}.${ext}`;
 
-        const { error } = await getClient()
-          .storage.from('group-banners')
-          .upload(path, body, { upsert: false, contentType });
-        if (error) return toApiError(error);
+        const err = await uploadToStorage(
+          getClient,
+          'group-banners',
+          path,
+          body,
+          contentType,
+          false,
+          onProgress
+        );
+        if (err) return err;
 
         const { data } = getClient().storage.from('group-banners').getPublicUrl(path);
         return data.publicUrl;
@@ -1319,7 +1622,8 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
     async uploadDiscussionPostImage(
       userId: string,
       imageUri: string,
-      base64Data?: string | null
+      base64Data?: string | null,
+      onProgress?: OnUploadProgress
     ): Promise<string | ApiError> {
       try {
         const { body, contentType } =
@@ -1337,10 +1641,16 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
         const timestamp = Date.now();
         const path = `${userId}/${timestamp}.${ext}`;
 
-        const { error } = await getClient()
-          .storage.from('discussion-post-images')
-          .upload(path, body, { upsert: false, contentType });
-        if (error) return toApiError(error);
+        const err = await uploadToStorage(
+          getClient,
+          'discussion-post-images',
+          path,
+          body,
+          contentType,
+          false,
+          onProgress
+        );
+        if (err) return err;
 
         const { data } = getClient().storage.from('discussion-post-images').getPublicUrl(path);
         return data.publicUrl;
@@ -1353,7 +1663,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
       userId: string,
       imageUri: string,
       base64Data?: string | null,
-      options?: { chatId?: string }
+      options?: { chatId?: string; onProgress?: OnUploadProgress }
     ): Promise<string | ApiError> {
       try {
         const { body, contentType } =
@@ -1373,10 +1683,16 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
           ? `avatars/${options.chatId}/${timestamp}.${ext}`
           : `messages/${userId}/${timestamp}.${ext}`;
 
-        const { error } = await getClient()
-          .storage.from('chat-images')
-          .upload(path, body, { upsert: false, contentType });
-        if (error) return toApiError(error);
+        const err = await uploadToStorage(
+          getClient,
+          'chat-images',
+          path,
+          body,
+          contentType,
+          false,
+          options?.onProgress
+        );
+        if (err) return err;
 
         const { data } = getClient().storage.from('chat-images').getPublicUrl(path);
         return data.publicUrl;
@@ -1393,6 +1709,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
         fileName: string;
         base64Data?: string | null;
         objectKind: 'message' | 'thumbnail';
+        onProgress?: OnUploadProgress;
       }
     ): Promise<string | ApiError> {
       try {
@@ -1408,10 +1725,16 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
             ? `messages/${userId}/thumbs/${ts}.jpg`
             : `messages/${userId}/${ts}-${safe}`;
 
-        const { error } = await getClient()
-          .storage.from('chat-images')
-          .upload(path, body, { upsert: false, contentType });
-        if (error) return toApiError(error);
+        const err = await uploadToStorage(
+          getClient,
+          'chat-images',
+          path,
+          body,
+          contentType,
+          false,
+          options.onProgress
+        );
+        if (err) return err;
         const { data } = getClient().storage.from('chat-images').getPublicUrl(path);
         return data.publicUrl;
       } catch (e) {
@@ -1431,6 +1754,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
         fileName: string;
         base64Data?: string | null;
         objectKind: 'post' | 'thumbnail';
+        onProgress?: OnUploadProgress;
       }
     ): Promise<string | ApiError> {
       try {
@@ -1446,12 +1770,59 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
             ? `${userId}/thumbs/${ts}.jpg`
             : `${userId}/${ts}-${safe}`;
 
-        const { error } = await getClient()
-          .storage.from('discussion-post-images')
-          .upload(path, body, { upsert: false, contentType });
-        if (error) return toApiError(error);
+        const err = await uploadToStorage(
+          getClient,
+          'discussion-post-images',
+          path,
+          body,
+          contentType,
+          false,
+          options.onProgress
+        );
+        if (err) return err;
         const { data } = getClient().storage.from('discussion-post-images').getPublicUrl(path);
         return data.publicUrl;
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'Upload failed';
+        if (msg === 'File is too large' || msg === 'File type not allowed') {
+          return { message: msg, code: 'VALIDATION_ERROR' };
+        }
+        return toApiError(e);
+      }
+    },
+
+    async uploadAssignmentMaterial(
+      groupId: string,
+      userId: string,
+      localUri: string,
+      options: { contentType: string; fileName: string; onProgress?: OnUploadProgress }
+    ): Promise<UploadedFile | ApiError> {
+      try {
+        const { body, contentType } = await readBinaryFile(
+          localUri,
+          options.contentType,
+          undefined,
+          {
+            isAllowed: isAllowedSubmissionMimeType,
+            maxBytes: MAX_SUBMISSION_FILE_BYTES,
+          }
+        );
+        const safe = sanitizeStorageFileSegment(options.fileName);
+        const path = `${groupId}/${userId}/${Date.now()}-${safe}`;
+
+        const err = await uploadToStorage(
+          getClient,
+          'assignment-materials',
+          path,
+          body,
+          contentType,
+          false,
+          options.onProgress
+        );
+        if (err) return err;
+
+        const size = body instanceof ArrayBuffer ? body.byteLength : body.size;
+        return { path, name: options.fileName, size };
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'Upload failed';
         if (msg === 'File is too large' || msg === 'File type not allowed') {
@@ -2520,13 +2891,46 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
       }
     },
 
+    async getAssignmentQuestions(assignmentId: string): Promise<QuizQuestion[] | ApiError> {
+      try {
+        const { data: rows, error } = await getClient()
+          .from('assignment_questions')
+          .select(QUIZ_QUESTION_ROW_COLUMNS)
+          .eq('assignment_id', assignmentId)
+          .order('sort_order', { ascending: true });
+        if (error) return toApiError(error);
+
+        // Students get zero key rows back (RLS), which is exactly the desired result: their
+        // questions come through with correctOptionIds undefined. So this is not an
+        // admin-only branch — the same query serves both, and the database decides.
+        const { data: keyRows } = await getClient()
+          .from('assignment_question_keys')
+          .select('question_id, correct_option_ids')
+          .eq('assignment_id', assignmentId);
+        const keys = new Map<string, string[]>();
+        for (const k of (keyRows ?? []) as {
+          question_id: string;
+          correct_option_ids: unknown;
+        }[]) {
+          keys.set(
+            k.question_id,
+            Array.isArray(k.correct_option_ids) ? k.correct_option_ids.map(String) : []
+          );
+        }
+
+        return ((rows ?? []) as QuizQuestionRow[]).map((r) =>
+          mapQuizQuestionRow(r, keys.get(r.id))
+        );
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
     async getAssignmentsByGroup(groupId: string): Promise<Assignment[] | ApiError> {
       try {
         const { data: rows, error } = await getClient()
           .from('assignments')
-          .select(
-            'id, group_id, title, description, due_date, created_by_user_id, sort_order, created_at, updated_at'
-          )
+          .select(ASSIGNMENT_ROW_COLUMNS)
           .eq('group_id', groupId)
           .order('sort_order', { ascending: true });
         if (error) return toApiError(error);
@@ -2540,9 +2944,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
       try {
         const { data, error } = await getClient()
           .from('assignments')
-          .select(
-            'id, group_id, title, description, due_date, created_by_user_id, sort_order, created_at, updated_at'
-          )
+          .select(ASSIGNMENT_ROW_COLUMNS)
           .eq('id', assignmentId)
           .single();
         if (error) return toApiError(error);
@@ -2563,6 +2965,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
         if (!title) {
           return { message: 'Title is required', code: 'VALIDATION_ERROR' };
         }
+        const assignmentType = input.assignmentType ?? 'file';
         const { data: row, error } = await getClient()
           .from('assignments')
           .insert({
@@ -2572,13 +2975,28 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
             due_date: input.dueDate || null,
             created_by_user_id: userId,
             sort_order: input.sortOrder,
+            materials: input.materials ?? [],
+            assignment_type: assignmentType,
           })
-          .select(
-            'id, group_id, title, description, due_date, created_by_user_id, sort_order, created_at, updated_at'
-          )
+          .select(ASSIGNMENT_ROW_COLUMNS)
           .single();
         if (error) return toApiError(error);
-        return mapAssignmentRow(row as AssignmentRow);
+
+        const created = mapAssignmentRow(row as AssignmentRow);
+        if (assignmentType === 'quiz' && input.questions?.length) {
+          const questionsError = await syncAssignmentQuestions(
+            getClient,
+            created.id,
+            input.questions
+          );
+          if (questionsError) {
+            // A quiz with no questions is not a usable assignment, so don't leave a
+            // half-created one behind for the instructor to discover later.
+            await getClient().from('assignments').delete().eq('id', created.id);
+            return questionsError;
+          }
+        }
+        return created;
       } catch (e) {
         return toApiError(e);
       }
@@ -2593,18 +3011,46 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
         if (!title) {
           return { message: 'Title is required', code: 'VALIDATION_ERROR' };
         }
+        const payload: Record<string, unknown> = {
+          title,
+          description: input.description?.trim() || null,
+          due_date: input.dueDate || null,
+          sort_order: input.sortOrder,
+        };
+        if (input.materials !== undefined) payload.materials = input.materials;
+        if (input.assignmentType !== undefined) payload.assignment_type = input.assignmentType;
+
+        // Removing a material from the edit screen means it's no longer in input.materials;
+        // clean up the now-orphaned storage objects the same way deleteAssignment does, so
+        // storage doesn't accumulate files nothing references anymore.
+        if (input.materials !== undefined) {
+          const { data: existing } = await getClient()
+            .from('assignments')
+            .select('materials')
+            .eq('id', assignmentId)
+            .maybeSingle();
+          const before = mapUploadedFileRows(existing?.materials);
+          const afterPaths = new Set((input.materials ?? []).map((m) => m.path));
+          const removed = before.filter((m) => !afterPaths.has(m.path)).map((m) => m.path);
+          if (removed.length > 0) {
+            await getClient().storage.from('assignment-materials').remove(removed);
+          }
+        }
+
+        if (input.questions !== undefined) {
+          const questionsError = await syncAssignmentQuestions(
+            getClient,
+            assignmentId,
+            input.questions
+          );
+          if (questionsError) return questionsError;
+        }
+
         const { data: row, error } = await getClient()
           .from('assignments')
-          .update({
-            title,
-            description: input.description?.trim() || null,
-            due_date: input.dueDate || null,
-            sort_order: input.sortOrder,
-          })
+          .update(payload)
           .eq('id', assignmentId)
-          .select(
-            'id, group_id, title, description, due_date, created_by_user_id, sort_order, created_at, updated_at'
-          )
+          .select(ASSIGNMENT_ROW_COLUMNS)
           .single();
         if (error) return toApiError(error);
         return mapAssignmentRow(row as AssignmentRow);
@@ -2616,18 +3062,31 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
     async deleteAssignment(assignmentId: string): Promise<void | ApiError> {
       try {
         // The submissions -> assignments FK cascade only removes DB rows; Storage objects
-        // are a separate system with no cascade, so submission files must be removed here
-        // first or they become orphaned. Requires the "Group admin can delete any submission
-        // file for their assignment" storage policy (00070) — without it, deletes for files
-        // that aren't the caller's own would be silently dropped by RLS.
+        // are a separate system with no cascade, so submission/material files must be removed
+        // here first or they become orphaned. Requires the "Group admin can delete any
+        // submission file for their assignment" storage policy (00070) — without it, deletes
+        // for files that aren't the caller's own would be silently dropped by RLS.
+        const { data: assignmentRow, error: assignmentError } = await getClient()
+          .from('assignments')
+          .select('materials')
+          .eq('id', assignmentId)
+          .maybeSingle();
+        if (assignmentError) return toApiError(assignmentError);
+        const materialPaths = mapUploadedFileRows(assignmentRow?.materials).map((m) => m.path);
+        if (materialPaths.length > 0) {
+          await getClient().storage.from('assignment-materials').remove(materialPaths);
+        }
+
         const { data: subs, error: subsError } = await getClient()
           .from('submissions')
-          .select('file_path')
+          .select('files')
           .eq('assignment_id', assignmentId);
         if (subsError) return toApiError(subsError);
-        const paths = (subs ?? []).map((s) => s.file_path).filter(Boolean);
-        if (paths.length > 0) {
-          await getClient().storage.from('assignment-submissions').remove(paths);
+        const submissionPaths = (subs ?? []).flatMap((s) =>
+          mapUploadedFileRows(s.files).map((f) => f.path)
+        );
+        if (submissionPaths.length > 0) {
+          await getClient().storage.from('assignment-submissions').remove(submissionPaths);
         }
 
         const { error } = await getClient().from('assignments').delete().eq('id', assignmentId);
@@ -2678,59 +3137,115 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
     async upsertSubmission(
       assignmentId: string,
       userId: string,
-      input: UpsertSubmissionInput
+      input: UpsertSubmissionInput,
+      onProgress?: OnUploadProgress
     ): Promise<Submission | ApiError> {
       try {
-        const fileName = input.fileName?.trim();
-        if (!fileName) {
-          return { message: 'File name is required', code: 'VALIDATION_ERROR' };
+        // A quiz submission answers questions and uploads nothing; a file submission is the
+        // reverse. Exactly one of the two shapes must be present.
+        const isQuiz = input.answers !== undefined;
+        const files = input.files ?? [];
+        if (!isQuiz) {
+          if (files.length === 0) {
+            return { message: 'At least one file is required', code: 'VALIDATION_ERROR' };
+          }
+          if (files.length > MAX_SUBMISSION_FILES) {
+            return { message: 'Too many files', code: 'VALIDATION_ERROR' };
+          }
+          for (const f of files) {
+            if (!f.fileName?.trim()) {
+              return { message: 'File name is required', code: 'VALIDATION_ERROR' };
+            }
+          }
         }
 
         const { data: existingRow, error: existingError } = await getClient()
           .from('submissions')
-          .select('id, file_path')
+          .select('id, files')
           .eq('assignment_id', assignmentId)
           .eq('user_id', userId)
           .maybeSingle();
         if (existingError) return toApiError(existingError);
 
-        let body: ImageUploadBody['body'];
-        let contentType: string;
-        try {
-          const read = await readBinaryFile(input.fileUri, input.mimeType, undefined, {
-            isAllowed: isAllowedSubmissionMimeType,
-            maxBytes: MAX_SUBMISSION_FILE_BYTES,
-          });
-          body = read.body;
-          contentType = read.contentType;
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : 'Upload failed';
-          if (msg === 'File is too large' || msg === 'File type not allowed') {
-            return { message: msg, code: 'VALIDATION_ERROR' };
-          }
-          return toApiError(e);
+        if (isQuiz) {
+          const payload = {
+            assignment_id: assignmentId,
+            user_id: userId,
+            files: [],
+            answers: input.answers ?? [],
+            file_path: null,
+            file_name: null,
+            file_size: null,
+            submitted_at: new Date().toISOString(),
+          };
+          const { data: row, error } = existingRow
+            ? await getClient()
+                .from('submissions')
+                .update(payload)
+                .eq('id', existingRow.id)
+                .select(SUBMISSION_ROW_COLUMNS)
+                .single()
+            : await getClient()
+                .from('submissions')
+                .insert(payload)
+                .select(SUBMISSION_ROW_COLUMNS)
+                .single();
+          if (error) return toApiError(error);
+          return mapSubmissionRow(row as SubmissionRow);
         }
 
-        const safeFileName = sanitizeStorageFileSegment(fileName);
-        const path = `${assignmentId}/${userId}/${Date.now()}-${safeFileName}`;
-        const { error: uploadError } = await getClient()
-          .storage.from('assignment-submissions')
-          .upload(path, body, { upsert: false, contentType });
-        if (uploadError) return toApiError(uploadError);
+        const uploaded: UploadedFile[] = [];
+        const total = files.length;
+        for (let i = 0; i < total; i++) {
+          const f = files[i];
+          let body: ImageUploadBody['body'];
+          let contentType: string;
+          try {
+            const read = await readBinaryFile(f.fileUri, f.mimeType, undefined, {
+              isAllowed: isAllowedSubmissionMimeType,
+              maxBytes: MAX_SUBMISSION_FILE_BYTES,
+            });
+            body = read.body;
+            contentType = read.contentType;
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : 'Upload failed';
+            if (msg === 'File is too large' || msg === 'File type not allowed') {
+              return { message: msg, code: 'VALIDATION_ERROR' };
+            }
+            return toApiError(e);
+          }
 
-        // Only remove the old file once the new one is safely uploaded, so a failed
-        // upload never leaves the student with no file at all (no orphaned file either,
-        // since the old path is removed right after the new row/file are both in place).
-        if (existingRow?.file_path && existingRow.file_path !== path) {
-          await getClient().storage.from('assignment-submissions').remove([existingRow.file_path]);
+          const safeFileName = sanitizeStorageFileSegment(f.fileName.trim());
+          const path = `${assignmentId}/${userId}/${Date.now()}-${i}-${safeFileName}`;
+          const err = await uploadToStorage(
+            getClient,
+            'assignment-submissions',
+            path,
+            body,
+            contentType,
+            false,
+            onProgress ? (fraction: number) => onProgress((i + fraction) / total) : undefined
+          );
+          if (err) return err;
+          uploaded.push({ path, name: f.fileName.trim(), size: f.fileSize });
+        }
+
+        // Only remove the old files once all new ones are safely uploaded, so a failed
+        // upload never leaves the student with no files at all (no orphaned files either,
+        // since the old paths are removed right after the new row/files are both in place).
+        const oldPaths = mapUploadedFileRows(existingRow?.files).map((f) => f.path);
+        if (oldPaths.length > 0) {
+          await getClient().storage.from('assignment-submissions').remove(oldPaths);
         }
 
         const payload = {
           assignment_id: assignmentId,
           user_id: userId,
-          file_path: path,
-          file_name: fileName,
-          file_size: input.fileSize ?? null,
+          files: uploaded,
+          answers: [],
+          file_path: uploaded[0].path,
+          file_name: uploaded[0].name,
+          file_size: uploaded[0].size ?? null,
           submitted_at: new Date().toISOString(),
         };
 
@@ -2784,14 +3299,15 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
       try {
         const { data: existing, error: fetchError } = await getClient()
           .from('submissions')
-          .select('file_path')
+          .select('files')
           .eq('id', submissionId)
           .maybeSingle();
         if (fetchError) return toApiError(fetchError);
         const { error } = await getClient().from('submissions').delete().eq('id', submissionId);
         if (error) return toApiError(error);
-        if (existing?.file_path) {
-          await getClient().storage.from('assignment-submissions').remove([existing.file_path]);
+        const paths = mapUploadedFileRows(existing?.files).map((f) => f.path);
+        if (paths.length > 0) {
+          await getClient().storage.from('assignment-submissions').remove(paths);
         }
         return;
       } catch (e) {

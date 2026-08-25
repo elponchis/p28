@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,8 +15,11 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Avatar, Button, Input } from '@/components/primitives';
 import { DesktopContentContainer } from '@/components/layout/DesktopContentContainer';
 import { FileAttachmentModal } from '@/components/messages';
+import { QuizAnswerForm } from '@/components/patterns/QuizAnswerForm';
 import { useAuth } from '@/hooks/useAuth';
 import {
+  useAssignmentQuery,
+  useAssignmentQuestionsQuery,
   useSubmissionDownloadUrlMutation,
   useSubmissionsByAssignmentQuery,
   useUpdateSubmissionFeedbackMutation,
@@ -23,6 +27,7 @@ import {
 } from '@/hooks/useApiQueries';
 import { getUserFacingError } from '@/lib/api';
 import { formatRelativeTime } from '@/lib/dates';
+import { answersById } from '@/lib/quiz';
 import { t } from '@/lib/i18n';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
@@ -42,14 +47,25 @@ export default function SubmissionReviewScreen() {
     isLoading: isRoleLoading,
     isError: isRoleError,
   } = useUserIsGroupAdminQuery(groupId, userId, { enabled: !!groupId && !!userId });
-  const { data: submissions = [], isLoading: submissionsLoading } =
-    useSubmissionsByAssignmentQuery(assignmentId, {
+  const { data: submissions = [], isLoading: submissionsLoading } = useSubmissionsByAssignmentQuery(
+    assignmentId,
+    {
       enabled: !!assignmentId && isGroupAdmin === true,
-    });
+    }
+  );
   const submission = useMemo(
     () => submissions.find((s) => s.id === submissionId),
     [submissions, submissionId]
   );
+
+  const { data: assignment } = useAssignmentQuery(assignmentId, { enabled: !!assignmentId });
+  const isQuiz = assignment?.assignmentType === 'quiz';
+  const { data: questions = [] } = useAssignmentQuestionsQuery(assignmentId, {
+    enabled: !!assignmentId && isQuiz,
+  });
+  // Reviewers are group admins, so their questions arrive with the answer key attached and
+  // the read-only form can flag which options were the correct ones.
+  const givenAnswers = useMemo(() => answersById(submission?.answers ?? []), [submission?.answers]);
 
   const updateFeedbackMutation = useUpdateSubmissionFeedbackMutation();
   const downloadUrlMutation = useSubmissionDownloadUrlMutation();
@@ -76,13 +92,12 @@ export default function SubmissionReviewScreen() {
     setScoreInput(submission.score !== undefined ? String(submission.score) : '');
   }, [submission]);
 
-  const handleViewFile = () => {
-    if (!submission) return;
+  const handleViewFile = (file: { path: string; name: string }) => {
     setError(null);
     downloadUrlMutation.mutate(
-      { filePath: submission.filePath },
+      { filePath: file.path },
       {
-        onSuccess: (url) => setViewingFile({ url, fileName: submission.fileName }),
+        onSuccess: (url) => setViewingFile({ url, fileName: file.name }),
         onError: (err) => setError(getUserFacingError(err)),
       }
     );
@@ -170,21 +185,42 @@ export default function SubmissionReviewScreen() {
             </View>
           </View>
 
-          <View style={styles.fileCard}>
-            <Ionicons name="document-text-outline" size={22} color={colors.primary} />
-            <Text style={styles.fileName} numberOfLines={2}>
-              {submission.fileName}
-            </Text>
-          </View>
-          <Button
-            title={t('submissions.viewFile')}
-            variant="secondary"
-            onPress={handleViewFile}
-            disabled={downloadUrlMutation.isPending}
-            accessibilityLabel={t('submissions.viewFile')}
-            accessibilityHint={t('submissions.viewFileHint')}
-            style={styles.viewFileButton}
-          />
+          {submission.files.map((file) => (
+            <Pressable
+              key={file.path}
+              style={styles.fileCard}
+              onPress={() => handleViewFile(file)}
+              disabled={downloadUrlMutation.isPending}
+              accessibilityLabel={file.name}
+              accessibilityHint={t('submissions.viewFileHint')}
+              accessibilityRole="button"
+            >
+              <Ionicons name="document-text-outline" size={22} color={colors.primary} />
+              <Text style={styles.fileName} numberOfLines={2}>
+                {file.name}
+              </Text>
+            </Pressable>
+          ))}
+
+          {isQuiz ? (
+            <View style={styles.quizBlock}>
+              <View style={styles.quizHeaderRow}>
+                <Text style={styles.sectionTitle}>{t('submissions.quizAnswersTitle')}</Text>
+                {submission.autoScoreMax ? (
+                  <Text style={styles.autoScoreText}>
+                    {t('submissions.autoScoreLabel')}: {submission.autoScore ?? 0} /{' '}
+                    {submission.autoScoreMax}
+                  </Text>
+                ) : null}
+              </View>
+              <QuizAnswerForm
+                questions={questions}
+                answers={givenAnswers}
+                onChange={() => {}}
+                readOnly
+              />
+            </View>
+          ) : null}
 
           <Text style={styles.sectionTitle}>{t('submissions.reviewSectionTitle')}</Text>
 
@@ -289,12 +325,24 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     flex: 1,
   },
-  viewFileButton: {
-    marginBottom: spacing.lg,
-  },
   sectionTitle: {
     ...typography.title,
     color: colors.textPrimary,
+    marginBottom: spacing.sm,
+  },
+  quizBlock: {
+    marginBottom: spacing.lg,
+  },
+  quizHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    flexWrap: 'wrap',
+  },
+  autoScoreText: {
+    ...typography.bodyStrong,
+    color: colors.primary,
     marginBottom: spacing.sm,
   },
   errorBanner: {
