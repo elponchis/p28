@@ -810,6 +810,8 @@ export const ko: TranslationShape = {
     markCorrectHint: '정답을 체크하면 자동으로 채점돼요. 체크하지 않으면 직접 채점하시면 돼요.',
     markCorrect: '정답으로 표시',
     markCorrectA11yHint: '이 선택지를 정답으로 표시해요',
+    correctBadge: '정답',
+    noCorrectWarning: '정답이 지정되지 않았어요. 이 문제는 자동 채점되지 않아요.',
     optionPlaceholder: '선택지',
     removeOption: '선택지 삭제',
     removeOptionHint: '이 선택지를 삭제해요',

@@ -910,6 +910,8 @@ export const en = {
       'Tick the correct answer to have it scored automatically. Leave it untouched to grade by hand.',
     markCorrect: 'Mark as correct',
     markCorrectA11yHint: 'Marks this option as a correct answer',
+    correctBadge: 'Correct',
+    noCorrectWarning: "No correct answer marked — this question won't be auto-scored.",
     optionPlaceholder: 'Answer option',
     removeOption: 'Remove option',
     removeOptionHint: 'Deletes this answer option',

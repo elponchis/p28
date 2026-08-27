@@ -206,10 +206,13 @@ export function QuizBuilder({ questions, onChange, disabled }: QuizBuilderProps)
                   const isCorrect = correct.includes(option.id);
                   return (
                     <View key={option.id} style={styles.optionRow}>
+                      {/* A bare icon here read as a bullet, not a control, so instructors
+                          never marked an answer and nothing auto-graded. It carries its
+                          own label now. */}
                       <Pressable
                         onPress={() => handleToggleCorrect(index, option.id)}
                         disabled={disabled}
-                        style={styles.correctToggle}
+                        style={[styles.correctToggle, isCorrect && styles.correctToggleOn]}
                         accessibilityRole="checkbox"
                         accessibilityState={{ checked: isCorrect }}
                         accessibilityLabel={t('assignments.markCorrect')}
@@ -220,14 +223,22 @@ export function QuizBuilder({ questions, onChange, disabled }: QuizBuilderProps)
                             isCorrect
                               ? question.allowMultiple
                                 ? 'checkbox'
-                                : 'radio-button-on'
+                                : 'checkmark-circle'
                               : question.allowMultiple
                                 ? 'square-outline'
-                                : 'radio-button-off'
+                                : 'ellipse-outline'
                           }
-                          size={20}
-                          color={isCorrect ? colors.success : colors.onSurfaceVariant}
+                          size={16}
+                          color={isCorrect ? colors.onPrimary : colors.onSurfaceVariant}
                         />
+                        <Text
+                          style={[
+                            styles.correctToggleText,
+                            isCorrect && styles.correctToggleTextOn,
+                          ]}
+                        >
+                          {t('assignments.correctBadge')}
+                        </Text>
                       </Pressable>
                       <TextInput
                         value={option.text}
@@ -264,6 +275,18 @@ export function QuizBuilder({ questions, onChange, disabled }: QuizBuilderProps)
                   accessibilityLabel={t('assignments.addOption')}
                   accessibilityHint={t('assignments.addOptionHint')}
                 />
+
+                {/* Say what silence costs, next to the control that fixes it — an
+                    unmarked question is graded by hand, which is easy to not notice
+                    until submissions arrive unscored. */}
+                {correct.length === 0 ? (
+                  <View style={styles.noCorrectWarning}>
+                    <Ionicons name="alert-circle-outline" size={16} color={colors.secondary} />
+                    <Text style={styles.noCorrectWarningText}>
+                      {t('assignments.noCorrectWarning')}
+                    </Text>
+                  </View>
+                ) : null}
 
                 <View style={styles.switchRow}>
                   <Text style={styles.switchLabel}>{t('assignments.allowMultipleLabel')}</Text>
@@ -414,7 +437,41 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   correctToggle: {
-    padding: spacing.xxs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xxs,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.xxs,
+    borderRadius: radius.chip,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
+    backgroundColor: colors.surfaceContainerHighest,
+  },
+  correctToggleOn: {
+    backgroundColor: colors.success,
+    borderColor: colors.success,
+  },
+  correctToggleText: {
+    ...typography.caption,
+    color: colors.onSurfaceVariant,
+  },
+  correctToggleTextOn: {
+    color: colors.onPrimary,
+  },
+  noCorrectWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.amberSoft,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  noCorrectWarningText: {
+    ...typography.caption,
+    color: colors.textPrimary,
+    flex: 1,
+    minWidth: 0,
   },
   optionInput: {
     ...typography.bodyMd,
