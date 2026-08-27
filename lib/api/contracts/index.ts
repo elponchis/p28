@@ -11,6 +11,7 @@ export type {
   ChatFolder,
   ChatFolderItem,
   ChatMember,
+  ChatRequestState,
   ChatMessage,
   ChatSharedContentMessage,
   CreateAssignmentInput,

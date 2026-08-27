@@ -21,6 +21,7 @@ import { FadeActionSheet } from '@/components/patterns/FadeActionSheet';
 import { useAuth } from '@/hooks/useAuth';
 import {
   useChatFoldersQuery,
+  useChatRequestsQuery,
   useChatsForUserQuery,
   useCreateChatMutation,
   useDeleteChatFolderMutation,
@@ -187,6 +188,7 @@ export default function MessagesIndexScreen() {
     isLoading,
     refetch,
   } = useChatsForUserQuery(userId, { folderId: selectedFolderId });
+  const { data: chatRequests = [] } = useChatRequestsQuery(userId);
   const { data: folders = [] } = useChatFoldersQuery(userId);
   const deleteFolderMutation = useDeleteChatFolderMutation();
   const createChatMutation = useCreateChatMutation();
@@ -270,6 +272,26 @@ export default function MessagesIndexScreen() {
         <View style={styles.titleRow}>
           <Text style={styles.heading}>{t('messages.conversations')}</Text>
           <Pressable
+            onPress={() => router.push('/messages/requests')}
+            accessibilityLabel={t('messages.requestsTitle')}
+            accessibilityHint={t('messages.requestsHint')}
+            hitSlop={8}
+            style={styles.friendsButton}
+          >
+            {({ pressed }) => (
+              <View style={{ opacity: pressed ? 0.6 : 1 }}>
+                <Ionicons name="mail-outline" size={24} color={colors.primary} />
+                {chatRequests.length > 0 ? (
+                  <View style={styles.requestBadge}>
+                    <Text style={styles.requestBadgeText}>
+                      {chatRequests.length > 9 ? '9+' : String(chatRequests.length)}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+            )}
+          </Pressable>
+          <Pressable
             onPress={handleOpenFriends}
             accessibilityLabel={t('messages.friendsList')}
             accessibilityHint={t('messages.friendsListHint')}
@@ -350,7 +372,7 @@ export default function MessagesIndexScreen() {
         </ScrollView>
       </View>
     ),
-    [selectedFolderId, folders, searchQuery, handleOpenFriends, router]
+    [selectedFolderId, folders, searchQuery, handleOpenFriends, router, chatRequests.length]
   );
 
   if (!userId) {
@@ -510,6 +532,22 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  requestBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -6,
+    minWidth: 16,
+    height: 16,
+    paddingHorizontal: 4,
+    borderRadius: 8,
+    backgroundColor: colors.error,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  requestBadgeText: {
+    ...typography.micro,
+    color: colors.onPrimary,
   },
 
   // ── Search ──

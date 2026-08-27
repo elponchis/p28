@@ -30,6 +30,12 @@ export default function MessagesTabLayout() {
         }}
       />
       <Stack.Screen
+        name="requests"
+        options={{
+          title: t('messages.requestsTitle'),
+        }}
+      />
+      <Stack.Screen
         name="friends"
         options={{
           title: t('messages.friendsList'),

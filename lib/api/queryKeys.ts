@@ -72,6 +72,9 @@ export const queryKeys = {
   course: (id: string) => ['course', id] as const,
   lessonsByCourse: (courseId: string) => ['lessonsByCourse', courseId] as const,
   lesson: (id: string) => ['lesson', id] as const,
+  chatRequests: (userId: string) => ['chatRequests', userId] as const,
+  canMessageUser: (userId: string, targetUserId: string) =>
+    ['canMessageUser', userId, targetUserId] as const,
   assignmentsByGroup: (groupId: string) => ['assignmentsByGroup', groupId] as const,
   assignment: (id: string) => ['assignment', id] as const,
   assignmentQuestions: (assignmentId: string) => ['assignmentQuestions', assignmentId] as const,

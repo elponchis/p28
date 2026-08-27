@@ -10,6 +10,7 @@ import { FadeActionSheet } from '@/components/patterns/FadeActionSheet';
 import { useAuth } from '@/hooks/useAuth';
 import {
   useAreFriendsQuery,
+  useCanMessageUserQuery,
   useCreateChatMutation,
   useProfileQuery,
   useRemoveFriendMutation,
@@ -36,6 +37,9 @@ export default function UserProfileScreen() {
   const { data: profile, isLoading, isError, error, refetch } = useProfileQuery(userId);
   const currentUserId = session?.user?.id ?? '';
   const { data: areFriends } = useAreFriendsQuery(currentUserId, userId);
+  // Messaging no longer waits on a friend request: sharing a group is enough, and the
+  // first message arrives as a request the other person can accept or decline.
+  const { data: canMessage = false } = useCanMessageUserQuery(currentUserId, userId);
   const removeFriendMutation = useRemoveFriendMutation();
   const createChatMutation = useCreateChatMutation();
 
@@ -223,11 +227,37 @@ export default function UserProfileScreen() {
                   </Pressable>
                 </View>
               ) : (
-                <AddFriendButton
-                  currentUserId={currentUserId}
-                  targetUserId={userId}
-                  displayName={profile?.displayName}
-                />
+                <View style={styles.friendActionsRow}>
+                  <AddFriendButton
+                    currentUserId={currentUserId}
+                    targetUserId={userId}
+                    displayName={profile?.displayName}
+                  />
+                  {canMessage ? (
+                    <Pressable
+                      onPress={handleStartChat}
+                      style={({ pressed }) => [
+                        styles.messageButton,
+                        pressed && styles.messageButtonPressed,
+                      ]}
+                      disabled={createChatMutation.isPending}
+                      accessibilityLabel={t('friends.startChat')}
+                      accessibilityHint={t('messages.startChatRequestHint')}
+                      accessibilityRole="button"
+                    >
+                      <Ionicons name="chatbubble-outline" size={18} color={colors.onPrimary} />
+                      <Text
+                        style={styles.messageButtonText}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.75}
+                      >
+                        {t('friends.startChat')}
+                      </Text>
+                    </Pressable>
+                  ) : null}
+                </View>
               )
             ) : null}
           </View>

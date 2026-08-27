@@ -677,7 +677,24 @@ export const ko: TranslationShape = {
     globalAnnouncementPublish: '게시',
     globalAnnouncementPublishHint: '모든 멤버의 홈 상단에 이 공지를 게시합니다',
   },
-  messages: en.messages,
+  // The messages section is otherwise English for every locale; these are the keys
+  // added for message requests, translated so the new screens are not the only
+  // half-English surface a Korean/Khmer reader meets.
+  messages: {
+    ...en.messages,
+    requestsTitle: '메시지 요청',
+    requestsHint: '답장을 기다리는 대화를 열어요',
+    requestsIntro: '친구가 아닌 사람이 보낸 대화예요. 수락하면 받은 메시지함으로 옮겨져요.',
+    noRequests: '메시지 요청이 없어요',
+    noRequestsHint: '같은 그룹에 있는 분이 처음 메시지를 보내면 여기에 나타나요.',
+    acceptRequest: '수락',
+    acceptRequestHint: '이 대화를 받은 메시지함으로 옮겨요',
+    declineRequest: '거절',
+    declineRequestHint: '이 대화를 닫고 더 이상 메시지를 받지 않아요',
+    declineRequestConfirm: '상대방은 이 대화에서 더 이상 메시지를 보낼 수 없어요.',
+    openRequestHint: '결정하기 전에 대화를 열어 읽어봐요',
+    startChatRequestHint: '메시지 요청을 보내요. 상대방이 수락하거나 거절할 수 있어요',
+  },
   conduct: {
     title: '행동 지침',
     intro: '이 앱을 사용할 때 다른 사람을 존중하고 안전을 지키는 방식으로 참여해 주세요.',

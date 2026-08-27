@@ -686,7 +686,25 @@ export const km: TranslationShape = {
     globalAnnouncementPublishHint:
       'បោះពុម្ពសេចក្តីជូនដំណឹងនេះនៅផ្នែកខាងលើនៃទំព័រដើមសម្រាប់សមាជិកទាំងអស់',
   },
-  messages: en.messages,
+  // The messages section is otherwise English for every locale; these are the keys
+  // added for message requests, translated so the new screens are not the only
+  // half-English surface a Korean/Khmer reader meets.
+  messages: {
+    ...en.messages,
+    requestsTitle: 'សំណើសារ',
+    requestsHint: 'បើកការសន្ទនាដែលកំពុងរង់ចាំការឆ្លើយតបរបស់អ្នក',
+    requestsIntro:
+      'អ្នកដែលមិនមែនជាមិត្តអាចចាប់ផ្ដើមការសន្ទនានៅទីនេះ។ ការទទួលយកនឹងផ្លាស់ទីវាទៅប្រអប់សាររបស់អ្នក។',
+    noRequests: 'គ្មានសំណើសារ',
+    noRequestsHint: 'នៅពេលមាននរណាម្នាក់ពីក្រុមរបស់អ្នកផ្ញើសារមកអ្នកជាលើកដំបូង វានឹងបង្ហាញនៅទីនេះ។',
+    acceptRequest: 'ទទួលយក',
+    acceptRequestHint: 'ផ្លាស់ទីការសន្ទនានេះទៅប្រអប់សាររបស់អ្នក',
+    declineRequest: 'បដិសេធ',
+    declineRequestHint: 'បិទការសន្ទនានេះ និងបញ្ឈប់សារបន្ថែម',
+    declineRequestConfirm: 'ពួកគេនឹងមិនអាចផ្ញើសារបន្ថែមមកអ្នកក្នុងការសន្ទនានេះទេ។',
+    openRequestHint: 'បើកការសន្ទនានេះដើម្បីអានមុនពេលសម្រេចចិត្ត',
+    startChatRequestHint: 'ផ្ញើសំណើសារ — ពួកគេអាចទទួលយក ឬបដិសេធបាន',
+  },
   conduct: {
     title: 'វិធានសីលធម៌ក្នុងការប្រើប្រាស់',
     intro: 'សូមប្រើកម្មវិធីនេះដោយគោរព មេត្តា និងថែរក្សាសុវត្ថិភាពរបស់អ្នកដទៃ។',

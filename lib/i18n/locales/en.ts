@@ -658,6 +658,20 @@ export const en = {
     retrySendHint: 'Attempts to send this message again',
   },
   messages: {
+    requestsTitle: 'Message requests',
+    requestsHint: 'Opens conversations waiting for your reply',
+    requestsIntro:
+      'People you are not friends with can start a conversation here. Accepting moves it to your inbox.',
+    noRequests: 'No message requests',
+    noRequestsHint:
+      'When someone from one of your groups messages you for the first time, it will appear here.',
+    acceptRequest: 'Accept',
+    acceptRequestHint: 'Moves this conversation to your inbox',
+    declineRequest: 'Decline',
+    declineRequestHint: 'Closes this conversation and stops further messages',
+    declineRequestConfirm: 'They will not be able to send you more messages in this conversation.',
+    openRequestHint: 'Opens this conversation to read it before deciding',
+    startChatRequestHint: 'Sends a message request; they can accept or decline it',
     title: 'Messages',
     conversations: 'Conversations',
     searchPlaceholder: 'Search conversations…',

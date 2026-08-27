@@ -4257,7 +4257,11 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
                 .from('chat_folder_items')
                 .select('chat_id')
                 .eq('folder_id', options.folderId),
-              getClient().from('chat_members').select('chat_id').eq('user_id', userId),
+              getClient()
+                .from('chat_members')
+                .select('chat_id')
+                .eq('user_id', userId)
+                .eq('request_state', 'accepted'),
             ]);
           if (error) return toApiError(error);
           if (memberErr) return toApiError(memberErr);
@@ -4269,7 +4273,9 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
           const { data: memberRows, error } = await getClient()
             .from('chat_members')
             .select('chat_id')
-            .eq('user_id', userId);
+            .eq('user_id', userId)
+            // Unaccepted requests live in getChatRequestsForUser, not the inbox.
+            .eq('request_state', 'accepted');
           if (error) return toApiError(error);
           chatIds = (memberRows ?? []).map((r) => r.chat_id);
           if (chatIds.length === 0) return [];
@@ -4552,6 +4558,64 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
       }
     },
 
+    async canMessageUser(userId: string, targetUserId: string): Promise<boolean | ApiError> {
+      try {
+        if (!userId || !targetUserId || userId === targetUserId) return false;
+        const friends = await this.areFriends(userId, targetUserId);
+        if (friends === true) return true;
+        const { data, error } = await getClient().rpc('users_share_a_group', {
+          p_a: userId,
+          p_b: targetUserId,
+        });
+        if (error) return toApiError(error);
+        return data === true;
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async getChatRequestsForUser(userId: string): Promise<Chat[] | ApiError> {
+      try {
+        const { data: rows, error } = await getClient()
+          .from('chat_members')
+          .select('chat_id')
+          .eq('user_id', userId)
+          .eq('request_state', 'pending');
+        if (error) return toApiError(error);
+        const ids = (rows ?? []).map((r) => r.chat_id as string);
+        if (ids.length === 0) return [];
+
+        const chats: Chat[] = [];
+        for (const id of ids) {
+          const chat = await this.getChat(id);
+          if (!isApiError(chat)) chats.push({ ...chat, requestState: 'pending' });
+        }
+        chats.sort((a, b) =>
+          (b.lastMessageAt ?? b.createdAt).localeCompare(a.lastMessageAt ?? a.createdAt)
+        );
+        return chats;
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async respondToChatRequest(
+      chatId: string,
+      userId: string,
+      accept: boolean
+    ): Promise<void | ApiError> {
+      try {
+        const { error } = await getClient()
+          .from('chat_members')
+          .update({ request_state: accept ? 'accepted' : 'declined' })
+          .eq('chat_id', chatId)
+          .eq('user_id', userId);
+        if (error) return toApiError(error);
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
     async createChat(userId: string, input: CreateChatInput): Promise<Chat | ApiError> {
       try {
         const memberUserIds = input.memberUserIds?.filter((id) => id && id !== userId) ?? [];
@@ -4564,14 +4628,22 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
 
         const allMemberIds = [userId, ...memberUserIds];
 
+        // Reach rule: friends, or a shared group. Checked here for a clean error
+        // message; the authority is the chat_members trigger from 00078, which a
+        // direct API call cannot skip.
+        const pendingFor = new Set<string>();
         for (const mid of memberUserIds) {
           const friends = await this.areFriends(userId, mid);
-          if (friends !== true) {
+          if (friends === true) continue;
+          const reachable = await this.canMessageUser(userId, mid);
+          if (reachable !== true) {
             return {
-              message: 'You can only add friends to a chat',
+              message: 'You can only message people you share a group with',
               code: 'VALIDATION_ERROR',
             };
           }
+          // Not friends but reachable — this is a request until they accept.
+          pendingFor.add(mid);
         }
 
         const { data: chatRow, error } = await getClient()
@@ -4590,6 +4662,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
         const memberInserts = allMemberIds.map((uid) => ({
           chat_id: chatRow.id,
           user_id: uid,
+          request_state: pendingFor.has(uid) ? 'pending' : 'accepted',
         }));
         const { error: memberErr } = await getClient().from('chat_members').insert(memberInserts);
         if (memberErr) return toApiError(memberErr);

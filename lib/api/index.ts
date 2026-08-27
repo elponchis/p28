@@ -86,6 +86,7 @@ export type {
   FriendRequestStatus,
   Chat,
   ChatMember,
+  ChatRequestState,
   ChatMessage,
   ChatSharedContentMessage,
   ChatFolder,

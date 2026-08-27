@@ -735,6 +735,9 @@ export interface UpdateDiscussionPostInput {
 // --- Chats ---
 
 /** Chat (DM or group chat). */
+/** A member's standing in a chat: an unaccepted first message is a request. */
+export type ChatRequestState = 'accepted' | 'pending' | 'declined';
+
 export interface Chat {
   id: string;
   createdByUserId: string;
@@ -755,6 +758,12 @@ export interface Chat {
   participantDisplayNames?: string;
   /** Number of unread messages for the current user. */
   unreadCount?: number;
+  /**
+   * The CALLER's own state on this chat. 'pending' means someone they are not friends
+   * with started the conversation and they have not accepted it yet, so it belongs in
+   * the requests inbox rather than the main list.
+   */
+  requestState?: ChatRequestState;
 }
 
 /** Chat member. */

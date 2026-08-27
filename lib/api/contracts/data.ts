@@ -427,6 +427,20 @@ export interface DataContract {
     memberUserIds: string[]
   ): Promise<Chat | null | ApiError>;
   createChat(userId: string, input: CreateChatInput): Promise<Chat | ApiError>;
+  /**
+   * Chats waiting on the caller's acceptance — someone they are not friends with
+   * started the conversation. Kept out of getChatsForUser so an unaccepted request
+   * never appears in the main inbox.
+   */
+  getChatRequestsForUser(userId: string): Promise<Chat[] | ApiError>;
+  /** Accept or decline a message request. Declining closes the thread to further messages. */
+  respondToChatRequest(chatId: string, userId: string, accept: boolean): Promise<void | ApiError>;
+  /**
+   * Whether the caller may start a conversation with this user: they are friends, or
+   * they share at least one group. Mirrors the server-side rule so the UI can hide a
+   * button that would fail.
+   */
+  canMessageUser(userId: string, targetUserId: string): Promise<boolean | ApiError>;
   addChatMembers(
     chatId: string,
     addedByUserId: string,
