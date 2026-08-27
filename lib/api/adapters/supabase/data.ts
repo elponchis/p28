@@ -70,6 +70,7 @@ import type {
   ProfileUpdates,
   PushToken,
   QuizAnswer,
+  QuizAnswerResult,
   QuizOption,
   QuizQuestion,
   QuizQuestionInput,
@@ -846,6 +847,7 @@ type AssignmentRow = {
   updated_at: string;
   materials: unknown;
   assignment_type: string | null;
+  allow_resubmission: boolean | null;
 };
 
 function mapAssignmentRow(row: AssignmentRow): Assignment {
@@ -861,11 +863,13 @@ function mapAssignmentRow(row: AssignmentRow): Assignment {
     updatedAt: row.updated_at,
     materials: mapUploadedFileRows(row.materials),
     assignmentType: row.assignment_type === 'quiz' ? 'quiz' : 'file',
+    // Older rows predate the column; they were resubmittable, so null reads as true.
+    allowResubmission: row.allow_resubmission !== false,
   };
 }
 
 const ASSIGNMENT_ROW_COLUMNS =
-  'id, group_id, title, description, due_date, created_by_user_id, sort_order, created_at, updated_at, materials, assignment_type';
+  'id, group_id, title, description, due_date, created_by_user_id, sort_order, created_at, updated_at, materials, assignment_type, allow_resubmission';
 
 type QuizQuestionRow = {
   id: string;
@@ -1001,6 +1005,14 @@ async function syncAssignmentQuestions(
   return null;
 }
 
+function mapQuizAnswerResultRows(value: unknown): QuizAnswerResult[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((r): r is Record<string, unknown> => !!r && typeof r === 'object')
+    .map((r) => ({ questionId: String(r.questionId ?? ''), correct: r.correct === true }))
+    .filter((r) => !!r.questionId);
+}
+
 function mapQuizAnswerRows(value: unknown): QuizAnswer[] {
   if (!Array.isArray(value)) return [];
   return value
@@ -1019,6 +1031,7 @@ type SubmissionRow = {
   user_id: string;
   files: unknown;
   answers: unknown;
+  answer_results: unknown;
   submitted_at: string;
   feedback: string | null;
   score: number | null;
@@ -1038,6 +1051,7 @@ function mapSubmissionRow(
     userId: row.user_id,
     files: mapUploadedFileRows(row.files),
     answers: mapQuizAnswerRows(row.answers),
+    answerResults: mapQuizAnswerResultRows(row.answer_results),
     submittedAt: row.submitted_at,
     feedback: row.feedback ?? undefined,
     score: row.score ?? undefined,
@@ -1051,7 +1065,7 @@ function mapSubmissionRow(
 }
 
 const SUBMISSION_ROW_COLUMNS =
-  'id, assignment_id, user_id, files, answers, submitted_at, feedback, score, auto_score, auto_score_max, reviewed_by_user_id, reviewed_at';
+  'id, assignment_id, user_id, files, answers, answer_results, submitted_at, feedback, score, auto_score, auto_score_max, reviewed_by_user_id, reviewed_at';
 
 function validateRecurringMeetingWrite(
   input: CreateGroupRecurringMeetingInput | UpdateGroupRecurringMeetingInput
@@ -2977,6 +2991,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
             sort_order: input.sortOrder,
             materials: input.materials ?? [],
             assignment_type: assignmentType,
+            allow_resubmission: input.allowResubmission ?? true,
           })
           .select(ASSIGNMENT_ROW_COLUMNS)
           .single();
@@ -3019,6 +3034,8 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
         };
         if (input.materials !== undefined) payload.materials = input.materials;
         if (input.assignmentType !== undefined) payload.assignment_type = input.assignmentType;
+        if (input.allowResubmission !== undefined)
+          payload.allow_resubmission = input.allowResubmission;
 
         // Removing a material from the edit screen means it's no longer in input.materials;
         // clean up the now-orphaned storage objects the same way deleteAssignment does, so

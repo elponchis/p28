@@ -343,6 +343,12 @@ export interface QuizQuestionInput {
   correctOptionIds?: string[];
 }
 
+/** Server-computed verdict for one keyed multiple-choice question. Never carries the key itself. */
+export interface QuizAnswerResult {
+  questionId: string;
+  correct: boolean;
+}
+
 /** One student's answer to one question: chosen options, free text, or neither if skipped. */
 export interface QuizAnswer {
   questionId: string;
@@ -364,6 +370,8 @@ export interface Assignment {
   /** Reference material an instructor attached to the assignment (public bucket). */
   materials: UploadedFile[];
   assignmentType: AssignmentType;
+  /** Whether a student may replace a submission they already made. Server-enforced in RLS. */
+  allowResubmission: boolean;
 }
 
 export interface CreateAssignmentInput {
@@ -374,6 +382,8 @@ export interface CreateAssignmentInput {
   materials?: UploadedFile[];
   /** Defaults to `'file'` when omitted. */
   assignmentType?: AssignmentType;
+  /** Defaults to true when omitted. */
+  allowResubmission?: boolean;
   /** Written in the same call for a quiz assignment; ignored for a file assignment. */
   questions?: QuizQuestionInput[];
 }
@@ -385,6 +395,7 @@ export interface UpdateAssignmentInput {
   sortOrder: number;
   materials?: UploadedFile[];
   assignmentType?: AssignmentType;
+  allowResubmission?: boolean;
   /** undefined leaves the existing questions alone; an array replaces the whole set. */
   questions?: QuizQuestionInput[];
 }
@@ -402,6 +413,13 @@ export interface Submission {
   files: UploadedFile[];
   /** Always empty for a file submission. */
   answers: QuizAnswer[];
+  /**
+   * Per-question right/wrong, computed server-side. Covers only keyed multiple-choice
+   * questions — a written answer has no automatic verdict. Deliberately carries the
+   * verdict and not the correct options, so showing a student their results never
+   * hands them the answer key.
+   */
+  answerResults: QuizAnswerResult[];
   submittedAt: string;
   feedback?: string;
   score?: number;

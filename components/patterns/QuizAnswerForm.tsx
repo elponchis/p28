@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
-import type { QuizAnswer, QuizQuestion } from '@/lib/api';
+import type { QuizAnswer, QuizAnswerResult, QuizQuestion } from '@/lib/api';
 import { isChoiceQuestion } from '@/lib/quiz';
 import { t } from '@/lib/i18n';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
@@ -18,6 +18,12 @@ export interface QuizAnswerFormProps {
    * questions carry an answer key, which only group admins ever receive.
    */
   readOnly?: boolean;
+  /**
+   * Server-computed per-question verdicts. Shown as a badge on each question so a
+   * student learns which ones they missed; carries no answer key, so a wrong answer
+   * stays wrong without revealing what was right.
+   */
+  results?: QuizAnswerResult[];
 }
 
 /** Student-facing quiz: one card per question, answered inline. */
@@ -27,7 +33,9 @@ export function QuizAnswerForm({
   onChange,
   disabled,
   readOnly,
+  results,
 }: QuizAnswerFormProps) {
+  const verdicts = new Map((results ?? []).map((r) => [r.questionId, r.correct]));
   const setAnswer = (questionId: string, patch: Partial<QuizAnswer>) => {
     onChange({ ...answers, [questionId]: { ...answers[questionId], ...patch, questionId } });
   };
@@ -51,6 +59,7 @@ export function QuizAnswerForm({
         const answer = answers[question.id];
         const chosen = answer?.optionIds ?? [];
         const key = question.correctOptionIds;
+        const verdict = verdicts.get(question.id);
         return (
           <View key={question.id} style={styles.questionCard}>
             <View style={styles.promptRow}>
@@ -63,6 +72,23 @@ export function QuizAnswerForm({
                 </Text>
               ) : null}
               {question.required ? <Text style={styles.requiredMark}>*</Text> : null}
+              {verdict !== undefined ? (
+                <View
+                  style={[
+                    styles.verdictBadge,
+                    verdict ? styles.verdictBadgeCorrect : styles.verdictBadgeWrong,
+                  ]}
+                >
+                  <Ionicons
+                    name={verdict ? 'checkmark' : 'close'}
+                    size={13}
+                    color={colors.onPrimary}
+                  />
+                  <Text style={styles.verdictText}>
+                    {t(verdict ? 'submissions.verdictCorrect' : 'submissions.verdictWrong')}
+                  </Text>
+                </View>
+              ) : null}
             </View>
             <Text style={styles.prompt}>{question.prompt}</Text>
 
@@ -162,6 +188,25 @@ const styles = StyleSheet.create({
   requiredMark: {
     ...typography.bodyStrong,
     color: colors.error,
+  },
+  verdictBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 1,
+    borderRadius: radius.chip,
+    marginLeft: 'auto',
+  },
+  verdictBadgeCorrect: {
+    backgroundColor: colors.success,
+  },
+  verdictBadgeWrong: {
+    backgroundColor: colors.secondary,
+  },
+  verdictText: {
+    ...typography.micro,
+    color: colors.onPrimary,
   },
   prompt: {
     ...typography.bodyMd,

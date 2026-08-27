@@ -63,6 +63,7 @@ export type {
   ProfileUpdates,
   AssignmentType,
   QuizAnswer,
+  QuizAnswerResult,
   QuizOption,
   QuizQuestion,
   QuizQuestionInput,

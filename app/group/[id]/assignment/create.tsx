@@ -6,6 +6,7 @@ import { Button, Input } from '@/components/primitives';
 import { AssignmentDueDateField } from '@/components/patterns/AssignmentDueDateField';
 import { AssignmentMaterialsField } from '@/components/patterns/AssignmentMaterialsField';
 import { AssignmentTypeField } from '@/components/patterns/AssignmentTypeField';
+import { LabeledSwitchRow } from '@/components/patterns/LabeledSwitchRow';
 import { QuizBuilder } from '@/components/patterns/QuizBuilder';
 import { DesktopContentContainer } from '@/components/layout/DesktopContentContainer';
 import { useAuth } from '@/hooks/useAuth';
@@ -29,6 +30,7 @@ export default function CreateAssignmentScreen() {
   const [materials, setMaterials] = useState<UploadedFile[]>([]);
   const [assignmentType, setAssignmentType] = useState<AssignmentType>('file');
   const [questions, setQuestions] = useState<QuizQuestionInput[]>([]);
+  const [allowResubmission, setAllowResubmission] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const createMutation = useCreateAssignmentMutation();
@@ -60,6 +62,7 @@ export default function CreateAssignmentScreen() {
           sortOrder: 0,
           materials,
           assignmentType,
+          allowResubmission,
           questions: isQuiz ? questions : undefined,
         },
       },
@@ -121,6 +124,17 @@ export default function CreateAssignmentScreen() {
           {isQuiz ? (
             <QuizBuilder questions={questions} onChange={setQuestions} disabled={isSubmitting} />
           ) : null}
+
+          <LabeledSwitchRow
+            label={t('assignments.allowResubmissionLabel')}
+            hint={t('assignments.allowResubmissionHint')}
+            value={allowResubmission}
+            onValueChange={setAllowResubmission}
+            disabled={isSubmitting}
+            variant="sheet"
+            accessibilityLabel={t('assignments.allowResubmissionLabel')}
+            accessibilityHint={t('assignments.allowResubmissionHint')}
+          />
 
           <AssignmentDueDateField value={dueDate} onChange={setDueDate} disabled={isSubmitting} />
 

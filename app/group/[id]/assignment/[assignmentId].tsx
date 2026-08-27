@@ -1,12 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -14,6 +7,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Button } from '@/components/primitives';
 import { FileAttachmentModal } from '@/components/messages';
 import { QuizAnswerForm } from '@/components/patterns/QuizAnswerForm';
+import { QuizResultCard } from '@/components/patterns/QuizResultCard';
 import { UploadProgressBar } from '@/components/patterns/UploadProgressBar';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -70,6 +64,7 @@ export default function AssignmentSubmissionScreen() {
     enabled: !!groupId && !!userId,
   });
   const isQuiz = assignment?.assignmentType === 'quiz';
+  const allowResubmission = assignment?.allowResubmission !== false;
   const { data: questions = [], isLoading: questionsLoading } = useAssignmentQuestionsQuery(
     assignmentId,
     { enabled: !!assignmentId && isQuiz }
@@ -120,6 +115,12 @@ export default function AssignmentSubmissionScreen() {
     [assignment?.dueDate]
   );
 
+  // Two independent reasons a submission can no longer be changed: the deadline passed,
+  // or the instructor turned resubmission off and one attempt is already in. The server
+  // enforces both in RLS; this only decides what the screen offers.
+  const submissionLocked = isPastDue || (!!mySubmission && !allowResubmission);
+  const quizLocked = submissionLocked;
+
   const handlePickFile = async () => {
     setError(null);
     let result: Awaited<ReturnType<typeof DocumentPicker.getDocumentAsync>>;
@@ -167,7 +168,7 @@ export default function AssignmentSubmissionScreen() {
   };
 
   const handleSubmit = () => {
-    if (!userId || !assignmentId || pendingFiles.length === 0 || isPastDue) return;
+    if (!userId || !assignmentId || pendingFiles.length === 0 || submissionLocked) return;
     setError(null);
     setUploadProgress(0);
     upsertMutation.mutate(
@@ -196,7 +197,7 @@ export default function AssignmentSubmissionScreen() {
   };
 
   const handleSubmitQuiz = () => {
-    if (!userId || !assignmentId || isPastDue) return;
+    if (!userId || !assignmentId || quizLocked) return;
     const missing = findUnansweredRequired(questions, answers);
     if (missing.length > 0) {
       setError(t('submissions.answerRequiredQuestions', { count: missing.length }));
@@ -360,15 +361,6 @@ export default function AssignmentSubmissionScreen() {
               {t('submissions.submittedAtLabel')}: {formatRelativeTime(mySubmission.submittedAt)}
             </Text>
 
-            {/* Only shown when the quiz actually has an answer key; written questions are
-                excluded from both numbers, so this is never a zero for an unread essay. */}
-            {mySubmission.autoScoreMax ? (
-              <Text style={styles.autoScoreText}>
-                {t('submissions.autoScoreLabel')}: {mySubmission.autoScore ?? 0} /{' '}
-                {mySubmission.autoScoreMax}
-              </Text>
-            ) : null}
-
             {isReviewed ? (
               <View style={styles.feedbackBlock}>
                 <Text style={styles.feedbackTitle}>{t('submissions.feedbackTitle')}</Text>
@@ -395,20 +387,33 @@ export default function AssignmentSubmissionScreen() {
             <Text style={styles.notSubmittedText}>{t('submissions.quizNoQuestions')}</Text>
           ) : (
             <View style={styles.quizBlock}>
+              {mySubmission ? (
+                <QuizResultCard
+                  score={mySubmission.autoScore ?? 0}
+                  scoreMax={mySubmission.autoScoreMax ?? 0}
+                  correctCount={mySubmission.answerResults.filter((r) => r.correct).length}
+                  questionCount={mySubmission.answerResults.length}
+                  hasUngradedWritten={questions.some((q) => q.questionType !== 'multiple_choice')}
+                />
+              ) : null}
+
               <QuizAnswerForm
                 questions={questions}
                 answers={answers}
                 onChange={setAnswers}
                 disabled={isSubmitting}
-                readOnly={isPastDue}
+                readOnly={quizLocked}
+                results={mySubmission?.answerResults}
               />
 
-              {isPastDue ? (
+              {quizLocked ? (
                 <View style={styles.errorBanner}>
                   <Text style={styles.errorText}>
-                    {mySubmission
-                      ? t('submissions.pastDueCannotResubmit')
-                      : t('submissions.pastDueCannotSubmit')}
+                    {isPastDue
+                      ? mySubmission
+                        ? t('submissions.pastDueCannotResubmit')
+                        : t('submissions.pastDueCannotSubmit')
+                      : t('submissions.resubmitNotAllowed')}
                   </Text>
                 </View>
               ) : (
@@ -439,12 +444,14 @@ export default function AssignmentSubmissionScreen() {
             </View>
           )}
         </View>
-      ) : isPastDue ? (
+      ) : submissionLocked ? (
         <View style={styles.errorBanner}>
           <Text style={styles.errorText}>
-            {mySubmission
-              ? t('submissions.pastDueCannotResubmit')
-              : t('submissions.pastDueCannotSubmit')}
+            {isPastDue
+              ? mySubmission
+                ? t('submissions.pastDueCannotResubmit')
+                : t('submissions.pastDueCannotSubmit')
+              : t('submissions.resubmitNotAllowed')}
           </Text>
         </View>
       ) : (
@@ -674,10 +681,6 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.onSurfaceVariant,
     marginTop: 2,
-  },
-  autoScoreText: {
-    ...typography.bodyStrong,
-    color: colors.primary,
   },
   quizBlock: {
     gap: spacing.md,

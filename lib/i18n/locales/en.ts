@@ -912,6 +912,9 @@ export const en = {
     markCorrectA11yHint: 'Marks this option as a correct answer',
     correctBadge: 'Correct',
     noCorrectWarning: "No correct answer marked — this question won't be auto-scored.",
+    allowResubmissionLabel: 'Allow resubmission',
+    allowResubmissionHint:
+      'When off, students get one attempt. Turn it off for a graded test — with it on, students can retry after seeing which answers were wrong.',
     optionPlaceholder: 'Answer option',
     removeOption: 'Remove option',
     removeOptionHint: 'Deletes this answer option',
@@ -983,6 +986,17 @@ export const en = {
     submitQuizHint: 'Submits your answers for this quiz',
     autoScoreLabel: 'Auto-scored',
     answeredCount: '{{count}} answer(s)',
+    resubmitNotAllowed: 'This assignment allows one attempt only, so your submission is final.',
+    verdictCorrect: 'Correct',
+    verdictWrong: 'Wrong',
+    resultPerfect: 'Perfect score',
+    resultPerfectHint: 'Every auto-scored question correct.',
+    resultGood: 'Well done',
+    resultGoodHint: 'Most of the auto-scored questions were correct.',
+    resultPartial: 'Keep going',
+    resultPartialHint: 'Check the questions marked wrong below.',
+    resultCorrectCount: '{{correct}} of {{total}} auto-scored questions correct',
+    resultWrittenPending: 'Written answers are graded by your instructor.',
   },
 } as const;
 

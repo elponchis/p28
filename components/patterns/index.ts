@@ -26,6 +26,8 @@ export { QuizBuilder } from './QuizBuilder';
 export type { QuizBuilderProps } from './QuizBuilder';
 export { QuizAnswerForm } from './QuizAnswerForm';
 export type { QuizAnswerFormProps } from './QuizAnswerForm';
+export { QuizResultCard } from './QuizResultCard';
+export type { QuizResultCardProps } from './QuizResultCard';
 export { GroupRecurringMeetingFormSheet } from './GroupRecurringMeetingFormSheet';
 export type { GroupRecurringMeetingFormSheetProps } from './GroupRecurringMeetingFormSheet';
 export { GroupMemberRowList } from './GroupMemberRowList';

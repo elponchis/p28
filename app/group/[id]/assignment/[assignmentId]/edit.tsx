@@ -16,6 +16,7 @@ import { Button, Input } from '@/components/primitives';
 import { AssignmentDueDateField } from '@/components/patterns/AssignmentDueDateField';
 import { AssignmentMaterialsField } from '@/components/patterns/AssignmentMaterialsField';
 import { AssignmentTypeField } from '@/components/patterns/AssignmentTypeField';
+import { LabeledSwitchRow } from '@/components/patterns/LabeledSwitchRow';
 import { QuizBuilder } from '@/components/patterns/QuizBuilder';
 import { DesktopContentContainer } from '@/components/layout/DesktopContentContainer';
 import { useAuth } from '@/hooks/useAuth';
@@ -61,6 +62,7 @@ export default function EditAssignmentScreen() {
   const [dueDate, setDueDate] = useState<Date | null>(null);
   const [materials, setMaterials] = useState<UploadedFile[]>([]);
   const [questions, setQuestions] = useState<QuizQuestionInput[]>([]);
+  const [allowResubmission, setAllowResubmission] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -69,6 +71,7 @@ export default function EditAssignmentScreen() {
     setDescription(assignment.description ?? '');
     setDueDate(assignment.dueDate ? new Date(assignment.dueDate) : null);
     setMaterials(assignment.materials);
+    setAllowResubmission(assignment.allowResubmission);
   }, [assignment]);
 
   useEffect(() => {
@@ -105,6 +108,7 @@ export default function EditAssignmentScreen() {
           dueDate: dueDate ? dueDate.toISOString() : undefined,
           sortOrder: assignment?.sortOrder ?? 0,
           materials,
+          allowResubmission,
           questions: isQuiz ? questions : undefined,
         },
       },
@@ -196,6 +200,17 @@ export default function EditAssignmentScreen() {
               disabled={isSubmitting || isDeleting}
             />
           ) : null}
+
+          <LabeledSwitchRow
+            label={t('assignments.allowResubmissionLabel')}
+            hint={t('assignments.allowResubmissionHint')}
+            value={allowResubmission}
+            onValueChange={setAllowResubmission}
+            disabled={isSubmitting || isDeleting}
+            variant="sheet"
+            accessibilityLabel={t('assignments.allowResubmissionLabel')}
+            accessibilityHint={t('assignments.allowResubmissionHint')}
+          />
 
           <AssignmentDueDateField
             value={dueDate}

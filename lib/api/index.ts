@@ -64,6 +64,7 @@ export type {
   UpdateAssignmentInput,
   AssignmentType,
   QuizAnswer,
+  QuizAnswerResult,
   QuizOption,
   QuizQuestion,
   QuizQuestionInput,
