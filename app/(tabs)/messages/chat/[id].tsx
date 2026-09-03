@@ -613,6 +613,98 @@ export default function ChatDetailScreen() {
     }
   }, [userId, pendingAttachments.length, uploadChatAttachmentMutation]);
 
+  /**
+   * Files pasted into the composer (web): screenshots, an image copied from a page, a file
+   * dragged onto the clipboard. Same validation and same upload as picking one, so a pasted
+   * screenshot behaves exactly like an attached one -- including the size message.
+   *
+   * A web File has no local URI, so it gets a blob: URL. readBinaryFile fetches it like any
+   * other, and the URL is revoked once the bytes are read.
+   */
+  const handlePasteFiles = useCallback(
+    async (files: File[]) => {
+      if (!userId) return;
+      const slotsLeft = MAX_ATTACHMENTS - pendingAttachments.length;
+      if (slotsLeft <= 0) {
+        void notify({ title: t('common.error'), message: t('attachments.tooManyFiles') });
+        return;
+      }
+      for (const file of files.slice(0, slotsLeft)) {
+        const mime = normalizeMimeTypeForAllowlist(file.type || 'application/octet-stream');
+        if (!isAllowedMessageAttachmentMimeType(mime)) {
+          void notify({ title: t('common.error'), message: t('attachments.unsupportedFileType') });
+          continue;
+        }
+        if (file.size > MAX_MESSAGE_ATTACHMENT_BYTES) {
+          void notify({ title: t('common.error'), message: tooLargeMessage(file.size) });
+          continue;
+        }
+        const attachmentId = newComposeAttachmentId();
+        const objectUrl = URL.createObjectURL(file);
+        const kind = mime.startsWith('image/')
+          ? 'image'
+          : mime.startsWith('video/')
+            ? 'video'
+            : 'file';
+        const fileName = file.name || `pasted-${Date.now()}`;
+        setPendingAttachments((prev) => [
+          ...prev,
+          {
+            id: attachmentId,
+            kind,
+            displayUri: kind === 'image' ? objectUrl : '',
+            fileName,
+            mimeType: mime,
+            sourceUri: objectUrl,
+            uploading: true,
+            progress: 0,
+          },
+        ]);
+        try {
+          const url = await uploadChatAttachmentMutation.mutateAsync({
+            userId,
+            localUri: objectUrl,
+            contentType: mime,
+            fileName,
+            objectKind: 'message',
+            onProgress: (fraction) =>
+              setPendingAttachments((prev) =>
+                prev.map((p) => (p.id === attachmentId ? { ...p, progress: fraction } : p))
+              ),
+          });
+          setPendingAttachments((prev) =>
+            prev.map((p) =>
+              p.id === attachmentId
+                ? {
+                    ...p,
+                    uploadedUrl: url,
+                    // Point the thumbnail at the uploaded copy before dropping the blob, or the
+                    // preview goes blank the moment the URL is revoked.
+                    displayUri: kind === 'image' ? url : p.displayUri,
+                    uploading: false,
+                    progress: undefined,
+                  }
+                : p
+            )
+          );
+          URL.revokeObjectURL(objectUrl);
+        } catch (e) {
+          // The blob URL is deliberately kept alive here: it is the attachment's sourceUri,
+          // and retry has nothing else to re-read the bytes from.
+          setPendingAttachments((prev) =>
+            prev.map((p) =>
+              p.id === attachmentId
+                ? { ...p, uploading: false, failed: true, progress: undefined }
+                : p
+            )
+          );
+          void notify({ title: t('common.error'), message: describeUploadError(e) });
+        }
+      }
+    },
+    [userId, pendingAttachments.length, uploadChatAttachmentMutation]
+  );
+
   const pickDocument = useCallback(async () => {
     if (!userId) return;
     if (pendingAttachments.length >= MAX_ATTACHMENTS) return;
@@ -1195,6 +1287,10 @@ export default function ChatDetailScreen() {
                     })
                   }
                   onLongPress={() => setReactionMessage(msg)}
+                  onReply={() => {
+                    setEditingMessage(null);
+                    setReplyingTo(msg);
+                  }}
                   onAddReaction={(reactionType) =>
                     reactMutation.mutate({
                       messageId: msg.id,
@@ -1264,6 +1360,7 @@ export default function ChatDetailScreen() {
             }
             variant="chat"
             submitOnEnter
+            onPasteFiles={handlePasteFiles}
           />
         </View>
       </KeyboardAvoidingView>

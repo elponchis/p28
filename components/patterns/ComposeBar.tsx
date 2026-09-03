@@ -83,6 +83,12 @@ export interface ComposeBarProps {
    * long-form composer (discussions) wants Enter to mean "new paragraph".
    */
   submitOnEnter?: boolean;
+
+  /**
+   * Files pasted into the composer (web). Text paste is left to the browser; this fires only
+   * when the clipboard carries actual files, which is how a screenshot arrives.
+   */
+  onPasteFiles?: (files: File[]) => void;
 }
 
 export function ComposeBar({
@@ -100,12 +106,14 @@ export function ComposeBar({
   isUploadingAttachment,
   maxAttachments = 5,
   submitOnEnter = false,
+  onPasteFiles,
   editingContext,
   replyingToContext,
   variant = 'discussion',
 }: ComposeBarProps) {
   const isChat = variant === 'chat';
   const atLimit = pendingAttachments.length >= maxAttachments;
+  const inputRef = React.useRef<TextInput>(null);
 
   /**
    * Enter-to-send on desktop web.
@@ -144,6 +152,41 @@ export function ComposeBar({
     },
     [submitOnEnter, canSend, isSending, isUploadingAttachment, onSend]
   );
+
+  /**
+   * Pasting a screenshot.
+   *
+   * Ctrl+V of text is the browser's job and stays that way -- preventDefault on it would break
+   * ordinary typing. Only a clipboard carrying files is intercepted, which is what a screenshot
+   * or a copied image is, and those become attachments instead of nothing at all.
+   *
+   * The listener goes on the input's own DOM node rather than the document, so a paste only
+   * lands in a composer the user is actually typing in.
+   */
+  React.useEffect(() => {
+    if (Platform.OS !== 'web' || !onPasteFiles) return;
+    const node = inputRef.current as unknown as HTMLElement | null;
+    if (!node || typeof node.addEventListener !== 'function') return;
+
+    const handlePaste = (event: Event) => {
+      const clipboard = (event as { clipboardData?: DataTransfer | null }).clipboardData;
+      const items = clipboard?.items;
+      if (!items) return;
+      const files: File[] = [];
+      for (let i = 0; i < items.length; i += 1) {
+        const item = items[i];
+        if (item.kind !== 'file') continue;
+        const file = item.getAsFile();
+        if (file) files.push(file);
+      }
+      if (files.length === 0) return;
+      event.preventDefault();
+      onPasteFiles(files);
+    };
+
+    node.addEventListener('paste', handlePaste);
+    return () => node.removeEventListener('paste', handlePaste);
+  }, [onPasteFiles]);
 
   return (
     <View>
@@ -384,6 +427,7 @@ export function ComposeBar({
         </Pressable>
 
         <TextInput
+          ref={inputRef}
           style={isChat ? chatStyles.composeInput : styles.composeInput}
           placeholder={placeholder ?? t('discussions.replyPlaceholder')}
           placeholderTextColor={isChat ? colors.outlineVariant : colors.ink300}

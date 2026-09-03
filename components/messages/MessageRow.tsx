@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
@@ -6,9 +7,9 @@ import { MessageVideoEmbed } from '@/components/patterns/MessageVideoEmbed';
 import type { MessageAttachment } from '@/lib/api';
 import { formatMessageSentClockTime } from '@/lib/dates';
 import { t } from '@/lib/i18n';
-import { colors, spacing, typography, fontFamily } from '@/theme/tokens';
+import { colors, radius, spacing, typography, fontFamily } from '@/theme/tokens';
 
-import { REACTION_EMOJI } from './constants';
+import { REACTION_EMOJI, REACTION_OPTIONS } from './constants';
 import { MessageAttachmentsBlock } from './MessageAttachmentsBlock';
 import type { MessageLike, ParentMessageLike, PostReactionType } from './types';
 
@@ -39,6 +40,8 @@ export interface MessageRowProps {
   unreadCount?: number;
   /** Extra top margin when the previous message was from the other side (you vs someone else). */
   extraGapAfterPeerChange?: boolean;
+  /** Start a reply to this message. Drives the hover toolbar's reply button on desktop. */
+  onReply?: () => void;
 }
 
 export function MessageRow({
@@ -59,6 +62,7 @@ export function MessageRow({
   showSentClockTime = true,
   unreadCount = 0,
   extraGapAfterPeerChange = false,
+  onReply,
 }: MessageRowProps) {
   const counts = post.reactionCounts ?? { prayer: 0, laugh: 0, thumbsUp: 0 };
   const userReactions = post.userReactionTypes ?? [];
@@ -81,6 +85,65 @@ export function MessageRow({
   const isEdited = !isDeleted && post.updatedAt && post.updatedAt !== post.createdAt;
   const canReactNow = canReact && !isDeleted;
 
+  /**
+   * Desktop hover toolbar.
+   *
+   * Reacting and replying already worked, but only through a long press -- which with a mouse
+   * means click-and-hold, something nobody discovers. Hovering is how every desktop chat
+   * surfaces these, so the same two actions get a toolbar beside the bubble.
+   *
+   * The listeners sit on the row rather than the bubble so that moving the pointer onto the
+   * toolbar does not count as leaving the message and dismiss the thing being reached for.
+   * react-native-web forwards these to the DOM node; React Native's types do not describe
+   * them, hence the cast, and on native the object is empty.
+   */
+  const [hovered, setHovered] = useState(false);
+  const hoverProps =
+    Platform.OS === 'web'
+      ? ({
+          onMouseEnter: () => setHovered(true),
+          onMouseLeave: () => setHovered(false),
+        } as object)
+      : {};
+  const showHoverActions = Platform.OS === 'web' && hovered && canReactNow && !outboundStatus;
+
+  const hoverActions = showHoverActions ? (
+    <View style={styles.hoverActions}>
+      {REACTION_OPTIONS.map((option) => {
+        const mine = isUserReaction(option.type);
+        return (
+          <Pressable
+            key={option.type}
+            onPress={() => (mine ? onRemoveReaction?.(option.type) : onAddReaction?.(option.type))}
+            style={({ pressed }) => [
+              styles.hoverActionButton,
+              mine && styles.hoverActionButtonActive,
+              pressed && styles.hoverActionButtonPressed,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel={option.label}
+          >
+            <Text style={styles.hoverActionEmoji}>{option.emoji}</Text>
+          </Pressable>
+        );
+      })}
+      {onReply ? (
+        <Pressable
+          onPress={onReply}
+          style={({ pressed }) => [
+            styles.hoverActionButton,
+            pressed && styles.hoverActionButtonPressed,
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel={t('discussions.sheetReply')}
+          accessibilityHint={t('discussions.sheetReplyHint')}
+        >
+          <Ionicons name="arrow-undo-outline" size={15} color={colors.onSurfaceVariant} />
+        </Pressable>
+      ) : null}
+    </View>
+  ) : null;
+
   const longPressHint = showFailedOutbound
     ? undefined
     : canReactNow
@@ -92,6 +155,7 @@ export function MessageRow({
   return (
     <View
       style={[styles.messageWrapper, extraGapAfterPeerChange && styles.messageWrapperPeerChange]}
+      {...hoverProps}
     >
       <View style={styles.messageSliding}>
         <View style={[styles.messageRow, isOwnMessage && styles.messageRowOwn]}>
@@ -147,6 +211,7 @@ export function MessageRow({
 
             <View style={styles.messageBubbleColumn}>
               <View style={[styles.bubbleAndTimeRow, isOwnMessage && styles.bubbleAndTimeRowOwn]}>
+                {isOwnMessage ? hoverActions : null}
                 {isOwnMessage && (showSentClockTime || unreadCount > 0) ? (
                   <View style={styles.ownMetaColumn}>
                     {unreadCount > 0 ? (
@@ -225,7 +290,15 @@ export function MessageRow({
                             // and swallow the reaction sheet, so copying there goes through the
                             // sheet's own Copy action instead.
                             selectable={Platform.OS === 'web'}
-                            style={[styles.messageBody, isOwnMessage && styles.messageBodyOwn]}
+                            style={[
+                              styles.messageBody,
+                              isOwnMessage && styles.messageBodyOwn,
+                              // The bubble is a Pressable, which paints a pointer cursor over
+                              // the text and makes it read as a button rather than something
+                              // you can drag across. An I-beam is the affordance every chat app
+                              // uses to say "this is selectable".
+                              Platform.OS === 'web' && styles.messageBodySelectableWeb,
+                            ]}
                           >
                             {post.body}
                           </Text>
@@ -263,6 +336,7 @@ export function MessageRow({
                     {clockTime}
                   </Text>
                 ) : null}
+                {isOwnMessage ? null : hoverActions}
               </View>
               {hasReactions ? (
                 <View style={styles.reactionBadges}>
@@ -329,6 +403,37 @@ export function MessageRow({
 const BUBBLE_RADIUS = 16;
 
 const styles = StyleSheet.create({
+  messageBodySelectableWeb: {
+    // Not in React Native's style types; react-native-web passes it through to CSS.
+    cursor: 'text',
+  } as object,
+  hoverActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    alignSelf: 'flex-end',
+    marginBottom: 2,
+    paddingHorizontal: spacing.xxs,
+    paddingVertical: spacing.xxs,
+    borderRadius: radius.chip,
+    backgroundColor: colors.surfaceContainerHigh,
+  },
+  hoverActionButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hoverActionButtonActive: {
+    backgroundColor: colors.surfaceContainerHighest,
+  },
+  hoverActionButtonPressed: {
+    opacity: 0.6,
+  },
+  hoverActionEmoji: {
+    fontSize: 14,
+  },
   ownMetaColumn: {
     alignItems: 'flex-end',
     justifyContent: 'flex-end',
