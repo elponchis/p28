@@ -649,8 +649,7 @@ export const en = {
     editDiscussion: 'Edit discussion',
     editDiscussionHint: 'Edit title and body of this discussion',
     deleteDiscussion: 'Delete discussion',
-    deleteDiscussionConfirm:
-      'Are you sure you want to delete this discussion? This cannot be undone.',
+    deleteDiscussionConfirm: 'Delete this discussion?',
     deleteDiscussionSuccess: 'Discussion deleted',
     edited: 'edited',
     sheetDelete: 'Delete',

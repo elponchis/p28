@@ -642,7 +642,7 @@ export const ko: TranslationShape = {
     editDiscussion: '토론 수정',
     editDiscussionHint: '이 토론의 제목과 내용 수정',
     deleteDiscussion: '토론 삭제',
-    deleteDiscussionConfirm: '이 토론을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
+    deleteDiscussionConfirm: '정말 삭제할까요?',
     deleteDiscussionSuccess: '토론이 삭제되었습니다',
     edited: '수정됨',
     sheetDelete: '삭제',

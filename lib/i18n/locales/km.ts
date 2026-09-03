@@ -648,8 +648,7 @@ export const km: TranslationShape = {
     editDiscussion: 'កែសម្រួលការពិភាក្សា',
     editDiscussionHint: 'កែសម្រួលចំណងជើង និងខ្លឹមសារនៃការពិភាក្សានេះ',
     deleteDiscussion: 'លុបការពិភាក្សា',
-    deleteDiscussionConfirm:
-      'តើអ្នកប្រាកដថាចង់លុបការពិភាក្សានេះទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។',
+    deleteDiscussionConfirm: 'លុបការពិភាក្សានេះមែនទេ?',
     deleteDiscussionSuccess: 'ការពិភាក្សាត្រូវបានលុប',
     edited: 'បានកែសម្រួល',
     sheetDelete: 'លុប',
