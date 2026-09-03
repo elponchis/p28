@@ -7,6 +7,7 @@ import * as MediaLibrary from 'expo-media-library';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   Keyboard,
   KeyboardAvoidingView,
   Modal,
@@ -25,7 +26,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Avatar } from '@/components/primitives';
 import {
   FileAttachmentModal,
+  HOVER_ACTIONS_SUPPORTED,
   MessageAttachmentsBlock,
+  MessageHoverActions,
   REACTION_EMOJI,
   REACTION_ORDER,
   VideoAttachmentModal,
@@ -160,6 +163,8 @@ function ReplyRow({
   currentUserId,
   showSentClockTime = true,
   extraGapAfterPeerChange = false,
+  onReply,
+  onParentPress,
 }: {
   post: DiscussionReplyPost;
   parentPost?: DiscussionPost | null;
@@ -175,6 +180,8 @@ function ReplyRow({
   currentUserId?: string;
   showSentClockTime?: boolean;
   extraGapAfterPeerChange?: boolean;
+  onReply?: () => void;
+  onParentPress?: () => void;
 }) {
   const counts = post.reactionCounts ?? {};
   const userReactions = post.userReactionTypes ?? [];
@@ -204,9 +211,30 @@ function ReplyRow({
 
   const sentClock = formatMessageSentClockTime(post.createdAt);
 
+  // Same arrangement as the chat row: listeners on the whole row, so moving onto the toolbar
+  // does not read as leaving the message.
+  const [hovered, setHovered] = useState(false);
+  const hoverProps = HOVER_ACTIONS_SUPPORTED
+    ? ({ onMouseEnter: () => setHovered(true), onMouseLeave: () => setHovered(false) } as object)
+    : {};
+  const showHoverActions = HOVER_ACTIONS_SUPPORTED && hovered && !!canReact && !outboundStatus;
+
   return (
-    <View style={[styles.replyRowOuter, extraGapAfterPeerChange && styles.replyRowOuterPeerChange]}>
+    <View
+      style={[styles.replyRowOuter, extraGapAfterPeerChange && styles.replyRowOuterPeerChange]}
+      {...hoverProps}
+    >
       <View style={styles.replyRowMain}>
+        {showHoverActions ? (
+          <MessageHoverActions
+            isOwnMessage={isOwnPost}
+            userReactionTypes={userReactions}
+            onAddReaction={onAddReaction}
+            onRemoveReaction={onRemoveReaction}
+            onMore={onLongPress}
+            onReply={onReply}
+          />
+        ) : null}
         <View style={styles.replyCardWrapper}>
           <View style={styles.replyCardSliding}>
             <Pressable
@@ -264,17 +292,36 @@ function ReplyRow({
                 </View>
               </View>
               {parentPost ? (
-                <View style={styles.replyToPreview}>
+                <Pressable
+                  onPress={onParentPress}
+                  disabled={!onParentPress}
+                  style={({ pressed }) => [
+                    styles.replyToPreview,
+                    pressed && onParentPress ? styles.replyToPreviewPressed : null,
+                  ]}
+                  accessibilityRole={onParentPress ? 'button' : 'text'}
+                  accessibilityLabel={t('discussions.jumpToOriginal')}
+                >
                   <Text style={styles.replyToAuthor}>
-                    {t('discussions.replyingTo')}{' '}
-                    {parentPost.authorDisplayName ?? t('common.loading')}
+                    {currentUserId && parentPost.userId === currentUserId
+                      ? t('discussions.replyingToYou')
+                      : t('discussions.replyingToPerson', {
+                          name: parentPost.authorDisplayName ?? t('common.loading'),
+                        })}
                   </Text>
                   <Text style={styles.replyToBody} numberOfLines={2}>
                     {parentPost.body ?? ''}
                   </Text>
-                </View>
+                </Pressable>
               ) : null}
-              {post.body ? <Text style={styles.replyBody}>{post.body}</Text> : null}
+              {post.body ? (
+                <Text
+                  selectable={Platform.OS === 'web'}
+                  style={[styles.replyBody, Platform.OS === 'web' && styles.replyBodySelectableWeb]}
+                >
+                  {post.body}
+                </Text>
+              ) : null}
               <MessageAttachmentsBlock
                 post={post}
                 isOwnMessage={isOwnPost}
@@ -372,6 +419,44 @@ export default function DiscussionDetailScreen() {
   const [editingPost, setEditingPost] = useState<DiscussionPost | null>(null);
   const navigation = useNavigation();
   const scrollViewRef = useRef<ScrollView>(null);
+
+  /**
+   * Jumping to the post a reply answers, same as chat: scroll to it, then a short sideways
+   * nudge once it is on screen. Offsets come from each row's onLayout, so a reply to something
+   * not currently rendered does nothing rather than scrolling somewhere wrong.
+   */
+  const postOffsetYsRef = useRef<Map<string, number>>(new Map());
+  const [nudgedPostId, setNudgedPostId] = useState<string | null>(null);
+  const nudge = useRef(new Animated.Value(0)).current;
+  const nudgeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (nudgeTimerRef.current) clearTimeout(nudgeTimerRef.current);
+    },
+    []
+  );
+
+  const jumpToPost = useCallback(
+    (postId: string) => {
+      const y = postOffsetYsRef.current.get(postId);
+      if (y === undefined) return;
+      scrollViewRef.current?.scrollTo({ y: Math.max(0, y - 72), animated: true });
+      setNudgedPostId(postId);
+      nudge.setValue(0);
+      Animated.sequence([
+        // Waits out the scroll so the movement happens once the post is actually visible.
+        Animated.delay(260),
+        Animated.timing(nudge, { toValue: -9, duration: 90, useNativeDriver: true }),
+        Animated.timing(nudge, { toValue: 6, duration: 90, useNativeDriver: true }),
+        Animated.timing(nudge, { toValue: -3, duration: 80, useNativeDriver: true }),
+        Animated.timing(nudge, { toValue: 0, duration: 90, useNativeDriver: true }),
+      ]).start();
+      if (nudgeTimerRef.current) clearTimeout(nudgeTimerRef.current);
+      nudgeTimerRef.current = setTimeout(() => setNudgedPostId(null), 1400);
+    },
+    [nudge]
+  );
   const discussionPostsScrollFingerprintRef = useRef<string | null>(null);
   const {
     data: discussion,
@@ -734,6 +819,91 @@ export default function DiscussionDetailScreen() {
       );
     }
   }, [userId, pendingAttachments.length, uploadDiscussionAttachmentMutation]);
+
+  /**
+   * Files pasted into the composer (web), the same path chat uses: same allowlist, same size
+   * cap, same upload. A web File has no local URI, so it gets a blob: URL that is revoked once
+   * the upload has read it -- except after a failure, where it is all retry has to work from.
+   */
+  const handlePasteFiles = useCallback(
+    async (files: File[]) => {
+      if (!userId) return;
+      const slotsLeft = MAX_ATTACHMENTS - pendingAttachments.length;
+      if (slotsLeft <= 0) {
+        void notify({ title: t('common.error'), message: t('attachments.tooManyFiles') });
+        return;
+      }
+      for (const file of files.slice(0, slotsLeft)) {
+        const mime = normalizeMimeTypeForAllowlist(file.type || 'application/octet-stream');
+        if (!isAllowedMessageAttachmentMimeType(mime)) {
+          void notify({ title: t('common.error'), message: t('attachments.unsupportedFileType') });
+          continue;
+        }
+        if (file.size > MAX_MESSAGE_ATTACHMENT_BYTES) {
+          void notify({ title: t('common.error'), message: tooLargeMessage(file.size) });
+          continue;
+        }
+        const attachmentId = newComposeAttachmentId();
+        const objectUrl = URL.createObjectURL(file);
+        const kind = mime.startsWith('image/')
+          ? 'image'
+          : mime.startsWith('video/')
+            ? 'video'
+            : 'file';
+        const fileName = file.name || `pasted-${Date.now()}`;
+        setPendingAttachments((prev) => [
+          ...prev,
+          {
+            id: attachmentId,
+            kind,
+            displayUri: kind === 'image' ? objectUrl : '',
+            fileName,
+            mimeType: mime,
+            sourceUri: objectUrl,
+            uploading: true,
+            progress: 0,
+          },
+        ]);
+        try {
+          const url = await uploadDiscussionAttachmentMutation.mutateAsync({
+            userId,
+            localUri: objectUrl,
+            contentType: mime,
+            fileName,
+            objectKind: 'post',
+            onProgress: (fraction) =>
+              setPendingAttachments((prev) =>
+                prev.map((p) => (p.id === attachmentId ? { ...p, progress: fraction } : p))
+              ),
+          });
+          setPendingAttachments((prev) =>
+            prev.map((p) =>
+              p.id === attachmentId
+                ? {
+                    ...p,
+                    uploadedUrl: url,
+                    displayUri: kind === 'image' ? url : p.displayUri,
+                    uploading: false,
+                    progress: undefined,
+                  }
+                : p
+            )
+          );
+          URL.revokeObjectURL(objectUrl);
+        } catch (e) {
+          setPendingAttachments((prev) =>
+            prev.map((p) =>
+              p.id === attachmentId
+                ? { ...p, uploading: false, failed: true, progress: undefined }
+                : p
+            )
+          );
+          void notify({ title: t('attachments.uploadFailed'), message: describeError(e) });
+        }
+      }
+    },
+    [userId, pendingAttachments.length, uploadDiscussionAttachmentMutation]
+  );
 
   const pickDocument = useCallback(async () => {
     if (!userId) return;
@@ -1180,35 +1350,48 @@ export default function DiscussionDetailScreen() {
               const thisIsOwn = !!userId && p.userId === userId;
               const extraGapAfterPeerChange = !!prevPost && !!userId && prevIsOwn !== thisIsOwn;
               return (
-                <ReplyRow
+                <Animated.View
                   key={p.id}
-                  post={p as DiscussionReplyPost}
-                  parentPost={
-                    p.parentPostId ? (posts.find((x) => x.id === p.parentPostId) ?? null) : null
-                  }
-                  onImagePress={(url) => setPreviewImageUrl(url)}
-                  onVideoPress={(att) => setPreviewVideoUrl(att.url)}
-                  onFilePress={(att) =>
-                    setPreviewFile({
-                      url: att.url,
-                      fileName: att.fileName ?? t('attachments.file'),
-                      mimeType: att.mimeType,
-                    })
-                  }
-                  onLongPress={() => setReactionPost(p)}
-                  onAddReaction={(type) => handleAddReaction(p, type)}
-                  onRemoveReaction={(type) => handleRemoveReaction(p, type)}
-                  onAuthorPress={() => router.push(`/profile/${p.userId}`)}
-                  onRetryOutbound={
-                    outboundStatus === 'failed'
-                      ? () => handleRetryOutboundDiscussionPost(p)
-                      : undefined
-                  }
-                  canReact={canReactOnPost}
-                  currentUserId={userId}
-                  showSentClockTime={showSentClockTime}
-                  extraGapAfterPeerChange={extraGapAfterPeerChange}
-                />
+                  collapsable={false}
+                  onLayout={(e) => {
+                    postOffsetYsRef.current.set(p.id, e.nativeEvent.layout.y);
+                  }}
+                  style={nudgedPostId === p.id ? { transform: [{ translateX: nudge }] } : undefined}
+                >
+                  <ReplyRow
+                    post={p as DiscussionReplyPost}
+                    parentPost={
+                      p.parentPostId ? (posts.find((x) => x.id === p.parentPostId) ?? null) : null
+                    }
+                    onImagePress={(url) => setPreviewImageUrl(url)}
+                    onVideoPress={(att) => setPreviewVideoUrl(att.url)}
+                    onFilePress={(att) =>
+                      setPreviewFile({
+                        url: att.url,
+                        fileName: att.fileName ?? t('attachments.file'),
+                        mimeType: att.mimeType,
+                      })
+                    }
+                    onLongPress={() => setReactionPost(p)}
+                    onReply={() => {
+                      setEditingPost(null);
+                      setReplyingToPost(p);
+                    }}
+                    onParentPress={p.parentPostId ? () => jumpToPost(p.parentPostId!) : undefined}
+                    onAddReaction={(type) => handleAddReaction(p, type)}
+                    onRemoveReaction={(type) => handleRemoveReaction(p, type)}
+                    onAuthorPress={() => router.push(`/profile/${p.userId}`)}
+                    onRetryOutbound={
+                      outboundStatus === 'failed'
+                        ? () => handleRetryOutboundDiscussionPost(p)
+                        : undefined
+                    }
+                    canReact={canReactOnPost}
+                    currentUserId={userId}
+                    showSentClockTime={showSentClockTime}
+                    extraGapAfterPeerChange={extraGapAfterPeerChange}
+                  />
+                </Animated.View>
               );
             })}
           </View>
@@ -1271,6 +1454,7 @@ export default function DiscussionDetailScreen() {
             <ComposeBar
               text={composeText}
               onChangeText={setComposeText}
+              onPasteFiles={handlePasteFiles}
               onSend={handlePostReply}
               canSend={canPost}
               isSending={editingPost ? updatePostMutation.isPending : createPostMutation.isPending}
@@ -1501,6 +1685,14 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
+  replyToPreviewPressed: {
+    opacity: 0.6,
+  },
+  replyBodySelectableWeb: {
+    // Not in React Native's style types; react-native-web passes it through to CSS. The card is
+    // a Pressable, so without this the text reads as a button rather than something selectable.
+    cursor: 'text',
+  } as object,
   replyCardFailed: {
     borderWidth: 1,
     borderColor: colors.error,

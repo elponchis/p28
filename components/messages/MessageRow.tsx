@@ -7,9 +7,10 @@ import { MessageVideoEmbed } from '@/components/patterns/MessageVideoEmbed';
 import type { MessageAttachment } from '@/lib/api';
 import { formatMessageSentClockTime } from '@/lib/dates';
 import { t } from '@/lib/i18n';
-import { colors, radius, spacing, typography, fontFamily } from '@/theme/tokens';
+import { colors, spacing, typography, fontFamily } from '@/theme/tokens';
 
-import { REACTION_EMOJI, REACTION_OPTIONS, REACTION_ORDER } from './constants';
+import { REACTION_EMOJI, REACTION_ORDER } from './constants';
+import { HOVER_ACTIONS_SUPPORTED, MessageHoverActions } from './MessageHoverActions';
 import { MessageAttachmentsBlock } from './MessageAttachmentsBlock';
 import type { MessageLike, ParentMessageLike, PostReactionType } from './types';
 
@@ -110,58 +111,17 @@ export function MessageRow({
           onMouseLeave: () => setHovered(false),
         } as object)
       : {};
-  const showHoverActions = Platform.OS === 'web' && hovered && canReactNow && !outboundStatus;
+  const showHoverActions = HOVER_ACTIONS_SUPPORTED && hovered && canReactNow && !outboundStatus;
 
   const hoverActions = showHoverActions ? (
-    <View style={styles.hoverActions}>
-      {/* Reacting to your own message is not a thing people do; replying to it is. */}
-      {(isOwnMessage ? [] : REACTION_OPTIONS).map((option) => {
-        const mine = isUserReaction(option.type);
-        return (
-          <Pressable
-            key={option.type}
-            onPress={() => (mine ? onRemoveReaction?.(option.type) : onAddReaction?.(option.type))}
-            style={({ pressed }) => [
-              styles.hoverActionButton,
-              mine && styles.hoverActionButtonActive,
-              pressed && styles.hoverActionButtonPressed,
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel={option.label}
-          >
-            <Text style={styles.hoverActionEmoji}>{option.emoji}</Text>
-          </Pressable>
-        );
-      })}
-      {/* The four quick picks cover most reactions; the rest are one tap further, in the sheet. */}
-      {isOwnMessage ? null : onLongPress ? (
-        <Pressable
-          onPress={onLongPress}
-          style={({ pressed }) => [
-            styles.hoverActionButton,
-            pressed && styles.hoverActionButtonPressed,
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel={t('discussions.moreReactions')}
-        >
-          <Ionicons name="add" size={15} color={colors.onSurfaceVariant} />
-        </Pressable>
-      ) : null}
-      {onReply ? (
-        <Pressable
-          onPress={onReply}
-          style={({ pressed }) => [
-            styles.hoverActionButton,
-            pressed && styles.hoverActionButtonPressed,
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel={t('discussions.sheetReply')}
-          accessibilityHint={t('discussions.sheetReplyHint')}
-        >
-          <Ionicons name="arrow-undo-outline" size={15} color={colors.onSurfaceVariant} />
-        </Pressable>
-      ) : null}
-    </View>
+    <MessageHoverActions
+      isOwnMessage={isOwnMessage}
+      userReactionTypes={userReactions}
+      onAddReaction={onAddReaction}
+      onRemoveReaction={onRemoveReaction}
+      onMore={onLongPress}
+      onReply={onReply}
+    />
   ) : null;
 
   const longPressHint = showFailedOutbound
@@ -440,33 +400,6 @@ const styles = StyleSheet.create({
   } as object,
   replyPreviewPressed: {
     opacity: 0.6,
-  },
-  hoverActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    alignSelf: 'flex-end',
-    marginBottom: 2,
-    paddingHorizontal: spacing.xxs,
-    paddingVertical: spacing.xxs,
-    borderRadius: radius.chip,
-    backgroundColor: colors.surfaceContainerHigh,
-  },
-  hoverActionButton: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  hoverActionButtonActive: {
-    backgroundColor: colors.surfaceContainerHighest,
-  },
-  hoverActionButtonPressed: {
-    opacity: 0.6,
-  },
-  hoverActionEmoji: {
-    fontSize: 14,
   },
   ownMetaColumn: {
     alignItems: 'flex-end',
