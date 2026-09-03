@@ -630,6 +630,7 @@ export const en = {
     sheetEdit: 'Edit',
     sheetEditHint: 'Edit this message',
     sheetCopy: 'Copy',
+    jumpToOriginal: 'Go to the original message',
     sheetCopyHint: 'Copy this message text',
     copied: 'Copied',
     copyFailed: 'Could not copy the message.',

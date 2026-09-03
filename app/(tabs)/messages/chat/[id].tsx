@@ -289,6 +289,37 @@ export default function ChatDetailScreen() {
     router.dismissTo('/messages');
   }, [router]);
 
+  /**
+   * Scroll to a message and flash it, for the quoted preview on a reply.
+   *
+   * Offsets come from the onLayout map the deep-link path already fills, so this only works
+   * for messages currently rendered -- a reply to something far enough back to be off the
+   * loaded window does nothing rather than jumping somewhere wrong.
+   *
+   * Sticking to the end is suspended while the highlight is up, so an arriving message does
+   * not yank the reader away from what they just went to look at.
+   */
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    },
+    []
+  );
+
+  const jumpToMessage = useCallback((messageId: string) => {
+    const y = messageOffsetYsRef.current.get(messageId);
+    if (y === undefined) return;
+    shouldStickToEndRef.current = false;
+    scrollViewRef.current?.scrollTo({ y: Math.max(0, y - 72), animated: true });
+    setHighlightedMessageId(messageId);
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    highlightTimerRef.current = setTimeout(() => {
+      setHighlightedMessageId(null);
+      shouldStickToEndRef.current = true;
+    }, 2200);
+  }, []);
+
   const chatMenuOptions = useMemo(
     () => [
       {
@@ -1291,6 +1322,9 @@ export default function ChatDetailScreen() {
                     setEditingMessage(null);
                     setReplyingTo(msg);
                   }}
+                  onParentPress={
+                    msg.parentMessageId ? () => jumpToMessage(msg.parentMessageId!) : undefined
+                  }
                   onAddReaction={(reactionType) =>
                     reactMutation.mutate({
                       messageId: msg.id,

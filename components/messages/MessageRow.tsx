@@ -42,6 +42,8 @@ export interface MessageRowProps {
   extraGapAfterPeerChange?: boolean;
   /** Start a reply to this message. Drives the hover toolbar's reply button on desktop. */
   onReply?: () => void;
+  /** Jump to the message this one is replying to, from the quoted preview. */
+  onParentPress?: () => void;
 }
 
 export function MessageRow({
@@ -63,6 +65,7 @@ export function MessageRow({
   unreadCount = 0,
   extraGapAfterPeerChange = false,
   onReply,
+  onParentPress,
 }: MessageRowProps) {
   const counts = post.reactionCounts ?? { prayer: 0, laugh: 0, thumbsUp: 0 };
   const userReactions = post.userReactionTypes ?? [];
@@ -212,7 +215,7 @@ export function MessageRow({
 
             <View style={styles.messageBubbleColumn}>
               <View style={[styles.bubbleAndTimeRow, isOwnMessage && styles.bubbleAndTimeRowOwn]}>
-                {hoverActions}
+                {isOwnMessage ? hoverActions : null}
                 {isOwnMessage && (showSentClockTime || unreadCount > 0) ? (
                   <View style={styles.ownMetaColumn}>
                     {unreadCount > 0 ? (
@@ -259,8 +262,18 @@ export function MessageRow({
                     ) : (
                       <>
                         {parentPost ? (
-                          <View
-                            style={[styles.replyPreview, isOwnMessage && styles.replyPreviewOwn]}
+                          // The quote is the only handle on the message being answered, and
+                          // every other chat app treats it as a link back to it.
+                          <Pressable
+                            onPress={onParentPress}
+                            disabled={!onParentPress}
+                            style={({ pressed }) => [
+                              styles.replyPreview,
+                              isOwnMessage && styles.replyPreviewOwn,
+                              pressed && onParentPress ? styles.replyPreviewPressed : null,
+                            ]}
+                            accessibilityRole={onParentPress ? 'button' : 'text'}
+                            accessibilityLabel={t('discussions.jumpToOriginal')}
                           >
                             <Text
                               style={[
@@ -280,7 +293,7 @@ export function MessageRow({
                             >
                               {parentPost.body ?? ''}
                             </Text>
-                          </View>
+                          </Pressable>
                         ) : null}
 
                         {post.body ? (
@@ -337,6 +350,7 @@ export function MessageRow({
                     {clockTime}
                   </Text>
                 ) : null}
+                {isOwnMessage ? null : hoverActions}
               </View>
               {hasReactions ? (
                 <View style={styles.reactionBadges}>
@@ -407,13 +421,15 @@ const styles = StyleSheet.create({
     // Not in React Native's style types; react-native-web passes it through to CSS.
     cursor: 'text',
   } as object,
+  replyPreviewPressed: {
+    opacity: 0.6,
+  },
   hoverActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
     alignSelf: 'flex-end',
     marginBottom: 2,
-    marginEnd: spacing.xxs,
     paddingHorizontal: spacing.xxs,
     paddingVertical: spacing.xxs,
     borderRadius: radius.chip,
@@ -651,8 +667,8 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.xxs,
     marginTop: -8,
-    alignSelf: 'flex-end',
-    paddingRight: spacing.xs,
+    alignSelf: 'flex-start',
+    paddingLeft: spacing.xs,
   },
   reactionBadge: {
     flexDirection: 'row',

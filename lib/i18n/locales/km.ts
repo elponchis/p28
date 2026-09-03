@@ -629,6 +629,7 @@ export const km: TranslationShape = {
     sheetEdit: 'កែសម្រួល',
     sheetEditHint: 'កែសម្រួលសារនេះ',
     sheetCopy: 'ចម្លង',
+    jumpToOriginal: 'ទៅកាន់សារដើម',
     sheetCopyHint: 'ចម្លងអត្ថបទសារនេះ',
     copied: 'បានចម្លង',
     copyFailed: 'មិនអាចចម្លងសារបានទេ។',
