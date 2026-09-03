@@ -15,19 +15,16 @@ import { Image } from 'expo-image';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { Avatar, avatarFallbackInitial, StackedAvatars } from '@/components/primitives';
-import { FriendPickerSheet } from '@/components/messages';
 import { EmptyState } from '@/components/patterns/EmptyState';
 import { useAuth } from '@/hooks/useAuth';
 import {
   useChatRequestsQuery,
   useChatsForUserQuery,
-  useCreateChatMutation,
   useSearchProfilesQuery,
 } from '@/hooks/useApiQueries';
-import { api, getUserFacingError, type ApiError, type Chat } from '@/lib/api';
+import type { Chat } from '@/lib/api';
 import { formatRelativeTime } from '@/lib/dates';
 import { t } from '@/lib/i18n';
-import { notify } from '@/lib/dialogs';
 import {
   colors,
   fontFamily,
@@ -176,7 +173,6 @@ export default function MessagesIndexScreen() {
   const insets = useSafeAreaInsets();
   const userId = session?.user?.id;
 
-  const [friendPickerVisible, setFriendPickerVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   // Searching people used to mean leaving this screen for the friends list first.
   // The same box now finds them here, so a profile is one tap from the tab you land on.
@@ -200,7 +196,6 @@ export default function MessagesIndexScreen() {
     userId,
     { enabled: debouncedPeopleSearch.length >= 1 }
   );
-  const createChatMutation = useCreateChatMutation();
 
   useFocusEffect(
     useCallback(() => {
@@ -209,41 +204,10 @@ export default function MessagesIndexScreen() {
   );
 
   const handleCreateChat = useCallback(() => {
-    setFriendPickerVisible(true);
-  }, []);
-
-  const handleSelectFriend = useCallback(
-    async (friendId: string) => {
-      if (!userId) return;
-      try {
-        const existing = await api.data.findExisting1on1Chat(userId, friendId);
-        if (existing && !('message' in existing)) {
-          router.push(`/messages/chat/${existing.id}`);
-        } else {
-          createChatMutation.mutate(
-            { userId, input: { memberUserIds: [friendId] } },
-            {
-              onSuccess: (chat) => router.push(`/messages/chat/${chat.id}`),
-              onError: (err) => {
-                const msg = getUserFacingError(err);
-                void notify({
-                  title: t('common.error'),
-                  message: msg,
-                });
-              },
-            }
-          );
-        }
-      } catch (err) {
-        const msg = getUserFacingError(err as ApiError);
-        void notify({
-          title: t('common.error'),
-          message: msg,
-        });
-      }
-    },
-    [userId, router, createChatMutation]
-  );
+    // The new-chat screen, not a one-friend sheet: a group has to be reachable from the first
+    // step, rather than by starting a private chat with someone and inviting people into it.
+    router.push('/messages/create');
+  }, [router]);
 
   const handleOpenFriends = useCallback(() => {
     router.push('/messages/friends');
@@ -444,13 +408,6 @@ export default function MessagesIndexScreen() {
       >
         <Ionicons name="create-outline" size={24} color={colors.onSecondaryContainer} />
       </Pressable>
-
-      <FriendPickerSheet
-        visible={friendPickerVisible}
-        onRequestClose={() => setFriendPickerVisible(false)}
-        onSelectFriend={handleSelectFriend}
-        userId={userId}
-      />
     </View>
   );
 }
