@@ -109,7 +109,8 @@ export function MessageRow({
 
   const hoverActions = showHoverActions ? (
     <View style={styles.hoverActions}>
-      {REACTION_OPTIONS.map((option) => {
+      {/* Reacting to your own message is not a thing people do; replying to it is. */}
+      {(isOwnMessage ? [] : REACTION_OPTIONS).map((option) => {
         const mine = isUserReaction(option.type);
         return (
           <Pressable
@@ -211,7 +212,7 @@ export function MessageRow({
 
             <View style={styles.messageBubbleColumn}>
               <View style={[styles.bubbleAndTimeRow, isOwnMessage && styles.bubbleAndTimeRowOwn]}>
-                {isOwnMessage ? hoverActions : null}
+                {hoverActions}
                 {isOwnMessage && (showSentClockTime || unreadCount > 0) ? (
                   <View style={styles.ownMetaColumn}>
                     {unreadCount > 0 ? (
@@ -336,7 +337,6 @@ export function MessageRow({
                     {clockTime}
                   </Text>
                 ) : null}
-                {isOwnMessage ? null : hoverActions}
               </View>
               {hasReactions ? (
                 <View style={styles.reactionBadges}>
@@ -413,6 +413,7 @@ const styles = StyleSheet.create({
     gap: 2,
     alignSelf: 'flex-end',
     marginBottom: 2,
+    marginEnd: spacing.xxs,
     paddingHorizontal: spacing.xxs,
     paddingVertical: spacing.xxs,
     borderRadius: radius.chip,
@@ -477,8 +478,11 @@ const styles = StyleSheet.create({
   },
 
   avatarContainer: {
-    alignSelf: 'flex-end',
-    marginBottom: 1,
+    // Top, not bottom. Anchored to the bottom it rode whatever the row's height happened to
+    // be, so adding a reaction -- which appends a badge row under the bubble -- visibly
+    // dropped the author's avatar. From the top nothing below it can move it.
+    alignSelf: 'flex-start',
+    marginTop: 1,
   },
   avatarSpacer: {
     width: 36,

@@ -114,7 +114,10 @@ export function ReactionSheet({
                       color={action.destructive ? colors.error : colors.textPrimary}
                     />
                     <Text
-                      style={[styles.primaryLabel, action.destructive && styles.primaryLabelDestructive]}
+                      style={[
+                        styles.primaryLabel,
+                        action.destructive && styles.primaryLabelDestructive,
+                      ]}
                     >
                       {action.label}
                     </Text>
@@ -192,7 +195,8 @@ export function ReactionSheet({
               )}
             </View>
 
-            {visible && (
+            {/* Hidden rather than disabled: a greyed-out emoji row says nothing about why. */}
+            {visible && canReact && (
               <View style={styles.footer}>
                 <View style={styles.addRow}>
                   {REACTION_OPTIONS.map(({ type, emoji, label }) => {

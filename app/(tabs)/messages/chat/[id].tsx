@@ -1397,6 +1397,10 @@ export default function ChatDetailScreen() {
         canReact={
           !!reactionMessage &&
           !!userId &&
+          // Reacting to your own message is not a thing people do. The sheet still opens on
+          // an own message -- that is how edit and delete are reached -- it just does not
+          // offer the emoji row.
+          reactionMessage.userId !== userId &&
           !(reactionMessage as ChatMessage & { outboundStatus?: 'sending' | 'failed' })
             .outboundStatus
         }
