@@ -8,6 +8,12 @@ export type RealtimeChannelId = string;
 
 export interface RealtimeHandlers {
   onMessage?: (payload: Record<string, unknown>) => void;
+  /**
+   * A member's read position moved (chat channels only). Kept separate from onMessage
+   * because the two want different work: a new message refetches the thread, a read receipt
+   * only refreshes the members and must not itself count as "the reader is looking".
+   */
+  onReadReceipt?: (payload: Record<string, unknown>) => void;
   onPresence?: (payload: unknown) => void;
   onError?: (error: ApiError) => void;
 }

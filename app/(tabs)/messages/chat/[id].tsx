@@ -72,9 +72,12 @@ import type { ChatMessage, CreateChatMessageInput, PostReactionType } from '@/li
 import { formatDateHeader, isSameDay, messageLocalMinuteKey } from '@/lib/dates';
 import { t } from '@/lib/i18n';
 import { confirm, notify } from '@/lib/dialogs';
+import { copyTextToClipboard } from '@/lib/clipboard';
+import { describeUploadError, tooLargeMessage } from '@/lib/uploadErrors';
+import { summarizeReadReceipt } from '@/lib/readReceipts';
 import { downloadFileInBrowser } from '@/lib/downloadFile';
 
-import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, radius, shadow, spacing, typography } from '@/theme/tokens';
 
 export default function ChatDetailScreen() {
   const { id, focusMessageId: focusMessageIdParam } = useLocalSearchParams<{
@@ -122,6 +125,7 @@ export default function ChatDetailScreen() {
   const [addFriendsVisible, setAddFriendsVisible] = useState(false);
   const [chatMenuVisible, setChatMenuVisible] = useState(false);
   const [attachmentMenuVisible, setAttachmentMenuVisible] = useState(false);
+  const [copiedToastVisible, setCopiedToastVisible] = useState(false);
 
   const { data: chat, isLoading, isError, error, refetch } = useChatQuery(id);
   const { data: messages = [], refetch: refetchMessages } = useChatMessagesQuery(id, {
@@ -205,6 +209,12 @@ export default function ChatDetailScreen() {
     };
   }, []);
 
+  // Held in a ref so the realtime subscription below does not tear down and re-subscribe every
+  // time the mutation object changes identity.
+  const markReadRef = useRef<((chatId: string, uid: string) => void) | null>(null);
+  markReadRef.current = (chatId: string, uid: string) =>
+    markReadMutation.mutate({ chatId, userId: uid });
+
   useFocusEffect(
     useCallback(() => {
       refetch();
@@ -223,6 +233,13 @@ export default function ChatDetailScreen() {
         onMessage: () => {
           qc.invalidateQueries({ queryKey: queryKeys.chatMessages(id, userId ?? undefined) });
           qc.invalidateQueries({ queryKey: queryKeys.chatSharedContent(id) });
+          // The screen is open, so the message has been seen the moment it arrives. Without
+          // this, last_read_at only moves on focus and the sender's receipt would sit unread
+          // for as long as the recipient stays in the thread.
+          if (userId) markReadRef.current?.(id, userId);
+        },
+        onReadReceipt: () => {
+          qc.invalidateQueries({ queryKey: queryKeys.chat(id) });
         },
       });
       return () => api.realtime.unsubscribe(channelId);
@@ -457,10 +474,11 @@ export default function ChatDetailScreen() {
         setPendingAttachments((prev) =>
           prev.map((p) => (p.id === attId ? { ...p, uploadedUrl: url, uploading: false } : p))
         );
-      } catch {
+      } catch (e) {
         setPendingAttachments((prev) =>
           prev.map((p) => (p.id === attId ? { ...p, uploading: false, failed: true } : p))
         );
+        void notify({ title: t('common.error'), message: describeUploadError(e) });
       }
     }
   }, [userId, pendingAttachments.length, uploadImageMutation]);
@@ -483,6 +501,14 @@ export default function ChatDetailScreen() {
     });
     if (result.canceled || !result.assets[0]?.uri) return;
     const asset = result.assets[0];
+    // Checked before the upload starts, not after: a phone video is easily several hundred
+    // megabytes, and letting it climb the wire only to be rejected by the storage policy costs
+    // the user minutes and tells them nothing. ImagePicker does not always report fileSize, so
+    // this is a fast path -- readBinaryFile still enforces the cap for the cases it misses.
+    if (asset.fileSize != null && asset.fileSize > MAX_MESSAGE_ATTACHMENT_BYTES) {
+      void notify({ title: t('common.error'), message: tooLargeMessage(asset.fileSize) });
+      return;
+    }
     const attachmentId = newComposeAttachmentId();
     const posterUri = await tryGetVideoPosterUri(asset.uri);
     const fileName = asset.fileName ?? `video-${Date.now()}.mp4`;
@@ -529,10 +555,11 @@ export default function ChatDetailScreen() {
             : p
         )
       );
-    } catch {
+    } catch (e) {
       setPendingAttachments((prev) =>
         prev.map((p) => (p.id === attachmentId ? { ...p, uploading: false, failed: true } : p))
       );
+      void notify({ title: t('common.error'), message: describeUploadError(e) });
     }
   }, [userId, pendingAttachments.length, uploadChatAttachmentMutation]);
 
@@ -597,10 +624,11 @@ export default function ChatDetailScreen() {
       setPendingAttachments((prev) =>
         prev.map((p) => (p.id === attachmentId ? { ...p, uploadedUrl: url, uploading: false } : p))
       );
-    } catch {
+    } catch (e) {
       setPendingAttachments((prev) =>
         prev.map((p) => (p.id === attachmentId ? { ...p, uploading: false, failed: true } : p))
       );
+      void notify({ title: t('common.error'), message: describeUploadError(e) });
     }
   }, [userId, pendingAttachments.length, uploadChatAttachmentMutation]);
 
@@ -818,6 +846,57 @@ export default function ChatDetailScreen() {
     [userId, id, deleteMessageMutation]
   );
 
+  // A copy needs an acknowledgement or it reads as a no-op, and the app has no toast
+  // primitive; a blocking dialog for something this small would be worse than silence.
+  const copiedToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (copiedToastTimerRef.current) clearTimeout(copiedToastTimerRef.current);
+    },
+    []
+  );
+
+  const handleCopyMessage = useCallback(async (msg: ChatMessage) => {
+    const body = msg.body?.trim() ?? '';
+    if (!body) return;
+    const ok = await copyTextToClipboard(body);
+    if (!ok) {
+      void notify({ title: t('common.error'), message: t('discussions.copyFailed') });
+      return;
+    }
+    setCopiedToastVisible(true);
+    if (copiedToastTimerRef.current) clearTimeout(copiedToastTimerRef.current);
+    copiedToastTimerRef.current = setTimeout(() => setCopiedToastVisible(false), 1600);
+  }, []);
+
+  /**
+   * Read receipts, Instagram-style: one marker, under the last message you sent, and only once
+   * someone else has actually reached it. Showing it on every own message turns the thread into
+   * a column of "Seen"; showing nothing until the whole group reads makes a busy group chat look
+   * permanently unread, so a partial group read is reported as a count.
+   */
+  const lastOwnMessageId = useMemo(() => {
+    if (!userId) return null;
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      const m = messages[i];
+      const outbound = (m as ChatMessage & { outboundStatus?: 'sending' | 'failed' })
+        .outboundStatus;
+      if (m.userId === userId && !outbound && !m.deletedAt) return m.id;
+    }
+    return null;
+  }, [messages, userId]);
+
+  const readReceiptLabel = useMemo(() => {
+    if (!lastOwnMessageId) return null;
+    const msg = messages.find((m) => m.id === lastOwnMessageId);
+    if (!msg) return null;
+    const summary = summarizeReadReceipt(chat?.members, userId, msg.createdAt);
+    if (!summary) return null;
+    return summary.otherCount === 1
+      ? t('messages.seen')
+      : t('messages.seenByCount', { count: String(summary.readerCount) });
+  }, [userId, lastOwnMessageId, messages, chat?.members]);
+
   const reactionSheetPrimaryActions = useMemo((): ReactionSheetPrimaryAction[] => {
     const msg = reactionMessage;
     if (!msg || !userId) return [];
@@ -838,6 +917,21 @@ export default function ChatDetailScreen() {
         },
       },
     ];
+    // Only for messages that carry text: copying an attachment-only bubble would put an
+    // empty string on the clipboard.
+    if (msg.body?.trim()) {
+      actions.push({
+        key: 'copy',
+        label: t('discussions.sheetCopy'),
+        icon: 'copy-outline',
+        accessibilityLabel: t('discussions.sheetCopy'),
+        accessibilityHint: t('discussions.sheetCopyHint'),
+        onPress: () => {
+          setReactionMessage(null);
+          void handleCopyMessage(msg);
+        },
+      });
+    }
     if (msg.userId === userId) {
       actions.push({
         key: 'edit',
@@ -864,7 +958,7 @@ export default function ChatDetailScreen() {
       });
     }
     return actions;
-  }, [reactionMessage, userId, handleStartEdit, handleDeleteMessage]);
+  }, [reactionMessage, userId, handleStartEdit, handleDeleteMessage, handleCopyMessage]);
 
   if (!id) {
     router.back();
@@ -1039,6 +1133,9 @@ export default function ChatDetailScreen() {
                   showSentClockTime={showSentClockTime}
                   extraGapAfterPeerChange={extraGapAfterPeerChange}
                 />
+                {msg.id === lastOwnMessageId && readReceiptLabel ? (
+                  <Text style={styles.readReceipt}>{readReceiptLabel}</Text>
+                ) : null}
               </View>
             );
           })}
@@ -1081,6 +1178,7 @@ export default function ChatDetailScreen() {
                 : null
             }
             variant="chat"
+            submitOnEnter
           />
         </View>
       </KeyboardAvoidingView>
@@ -1125,6 +1223,13 @@ export default function ChatDetailScreen() {
         onRemoveReaction={handleRemoveReaction}
         primaryActions={reactionSheetPrimaryActions}
       />
+
+      {copiedToastVisible ? (
+        <View style={styles.copiedToast} pointerEvents="none" accessibilityRole="alert">
+          <Ionicons name="checkmark-circle" size={16} color={colors.onPrimary} />
+          <Text style={styles.copiedToastText}>{t('discussions.copied')}</Text>
+        </View>
+      ) : null}
 
       {/* Image preview modal */}
       <Modal
@@ -1194,6 +1299,30 @@ export default function ChatDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  readReceipt: {
+    ...typography.caption,
+    color: colors.onSurfaceVariant,
+    alignSelf: 'flex-end',
+    marginTop: spacing.xxs,
+    marginRight: spacing.xs,
+  },
+  copiedToast: {
+    position: 'absolute',
+    alignSelf: 'center',
+    bottom: spacing.xxl,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.chip,
+    backgroundColor: colors.primary,
+    ...shadow.floating,
+  },
+  copiedToastText: {
+    ...typography.bodyMd,
+    color: colors.onPrimary,
+  },
   container: {
     flex: 1,
     backgroundColor: colors.background,

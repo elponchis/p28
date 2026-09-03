@@ -1,5 +1,5 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
-import { avatarFallbackInitial, StackedAvatars } from '@/components/primitives';
+import { Avatar, avatarFallbackInitial, StackedAvatars } from '@/components/primitives';
 import { FriendPickerSheet } from '@/components/messages';
 import { EmptyState } from '@/components/patterns/EmptyState';
 import { FadeActionSheet } from '@/components/patterns/FadeActionSheet';
@@ -25,6 +25,7 @@ import {
   useChatsForUserQuery,
   useCreateChatMutation,
   useDeleteChatFolderMutation,
+  useSearchProfilesQuery,
 } from '@/hooks/useApiQueries';
 import { api, getUserFacingError, type ApiError, type Chat, type ChatFolder } from '@/lib/api';
 import { formatRelativeTime } from '@/lib/dates';
@@ -182,6 +183,20 @@ export default function MessagesIndexScreen() {
   const [folderOptionsFolder, setFolderOptionsFolder] = useState<ChatFolder | null>(null);
   const [friendPickerVisible, setFriendPickerVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  // Searching people used to mean leaving this screen for the friends list first.
+  // The same box now finds them here, so a profile is one tap from the tab you land on.
+  const [debouncedPeopleSearch, setDebouncedPeopleSearch] = useState('');
+  const peopleDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (peopleDebounceRef.current) clearTimeout(peopleDebounceRef.current);
+    peopleDebounceRef.current = setTimeout(() => {
+      setDebouncedPeopleSearch(searchQuery.trim());
+    }, 200);
+    return () => {
+      if (peopleDebounceRef.current) clearTimeout(peopleDebounceRef.current);
+    };
+  }, [searchQuery]);
 
   const {
     data: chats = [],
@@ -190,6 +205,11 @@ export default function MessagesIndexScreen() {
   } = useChatsForUserQuery(userId, { folderId: selectedFolderId });
   const { data: chatRequests = [] } = useChatRequestsQuery(userId);
   const { data: folders = [] } = useChatFoldersQuery(userId);
+  const { data: peopleResults = [], isFetching: isSearchingPeople } = useSearchProfilesQuery(
+    debouncedPeopleSearch,
+    userId,
+    { enabled: debouncedPeopleSearch.length >= 1 }
+  );
   const deleteFolderMutation = useDeleteChatFolderMutation();
   const createChatMutation = useCreateChatMutation();
 
@@ -375,6 +395,47 @@ export default function MessagesIndexScreen() {
     [selectedFolderId, folders, searchQuery, handleOpenFriends, router, chatRequests.length]
   );
 
+  const renderPeopleResults = useCallback(() => {
+    if (!searchQuery.trim()) return null;
+    return (
+      <View style={styles.peopleSection}>
+        <Text style={styles.peopleHeading}>{t('messages.otherPeopleSection')}</Text>
+        {peopleResults.length === 0 ? (
+          <Text style={styles.peopleEmpty}>
+            {isSearchingPeople ? t('common.loading') : t('messages.noSearchResults')}
+          </Text>
+        ) : (
+          peopleResults.map((person) => {
+            const name =
+              person.displayName ||
+              [person.firstName, person.lastName].filter(Boolean).join(' ').trim() ||
+              t('common.loading');
+            return (
+              <Pressable
+                key={person.userId}
+                onPress={() => router.push(`/profile/${person.userId}`)}
+                style={({ pressed }) => [styles.personRow, pressed && { opacity: 0.7 }]}
+                accessibilityRole="button"
+                accessibilityLabel={name}
+                accessibilityHint={t('messages.viewProfileHint')}
+              >
+                <Avatar
+                  source={person.avatarUrl ? { uri: person.avatarUrl } : null}
+                  fallbackText={name}
+                  size="md"
+                />
+                <Text style={styles.personName} numberOfLines={1}>
+                  {name}
+                </Text>
+                <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceVariant} />
+              </Pressable>
+            );
+          })
+        )}
+      </View>
+    );
+  }, [searchQuery, peopleResults, isSearchingPeople, router]);
+
   if (!userId) {
     return null;
   }
@@ -390,21 +451,26 @@ export default function MessagesIndexScreen() {
             </View>
           </>
         ) : filteredChats.length === 0 ? (
-          <>
+          <ScrollView keyboardShouldPersistTaps="handled">
             {renderHeader()}
-            <View style={styles.emptyWrap}>
-              <EmptyState
-                iconName="chatbubbles-outline"
-                title={t('messages.noChats')}
-                subtitle={t('messages.noChatsSubtitle')}
-              />
-            </View>
-          </>
+            {searchQuery.trim() ? null : (
+              <View style={styles.emptyWrap}>
+                <EmptyState
+                  iconName="chatbubbles-outline"
+                  title={t('messages.noChats')}
+                  subtitle={t('messages.noChatsSubtitle')}
+                />
+              </View>
+            )}
+            {renderPeopleResults()}
+          </ScrollView>
         ) : (
           <FlatList
             data={filteredChats}
             keyExtractor={(c) => c.id}
             ListHeaderComponent={renderHeader}
+            ListFooterComponent={renderPeopleResults}
+            keyboardShouldPersistTaps="handled"
             renderItem={({ item }) => (
               <ChatRow
                 chat={item}
@@ -532,6 +598,33 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  peopleSection: {
+    paddingHorizontal: spacing.screenHorizontal,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xl,
+    gap: spacing.xs,
+  },
+  peopleHeading: {
+    ...typography.label,
+    color: colors.textSecondary,
+    marginBottom: spacing.xxs,
+  },
+  peopleEmpty: {
+    ...typography.bodyMd,
+    color: colors.onSurfaceVariant,
+  },
+  personRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  personName: {
+    ...typography.body,
+    color: colors.textPrimary,
+    flex: 1,
+    minWidth: 0,
   },
   requestBadge: {
     position: 'absolute',

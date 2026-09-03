@@ -138,6 +138,14 @@ function navigateFromNotificationData(
     return;
   }
 
+  const chatIdVal = data?.chatId;
+  const chatId =
+    typeof chatIdVal === 'string' ? chatIdVal : chatIdVal != null ? String(chatIdVal) : '';
+  if (typeStr === 'chat_message' && chatId.length > 0) {
+    router.push(`/messages/chat/${chatId}`);
+    return;
+  }
+
   const meetingLink = data?.meetingLink;
   if (typeof meetingLink === 'string' && meetingLink.trim().length > 0) {
     void WebBrowser.openBrowserAsync(meetingLink.trim());

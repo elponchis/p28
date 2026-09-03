@@ -3,7 +3,13 @@
  * Keeps the facade as the boundary; hooks add caching, deduplication, and invalidation.
  */
 import { useMemo } from 'react';
-import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+  keepPreviousData,
+} from '@tanstack/react-query';
 
 import { api, isApiError } from '@/lib/api';
 import { queryKeys } from '@/lib/api/queryKeys';
@@ -2349,6 +2355,12 @@ export function useSearchProfilesQuery(
         import('@/lib/api').Profile[]
       >,
     enabled: trimmed.length >= 2 && !!excludeUserId && (options?.enabled ?? true),
+    // People do not change mid-search: reusing a result the user already waited for
+    // makes backspacing and retyping feel instant instead of re-round-tripping.
+    staleTime: 5 * 60 * 1000,
+    // Keep the previous list visible while the next one loads, so the results area
+    // does not blank out on every keystroke.
+    placeholderData: keepPreviousData,
   });
 }
 

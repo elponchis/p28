@@ -12,6 +12,19 @@ After a successful **`create_group_event_with_discussion`** RPC, the app best-ef
 
 `supabase functions deploy send-group-event-created --no-verify-jwt` (align `verify_jwt` with **`send-announcement`**). See **`supabase/functions/send-group-event-created/README.md`**.
 
+## Chat messages (push)
+
+After a chat message row is stored, the adapter fires **`send-chat-message`** with `{ messageId }`
+without awaiting it, so a push failure can never look like a send failure. Recipients are the
+chat's other members, filtered by `notification_preferences.messages_enabled`, by
+`chat_members.request_state`, and by whether they have already read the message. Deploy with:
+
+`supabase functions deploy send-chat-message --no-verify-jwt`. See
+**`supabase/functions/send-chat-message/README.md`**.
+
+Read receipts ride on **`00082_chat_members_realtime.sql`**, which puts `chat_members` in the
+`supabase_realtime` publication so a moving `last_read_at` reaches the sender live.
+
 ## Schema overview (as of Story 2.1)
 
 - **organizations** — id, name, created_at, updated_at

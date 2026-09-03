@@ -25,7 +25,7 @@ import { t } from '@/lib/i18n';
 import type { Profile } from '@/lib/api';
 import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
-const SEARCH_DEBOUNCE_MS = 350;
+const SEARCH_DEBOUNCE_MS = 200;
 
 function getDisplayName(profile: Profile | undefined): string {
   return (
@@ -67,7 +67,7 @@ export default function FriendsListScreen() {
   const { data: searchResults = [], isLoading: isSearching } = useSearchProfilesQuery(
     debouncedSearch,
     userId,
-    { enabled: debouncedSearch.length >= 2 }
+    { enabled: debouncedSearch.length >= 1 }
   );
 
   const friendIdSet = useMemo(() => new Set(friendIds), [friendIds]);
@@ -140,7 +140,7 @@ export default function FriendsListScreen() {
   }, [sortedFriendIds, profileMap, trimmedSearch]);
 
   const otherPeopleProfiles = useMemo(() => {
-    if (debouncedSearch.length < 2) return [];
+    if (debouncedSearch.length < 1) return [];
     return searchResults.filter((p) => !friendIdSet.has(p.userId) && !pendingIdSet.has(p.userId));
   }, [searchResults, friendIdSet, pendingIdSet, debouncedSearch]);
 

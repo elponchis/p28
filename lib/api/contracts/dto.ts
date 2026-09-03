@@ -773,6 +773,11 @@ export interface ChatMember {
   joinedAt?: string;
   displayName?: string;
   avatarUrl?: string;
+  /**
+   * When this member last opened the chat. Read receipts compare it against a message's
+   * createdAt: everyone whose lastReadAt is at or after it has seen that message.
+   */
+  lastReadAt?: string;
 }
 
 /** Input for creating a chat. */

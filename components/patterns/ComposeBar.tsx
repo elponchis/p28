@@ -1,6 +1,16 @@
 import React from 'react';
 import { Image } from 'expo-image';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  type NativeSyntheticEvent,
+  type TextInputKeyPressEventData,
+} from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { t } from '@/lib/i18n';
@@ -62,6 +72,12 @@ export interface ComposeBarProps {
   replyingToContext?: ReplyContextBanner | null;
 
   variant?: 'discussion' | 'chat';
+
+  /**
+   * Desktop web only: Enter sends, Shift+Enter inserts a newline. Off by default because a
+   * long-form composer (discussions) wants Enter to mean "new paragraph".
+   */
+  submitOnEnter?: boolean;
 }
 
 export function ComposeBar({
@@ -78,12 +94,51 @@ export function ComposeBar({
   onOpenAttachmentMenu,
   isUploadingAttachment,
   maxAttachments = 5,
+  submitOnEnter = false,
   editingContext,
   replyingToContext,
   variant = 'discussion',
 }: ComposeBarProps) {
   const isChat = variant === 'chat';
   const atLimit = pendingAttachments.length >= maxAttachments;
+
+  /**
+   * Enter-to-send on desktop web.
+   *
+   * Two things this must not break:
+   *
+   * 1. IME composition. Typing Korean or Khmer goes through a composition session, and the
+   *    Enter that commits a candidate is a *different* Enter from the one that means "send".
+   *    Sending on the first would truncate the word being typed, so the composing keystroke
+   *    (`isComposing`, or the legacy keyCode 229 that older browsers report) is ignored.
+   *    react-native-web's own submit path makes the same check; this mirrors it.
+   * 2. Touch keyboards. On a phone browser Enter is the newline key, so this is gated on a
+   *    fine pointer rather than on Platform.OS === 'web' alone.
+   *
+   * preventDefault stops both the newline insertion and react-native-web's built-in
+   * onSubmitEditing path, which would otherwise blur the input and cost the user their focus.
+   */
+  const handleKeyPress = React.useCallback(
+    (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
+      if (!submitOnEnter || Platform.OS !== 'web') return;
+      const webEvent = e as unknown as {
+        key?: string;
+        shiftKey?: boolean;
+        preventDefault?: () => void;
+        nativeEvent?: { isComposing?: boolean; keyCode?: number };
+      };
+      if (webEvent.key !== 'Enter' || webEvent.shiftKey) return;
+      const native = webEvent.nativeEvent;
+      if (native?.isComposing || native?.keyCode === 229) return;
+      if (typeof window !== 'undefined' && window.matchMedia) {
+        if (!window.matchMedia('(pointer: fine)').matches) return;
+      }
+      webEvent.preventDefault?.();
+      if (!canSend || isSending || isUploadingAttachment) return;
+      onSend();
+    },
+    [submitOnEnter, canSend, isSending, isUploadingAttachment, onSend]
+  );
 
   return (
     <View>
@@ -317,6 +372,7 @@ export function ComposeBar({
           placeholderTextColor={isChat ? colors.outlineVariant : colors.ink300}
           value={text}
           onChangeText={onChangeText}
+          onKeyPress={handleKeyPress}
           multiline
           maxLength={2000}
           editable={!isSending}

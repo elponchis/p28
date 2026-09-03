@@ -1,4 +1,4 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { Avatar } from '@/components/primitives';
@@ -201,7 +201,15 @@ export function MessageRow({
                         ) : null}
 
                         {post.body ? (
-                          <Text style={[styles.messageBody, isOwnMessage && styles.messageBodyOwn]}>
+                          <Text
+                            // Web only: on a desktop browser this is what makes a message
+                            // selectable with the mouse and copyable with Ctrl+C. On native the
+                            // same prop would hand the long press to the OS selection magnifier
+                            // and swallow the reaction sheet, so copying there goes through the
+                            // sheet's own Copy action instead.
+                            selectable={Platform.OS === 'web'}
+                            style={[styles.messageBody, isOwnMessage && styles.messageBodyOwn]}
+                          >
                             {post.body}
                           </Text>
                         ) : null}

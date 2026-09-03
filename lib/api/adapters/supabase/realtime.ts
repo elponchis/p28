@@ -114,6 +114,21 @@ export function createSupabaseRealtimeAdapter(getClient: () => SupabaseClient): 
               handlers.onMessage?.(payload as Record<string, unknown>);
             }
           )
+          // Read receipts. chat_members.last_read_at is the only column that moves on its own
+          // here, and nothing else UPDATEs a membership row often enough for the extra traffic
+          // to matter.
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'chat_members',
+              filter: `chat_id=eq.${chatId}`,
+            },
+            (payload) => {
+              handlers.onReadReceipt?.(payload as Record<string, unknown>);
+            }
+          )
           .subscribe((status, err) => {
             if (status === 'CHANNEL_ERROR' && err && handlers.onError) {
               handlers.onError({

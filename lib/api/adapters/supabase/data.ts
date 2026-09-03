@@ -478,24 +478,22 @@ function avatarPathFromPublicUrl(avatarUrl: string): string | undefined {
 }
 
 /**
- * Resolves avatar URL to a signed URL so it works for private buckets. Returns the
- * original URL if resolution fails (e.g. not our storage URL, or signed URL error).
+ * Returns the URL to display for an avatar.
+ *
+ * This used to mint a signed URL, which cost a network round-trip PER AVATAR — and the
+ * callers await them in sequence, so a 30-result profile search paid 30 serial requests
+ * before rendering anything. The `avatars` bucket is public ("Avatar images are publicly
+ * readable" in 00001_profiles.sql), and the stored value already IS the public URL, so
+ * the signing was buying nothing.
+ *
+ * Kept as a function, and still async, so the 27 call sites stay unchanged and so this is
+ * the single place to reinstate signing if avatars are ever made private.
  */
 async function resolveAvatarDisplayUrl(
-  getClient: () => SupabaseClient,
+  _getClient: () => SupabaseClient,
   avatarUrl: string
 ): Promise<string> {
-  const path = avatarPathFromPublicUrl(avatarUrl);
-  if (!path) return avatarUrl;
-  try {
-    const { data, error } = await getClient()
-      .storage.from('avatars')
-      .createSignedUrl(path, 60 * 60); // 1 hour
-    if (error || !data?.signedUrl) return avatarUrl;
-    return data.signedUrl;
-  } catch {
-    return avatarUrl;
-  }
+  return avatarUrl;
 }
 
 /** Display fields for stacked avatars / member rows (name + resolved avatar URL). */
@@ -1346,6 +1344,28 @@ function interpretRemoteErrorPayload(data: unknown): void | ApiError {
 /**
  * Invoke push-related Edge Functions; fails on `{ error: string }` JSON body.
  */
+/**
+ * Fire-and-forget Edge Function call for something that must never fail the user's action.
+ *
+ * Unlike invokeEdgeWithUserJwt this does NOT refresh the session first. That refresh costs a
+ * network round trip and rotates the token, which is fine once per announcement but not once
+ * per chat message; supabase-js already attaches the current session to functions.invoke.
+ */
+function invokeEdgeBestEffort(
+  getClient: () => SupabaseClient,
+  functionName: string,
+  body: Record<string, unknown>
+): void {
+  void (async () => {
+    try {
+      const { error } = await getClient().functions.invoke(functionName, { body });
+      if (error) console.warn(`[push] ${functionName} failed`, error.message);
+    } catch (e) {
+      console.warn(`[push] ${functionName} threw`, e);
+    }
+  })();
+}
+
 async function invokePushEdgeFunctionWithUserJwt(
   getClient: () => SupabaseClient,
   functionName: string,
@@ -4419,7 +4439,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
 
         const { data: memberRows } = await getClient()
           .from('chat_members')
-          .select('user_id, chat_id, joined_at')
+          .select('user_id, chat_id, joined_at, last_read_at')
           .eq('chat_id', id);
 
         const memberUserIds = (memberRows ?? []).map((r) => r.user_id);
@@ -4447,6 +4467,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
             userId: r.user_id,
             chatId: r.chat_id,
             joinedAt: r.joined_at,
+            lastReadAt: r.last_read_at ?? undefined,
             displayName: profile?.displayName,
             avatarUrl: profile?.avatarUrl,
           };
@@ -4955,6 +4976,11 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
         };
         const attachmentsOut = attachmentsForApiRow(r.attachments, r.image_urls);
         const imageUrlsOut = deriveLegacyImageUrls(attachmentsOut);
+
+        // Push the other members. Deliberately not awaited: the sender's UI should never wait
+        // on Expo, and a push that fails is not a message that failed to send.
+        invokeEdgeBestEffort(getClient, 'send-chat-message', { messageId: r.id });
+
         return {
           id: r.id,
           chatId: r.chat_id,
