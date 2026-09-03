@@ -1418,6 +1418,8 @@ export default function ChatDetailScreen() {
                   onParentPress={
                     msg.parentMessageId ? () => jumpToMessage(msg.parentMessageId!) : undefined
                   }
+                  onEdit={thisIsOwn ? () => handleStartEdit(msg) : undefined}
+                  onDelete={thisIsOwn ? () => handleDeleteMessage(msg) : undefined}
                   onAddReaction={(reactionType) =>
                     reactMutation.mutate({
                       messageId: msg.id,

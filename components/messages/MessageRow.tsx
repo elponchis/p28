@@ -45,6 +45,9 @@ export interface MessageRowProps {
   onReply?: () => void;
   /** Jump to the message this one is replying to, from the quoted preview. */
   onParentPress?: () => void;
+  /** Own messages: edit / delete from the hover toolbar instead of only the long-press sheet. */
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
 export function MessageRow({
@@ -67,6 +70,8 @@ export function MessageRow({
   extraGapAfterPeerChange = false,
   onReply,
   onParentPress,
+  onEdit,
+  onDelete,
 }: MessageRowProps) {
   const counts = post.reactionCounts ?? {};
   const userReactions = post.userReactionTypes ?? [];
@@ -121,6 +126,8 @@ export function MessageRow({
       onRemoveReaction={onRemoveReaction}
       onMore={onLongPress}
       onReply={onReply}
+      onEdit={onEdit}
+      onDelete={onDelete}
     />
   ) : null;
 

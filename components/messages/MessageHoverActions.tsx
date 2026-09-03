@@ -28,6 +28,9 @@ export interface MessageHoverActionsProps {
   /** Opens the full picker (the long-press sheet), reached by the + button. */
   onMore?: () => void;
   onReply?: () => void;
+  /** Own messages only. Edit and delete otherwise live behind a long press, which a mouse never finds. */
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
 /** True where a hover toolbar makes sense at all. */
@@ -40,6 +43,8 @@ export function MessageHoverActions({
   onRemoveReaction,
   onMore,
   onReply,
+  onEdit,
+  onDelete,
 }: MessageHoverActionsProps) {
   return (
     <View style={styles.container}>
@@ -81,6 +86,30 @@ export function MessageHoverActions({
           accessibilityHint={t('discussions.sheetReplyHint')}
         >
           <Ionicons name="arrow-undo-outline" size={15} color={colors.onSurfaceVariant} />
+        </Pressable>
+      ) : null}
+      {isOwnMessage && onEdit ? (
+        <Pressable
+          onPress={onEdit}
+          style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
+          accessibilityRole="button"
+          accessibilityLabel={t('discussions.sheetEdit')}
+          accessibilityHint={t('discussions.sheetEditHint')}
+        >
+          <Ionicons name="pencil-outline" size={15} color={colors.onSurfaceVariant} />
+        </Pressable>
+      ) : null}
+      {isOwnMessage && onDelete ? (
+        // Destructive, but it opens a confirm dialog rather than deleting on the spot, which is
+        // what makes it safe enough to sit a single click away.
+        <Pressable
+          onPress={onDelete}
+          style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
+          accessibilityRole="button"
+          accessibilityLabel={t('discussions.sheetDelete')}
+          accessibilityHint={t('discussions.sheetDeleteHint')}
+        >
+          <Ionicons name="trash-outline" size={15} color={colors.error} />
         </Pressable>
       ) : null}
     </View>

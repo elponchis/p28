@@ -165,6 +165,8 @@ function ReplyRow({
   extraGapAfterPeerChange = false,
   onReply,
   onParentPress,
+  onEdit,
+  onDelete,
 }: {
   post: DiscussionReplyPost;
   parentPost?: DiscussionPost | null;
@@ -182,6 +184,8 @@ function ReplyRow({
   extraGapAfterPeerChange?: boolean;
   onReply?: () => void;
   onParentPress?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }) {
   const counts = post.reactionCounts ?? {};
   const userReactions = post.userReactionTypes ?? [];
@@ -233,6 +237,8 @@ function ReplyRow({
             onRemoveReaction={onRemoveReaction}
             onMore={onLongPress}
             onReply={onReply}
+            onEdit={onEdit}
+            onDelete={onDelete}
           />
         ) : null}
         <View style={styles.replyCardWrapper}>
