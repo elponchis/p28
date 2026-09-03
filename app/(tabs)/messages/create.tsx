@@ -17,6 +17,7 @@ import { useAuth } from '@/hooks/useAuth';
 import {
   useCreateChatMutation,
   useFriendIdsQuery,
+  useGroupMateUserIdsQuery,
   useProfilesQuery,
   useUpdateChatMutation,
   useUploadChatImageMutation,
@@ -39,7 +40,19 @@ export default function CreateChatScreen() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const { data: friendIds = [] } = useFriendIdsQuery(userId);
-  const { data: profiles = [] } = useProfilesQuery(friendIds.length > 0 ? friendIds : undefined);
+  // The reach rule (00078) lets you open a conversation with anyone you share a group with, not
+  // only friends, so the picker offers them too -- in their own section, since "why is this
+  // person here" has a different answer for each list.
+  const { data: groupMateIds = [] } = useGroupMateUserIdsQuery(userId);
+  const friendIdSet = useMemo(() => new Set(friendIds), [friendIds]);
+  const groupOnlyIds = useMemo(
+    () => groupMateIds.filter((id) => !friendIdSet.has(id)),
+    [groupMateIds, friendIdSet]
+  );
+  const pickableIds = useMemo(() => [...friendIds, ...groupOnlyIds], [friendIds, groupOnlyIds]);
+  const { data: profiles = [] } = useProfilesQuery(
+    pickableIds.length > 0 ? pickableIds : undefined
+  );
   const profileMap = useMemo(() => new Map(profiles.map((p) => [p.userId, p])), [profiles]);
 
   const createMutation = useCreateChatMutation();
@@ -198,7 +211,7 @@ export default function CreateChatScreen() {
 
       <View style={styles.section}>
         <Text style={styles.label}>{t('messages.addFriends')}</Text>
-        {friendIds.length === 0 ? (
+        {pickableIds.length === 0 ? (
           <Text style={styles.hint}>{t('messages.noFriendsToAdd')}</Text>
         ) : (
           <View style={styles.friendList}>
@@ -231,6 +244,42 @@ export default function CreateChatScreen() {
             })}
           </View>
         )}
+        {groupOnlyIds.length > 0 ? (
+          <>
+            <Text style={[styles.label, styles.groupSectionLabel]}>
+              {t('messages.peopleInYourGroups')}
+            </Text>
+            <View style={styles.friendList}>
+              {groupOnlyIds.map((id) => {
+                const profile = profileMap.get(id);
+                const displayName = profile?.displayName ?? profile?.firstName ?? id.slice(0, 8);
+                const isSelected = selectedIds.has(id);
+                return (
+                  <Pressable
+                    key={id}
+                    onPress={() => handleToggleFriend(id)}
+                    style={[styles.friendRow, isSelected && styles.friendRowSelected]}
+                    accessibilityLabel={displayName}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: isSelected }}
+                  >
+                    <Avatar
+                      source={profile?.avatarUrl ? { uri: profile.avatarUrl } : null}
+                      fallbackText={displayName}
+                      size="md"
+                    />
+                    <Text style={styles.friendName} numberOfLines={1}>
+                      {displayName}
+                    </Text>
+                    {isSelected ? (
+                      <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                    ) : null}
+                  </Pressable>
+                );
+              })}
+            </View>
+          </>
+        ) : null}
       </View>
 
       <Pressable
@@ -254,6 +303,9 @@ export default function CreateChatScreen() {
 }
 
 const styles = StyleSheet.create({
+  groupSectionLabel: {
+    marginTop: spacing.lg,
+  },
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.screenHorizontal, paddingBottom: spacing.xxl },
   section: { marginBottom: spacing.lg },

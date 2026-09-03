@@ -754,6 +754,7 @@ export const km: TranslationShape = {
     lastMessage: 'សារចុងក្រោយ',
     unreadByCount: '{{count}} នាក់មិនទាន់អាន',
     typingOne: '{{name}} កំពុងវាយបញ្ចូល',
+    peopleInYourGroups: 'មនុស្សក្នុងក្រុមរបស់អ្នក',
     typingMany: '{{count}} នាក់កំពុងវាយបញ្ចូល',
     you: 'អ្នក',
     editFolder: 'កែថត',

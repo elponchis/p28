@@ -25,6 +25,7 @@ import type {
   GroupType,
   NotificationPreferencesUpdates,
   OnboardingProfileData,
+  PostReactionCounts,
   PostReactionType,
   Profile,
   ProfileUpdates,
@@ -192,6 +193,17 @@ export function useGroupMembersQuery(groupId: string | undefined, options?: { en
 }
 
 // --- Friendships ---
+
+export function useGroupMateUserIdsQuery(
+  userId: string | undefined,
+  options?: { enabled?: boolean }
+) {
+  return useQuery({
+    queryKey: queryKeys.groupMateIds(userId ?? ''),
+    queryFn: () => queryFn(api.data.getGroupMateUserIds(userId!)) as Promise<string[]>,
+    enabled: !!userId && (options?.enabled ?? true),
+  });
+}
 
 export function useFriendIdsQuery(userId: string | undefined, options?: { enabled?: boolean }) {
   return useQuery({
@@ -1636,30 +1648,35 @@ export function useDeleteDiscussionPostMutation() {
   });
 }
 
+/**
+ * Optimistic reaction update.
+ *
+ * Adding no longer clears the viewer's previous reaction: since 00084 one person can hold
+ * several on the same post, so this accumulates rather than replaces. Counts are keyed by the
+ * stored reaction_type, which is what the server sends back -- the old shape had a thumbsUp the
+ * database called thumbs_up and needed translating at every touch.
+ */
 function updatePostReaction(
   post: DiscussionPost,
   reactionType: PostReactionType,
-  delta: 1 | -1,
-  userId: string
+  delta: 1 | -1
 ): DiscussionPost {
-  const counts = { ...(post.reactionCounts ?? { prayer: 0, laugh: 0, thumbsUp: 0 }) };
+  const counts: PostReactionCounts = { ...(post.reactionCounts ?? {}) };
   const userReactions = [...(post.userReactionTypes ?? [])];
+
   if (delta === 1) {
-    const prev = userReactions[0];
-    if (prev) {
-      const prevKey = prev === 'thumbs_up' ? 'thumbsUp' : prev;
-      counts[prevKey] = Math.max(0, counts[prevKey] - 1);
+    // Guarded so a double tap cannot inflate the count past what the server will report.
+    if (!userReactions.includes(reactionType)) {
+      counts[reactionType] = (counts[reactionType] ?? 0) + 1;
+      userReactions.push(reactionType);
     }
-    const key = reactionType === 'thumbs_up' ? 'thumbsUp' : reactionType;
-    counts[key] = (counts[key] ?? 0) + 1;
-    return { ...post, reactionCounts: counts, userReactionTypes: [reactionType] };
-  } else {
-    const key = reactionType === 'thumbs_up' ? 'thumbsUp' : reactionType;
-    counts[key] = Math.max(0, counts[key] - 1);
-    const i = userReactions.indexOf(reactionType);
-    if (i >= 0) userReactions.splice(i, 1);
     return { ...post, reactionCounts: counts, userReactionTypes: userReactions };
   }
+
+  counts[reactionType] = Math.max(0, (counts[reactionType] ?? 0) - 1);
+  const i = userReactions.indexOf(reactionType);
+  if (i >= 0) userReactions.splice(i, 1);
+  return { ...post, reactionCounts: counts, userReactionTypes: userReactions };
 }
 
 export function useReactToPostMutation() {
@@ -1683,8 +1700,7 @@ export function useReactToPostMutation() {
       );
       qc.setQueryData<DiscussionPost[]>(
         queryKeys.discussionPosts(discussionId, userId),
-        (old = []) =>
-          old.map((p) => (p.id === postId ? updatePostReaction(p, reactionType, 1, userId) : p))
+        (old = []) => old.map((p) => (p.id === postId ? updatePostReaction(p, reactionType, 1) : p))
       );
       return { previous };
     },
@@ -1737,7 +1753,7 @@ export function useRemovePostReactionMutation() {
       qc.setQueryData<DiscussionPost[]>(
         queryKeys.discussionPosts(discussionId, userId),
         (old = []) =>
-          old.map((p) => (p.id === postId ? updatePostReaction(p, reactionType, -1, userId) : p))
+          old.map((p) => (p.id === postId ? updatePostReaction(p, reactionType, -1) : p))
       );
       return { previous };
     },

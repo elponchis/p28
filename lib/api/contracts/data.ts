@@ -171,6 +171,12 @@ export interface DataContract {
 
   // Friendships
   getFriendIds(userId: string): Promise<string[] | ApiError>;
+  /**
+   * Everyone who shares at least one group with this user, excluding the user. These are the
+   * people the message reach rule (00078) allows starting a conversation with even when there
+   * is no friendship, so the new-chat screen can offer them.
+   */
+  getGroupMateUserIds(userId: string): Promise<string[] | ApiError>;
   areFriends(userId: string, targetUserId: string): Promise<boolean | ApiError>;
   addFriend(userId: string, friendId: string): Promise<void | ApiError>;
   removeFriend(userId: string, friendId: string): Promise<void | ApiError>;

@@ -2081,6 +2081,29 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
       }
     },
 
+    async getGroupMateUserIds(userId: string): Promise<string[] | ApiError> {
+      try {
+        const { data: mine, error: mineErr } = await getClient()
+          .from('group_members')
+          .select('group_id')
+          .eq('user_id', userId);
+        if (mineErr) return toApiError(mineErr);
+        const groupIds = (mine ?? []).map((r) => r.group_id as string);
+        if (groupIds.length === 0) return [];
+
+        const { data: rows, error } = await getClient()
+          .from('group_members')
+          .select('user_id')
+          .in('group_id', groupIds)
+          .neq('user_id', userId);
+        if (error) return toApiError(error);
+        // One person can share several groups, so the same id comes back more than once.
+        return [...new Set((rows ?? []).map((r) => r.user_id as string))];
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
     async getFriendIds(userId: string): Promise<string[] | ApiError> {
       try {
         const { data: rows, error } = await getClient()

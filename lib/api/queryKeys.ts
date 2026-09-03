@@ -23,6 +23,7 @@ export const queryKeys = {
   isAdmin: (userId: string) => ['isAdmin', userId] as const,
   isSuperAdmin: (userId: string) => ['isSuperAdmin', userId] as const,
   friendIds: (userId: string) => ['friendIds', userId] as const,
+  groupMateIds: (userId: string) => ['groupMateIds', userId] as const,
   areFriends: (userId: string, targetUserId: string) =>
     ['areFriends', userId, targetUserId] as const,
   friendRequestBetween: (userId: string, targetUserId: string) =>
