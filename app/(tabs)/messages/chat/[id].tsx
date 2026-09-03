@@ -7,6 +7,7 @@ import * as MediaLibrary from 'expo-media-library';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   Keyboard,
   KeyboardAvoidingView,
   Modal,
@@ -169,6 +170,25 @@ export default function ChatDetailScreen() {
     if (focusMessageId) shouldStickToEndRef.current = false;
   }, [focusMessageId]);
 
+  /**
+   * The arrival cue for a jump: a short sideways nudge, the way KakaoTalk answers a tap on a
+   * reply quote. A background tint had to stay up long enough to be noticed, which meant it was
+   * also up long enough to be read as state -- "this message is selected" -- rather than as an
+   * answer to the tap. Motion is over in half a second and leaves nothing behind.
+   */
+  const nudge = useRef(new Animated.Value(0)).current;
+  const playNudge = useCallback(() => {
+    nudge.setValue(0);
+    Animated.sequence([
+      // Waits out the scroll, so the movement happens once the message is actually on screen.
+      Animated.delay(260),
+      Animated.timing(nudge, { toValue: -9, duration: 90, useNativeDriver: true }),
+      Animated.timing(nudge, { toValue: 6, duration: 90, useNativeDriver: true }),
+      Animated.timing(nudge, { toValue: -3, duration: 80, useNativeDriver: true }),
+      Animated.timing(nudge, { toValue: 0, duration: 90, useNativeDriver: true }),
+    ]).start();
+  }, [nudge]);
+
   useEffect(() => {
     if (!focusMessageId || messages.length === 0) return;
     if (!messages.some((m) => m.id === focusMessageId)) return;
@@ -181,8 +201,9 @@ export default function ChatDetailScreen() {
       if (y !== undefined) {
         scrollViewRef.current?.scrollTo({ y: Math.max(0, y - 72), animated: true });
         setHighlightedMessageId(focusMessageId);
+        playNudge();
         lastScrolledFocusRef.current = focusMessageId;
-        setTimeout(() => setHighlightedMessageId(null), 2200);
+        setTimeout(() => setHighlightedMessageId(null), 1400);
         shouldStickToEndRef.current = true;
         return;
       }
@@ -193,7 +214,7 @@ export default function ChatDetailScreen() {
       }
     };
     requestAnimationFrame(tryScroll);
-  }, [focusMessageId, messages]);
+  }, [focusMessageId, messages, playNudge]);
 
   useFocusEffect(
     useCallback(() => {
@@ -300,6 +321,7 @@ export default function ChatDetailScreen() {
    * not yank the reader away from what they just went to look at.
    */
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(
     () => () => {
       if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
@@ -307,18 +329,22 @@ export default function ChatDetailScreen() {
     []
   );
 
-  const jumpToMessage = useCallback((messageId: string) => {
-    const y = messageOffsetYsRef.current.get(messageId);
-    if (y === undefined) return;
-    shouldStickToEndRef.current = false;
-    scrollViewRef.current?.scrollTo({ y: Math.max(0, y - 72), animated: true });
-    setHighlightedMessageId(messageId);
-    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
-    highlightTimerRef.current = setTimeout(() => {
-      setHighlightedMessageId(null);
-      shouldStickToEndRef.current = true;
-    }, 2200);
-  }, []);
+  const jumpToMessage = useCallback(
+    (messageId: string) => {
+      const y = messageOffsetYsRef.current.get(messageId);
+      if (y === undefined) return;
+      shouldStickToEndRef.current = false;
+      scrollViewRef.current?.scrollTo({ y: Math.max(0, y - 72), animated: true });
+      setHighlightedMessageId(messageId);
+      playNudge();
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+      highlightTimerRef.current = setTimeout(() => {
+        setHighlightedMessageId(null);
+        shouldStickToEndRef.current = true;
+      }, 1400);
+    },
+    [playNudge]
+  );
 
   const chatMenuOptions = useMemo(
     () => [
@@ -1284,13 +1310,17 @@ export default function ChatDetailScreen() {
               !!prevMsg && !!userId && !showDateSeparator && prevIsOwn !== thisIsOwn;
 
             return (
-              <View
+              <Animated.View
                 key={msg.id}
                 collapsable={false}
                 onLayout={(e) => {
                   messageOffsetYsRef.current.set(msg.id, e.nativeEvent.layout.y);
                 }}
-                style={highlightedMessageId === msg.id ? styles.messageHighlight : undefined}
+                style={
+                  highlightedMessageId === msg.id
+                    ? { transform: [{ translateX: nudge }] }
+                    : undefined
+                }
               >
                 {showDateSeparator ? (
                   <View style={styles.dateSeparator}>
@@ -1351,7 +1381,7 @@ export default function ChatDetailScreen() {
                   extraGapAfterPeerChange={extraGapAfterPeerChange}
                   unreadCount={unreadCountByMessageId.get(msg.id) ?? 0}
                 />
-              </View>
+              </Animated.View>
             );
           })}
         </ScrollView>
@@ -1624,12 +1654,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.screenHorizontal,
     paddingTop: spacing.sm,
     paddingBottom: spacing.sm,
-  },
-  messageHighlight: {
-    backgroundColor: colors.primaryFixed,
-    borderRadius: radius.md,
-    marginHorizontal: -spacing.xs,
-    paddingHorizontal: spacing.xs,
   },
 
   /* ── Date separator ─────────────────────────────────── */
