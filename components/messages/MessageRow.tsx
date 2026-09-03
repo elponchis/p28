@@ -332,7 +332,10 @@ const styles = StyleSheet.create({
   ownMetaColumn: {
     alignItems: 'flex-end',
     justifyContent: 'flex-end',
-    gap: 2,
+    // No gap: the two lines are one block, and the tight line heights below already leave
+    // enough air between them. Anything more reads as a stray number floating over the time,
+    // which is most obvious beside a single-line message.
+    gap: 0,
     // On the column so the count clears the bubble too. It used to sit on the timestamp alone,
     // leaving the number touching the message.
     marginEnd: spacing.xs,
@@ -340,6 +343,10 @@ const styles = StyleSheet.create({
   unreadCount: {
     ...typography.caption,
     fontFamily: fontFamily.sansSemiBold,
+    fontSize: 12,
+    // caption ships lineHeight 18 against a 13px face, so the glyphs carry 2.5px of dead space
+    // above and below. Digits need none of it, and here it was all gap.
+    lineHeight: 14,
     color: colors.secondary,
   },
   messageWrapper: {
@@ -425,8 +432,12 @@ const styles = StyleSheet.create({
   sentClockTime: {
     ...typography.caption,
     fontSize: 11,
+    // Same reason as unreadCount: caption's 18px leading is 7px of slack at this size. The
+    // bottom padding stays -- it is what keeps the time off the bubble's rounded corner --
+    // but the top padding only widened the gap under the unread count.
+    lineHeight: 14,
     color: colors.onSurfaceVariant,
-    paddingVertical: 2,
+    paddingBottom: 2,
   },
   sentClockTimeOther: {
     marginStart: spacing.xs,
