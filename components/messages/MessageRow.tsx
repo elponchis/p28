@@ -160,10 +160,7 @@ export function MessageRow({
                       </Text>
                     ) : null}
                     {showSentClockTime ? (
-                      <Text
-                        style={[styles.sentClockTime, styles.sentClockTimeOwn]}
-                        accessibilityLabel={clockTime}
-                      >
+                      <Text style={styles.sentClockTime} accessibilityLabel={clockTime}>
                         {clockTime}
                       </Text>
                     ) : null}
@@ -336,6 +333,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'flex-end',
     gap: 2,
+    // On the column so the count clears the bubble too. It used to sit on the timestamp alone,
+    // leaving the number touching the message.
+    marginEnd: spacing.xs,
   },
   unreadCount: {
     ...typography.caption,
@@ -409,7 +409,10 @@ const styles = StyleSheet.create({
   },
   bubbleAndTimeRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    // Bottom, not center: KakaoTalk hangs the timestamp off the bubble's bottom edge and
+    // stacks the unread count above it. Centering put the time halfway up a tall message,
+    // which is what read wrong.
+    alignItems: 'flex-end',
     maxWidth: '100%',
   },
   bubbleAndTimeRowOwn: {
@@ -424,9 +427,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.onSurfaceVariant,
     paddingVertical: 2,
-  },
-  sentClockTimeOwn: {
-    marginEnd: spacing.xs,
   },
   sentClockTimeOther: {
     marginStart: spacing.xs,
