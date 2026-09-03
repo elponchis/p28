@@ -9,7 +9,7 @@ import { formatMessageSentClockTime } from '@/lib/dates';
 import { t } from '@/lib/i18n';
 import { colors, radius, spacing, typography, fontFamily } from '@/theme/tokens';
 
-import { REACTION_EMOJI, REACTION_OPTIONS } from './constants';
+import { REACTION_EMOJI, REACTION_OPTIONS, REACTION_ORDER } from './constants';
 import { MessageAttachmentsBlock } from './MessageAttachmentsBlock';
 import type { MessageLike, ParentMessageLike, PostReactionType } from './types';
 
@@ -67,10 +67,12 @@ export function MessageRow({
   onReply,
   onParentPress,
 }: MessageRowProps) {
-  const counts = post.reactionCounts ?? { prayer: 0, laugh: 0, thumbsUp: 0 };
+  const counts = post.reactionCounts ?? {};
   const userReactions = post.userReactionTypes ?? [];
-  const hasReactions =
-    !post.deletedAt && (counts.prayer > 0 || counts.laugh > 0 || counts.thumbsUp > 0);
+  // Rendered in catalogue order rather than whatever order the keys arrived in, so a message's
+  // badges do not reshuffle when someone adds a reaction.
+  const presentReactions = REACTION_ORDER.filter((type) => (counts[type] ?? 0) > 0);
+  const hasReactions = !post.deletedAt && presentReactions.length > 0;
   const isOwnMessage = !!currentUserId && post.userId === currentUserId;
   const outboundStatus = post.outboundStatus;
   const showFailedOutbound = isOwnMessage && outboundStatus === 'failed' && !!onRetrySend;
@@ -131,6 +133,20 @@ export function MessageRow({
           </Pressable>
         );
       })}
+      {/* The four quick picks cover most reactions; the rest are one tap further, in the sheet. */}
+      {isOwnMessage ? null : onLongPress ? (
+        <Pressable
+          onPress={onLongPress}
+          style={({ pressed }) => [
+            styles.hoverActionButton,
+            pressed && styles.hoverActionButtonPressed,
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel={t('discussions.moreReactions')}
+        >
+          <Ionicons name="add" size={15} color={colors.onSurfaceVariant} />
+        </Pressable>
+      ) : null}
       {onReply ? (
         <Pressable
           onPress={onReply}
@@ -357,10 +373,8 @@ export function MessageRow({
               </View>
               {hasReactions ? (
                 <View style={styles.reactionBadges}>
-                  {(['prayer', 'laugh', 'thumbs_up'] as PostReactionType[]).map((type) => {
-                    const countKey = type === 'thumbs_up' ? 'thumbsUp' : type;
-                    if ((counts as unknown as Record<string, number>)[countKey] <= 0) return null;
-                    const count = (counts as unknown as Record<string, number>)[countKey];
+                  {presentReactions.map((type) => {
+                    const count = counts[type] ?? 0;
                     const isMine = isUserReaction(type);
                     const onPress =
                       canReact && (isMine ? onRemoveReaction : onAddReaction)

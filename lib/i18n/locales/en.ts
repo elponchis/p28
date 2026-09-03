@@ -631,6 +631,7 @@ export const en = {
     sheetEditHint: 'Edit this message',
     sheetCopy: 'Copy',
     jumpToOriginal: 'Go to the original message',
+    moreReactions: 'More reactions',
     replyingToYou: 'Replying to you',
     replyingToPerson: 'Replying to {{name}}',
     sheetCopyHint: 'Copy this message text',

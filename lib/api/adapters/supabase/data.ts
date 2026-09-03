@@ -65,6 +65,7 @@ import type {
   NotificationPreferences,
   NotificationPreferencesUpdates,
   OnboardingProfileData,
+  PostReactionCounts,
   PostReactionType,
   Profile,
   ProfileUpdates,
@@ -1211,10 +1212,40 @@ type DiscussionPostRow = {
   attachments?: unknown;
 };
 
+/**
+ * Reaction keys the database is allowed to hold. Kept here so a row written by an older client
+ * -- or a future key this build does not know -- is dropped rather than rendered as a blank
+ * badge; PostReactionType is the same list on the contract side.
+ */
+const KNOWN_REACTION_TYPES: ReadonlySet<string> = new Set<PostReactionType>([
+  'heart',
+  'thumbs_up',
+  'laugh',
+  'sad',
+  'prayer',
+  'wow',
+  'clap',
+  'fire',
+  'celebrate',
+  'thinking',
+  'eyes',
+  'check',
+]);
+
+function isKnownReactionType(value: string): value is PostReactionType {
+  return KNOWN_REACTION_TYPES.has(value);
+}
+
+/** Counts one reaction row into a per-message tally. Absent keys mean zero. */
+function tallyReaction(counts: PostReactionCounts, reactionType: string): void {
+  if (!isKnownReactionType(reactionType)) return;
+  counts[reactionType] = (counts[reactionType] ?? 0) + 1;
+}
+
 function mapDiscussionPostRow(
   row: DiscussionPostRow,
   profile?: { displayName?: string; avatarUrl?: string } | null,
-  reactionCounts?: { prayer: number; laugh: number; thumbsUp: number },
+  reactionCounts?: PostReactionCounts,
   userReactionTypes?: string[]
 ): DiscussionPost {
   const attachments = attachmentsForApiRow(row.attachments, row.image_urls);
@@ -1231,12 +1262,8 @@ function mapDiscussionPostRow(
     authorAvatarUrl: profile?.avatarUrl,
     imageUrls,
     attachments: attachments && attachments.length > 0 ? attachments : undefined,
-    reactionCounts: reactionCounts ?? { prayer: 0, laugh: 0, thumbsUp: 0 },
-    userReactionTypes:
-      userReactionTypes?.filter(
-        (t): t is 'prayer' | 'laugh' | 'thumbs_up' =>
-          t === 'prayer' || t === 'laugh' || t === 'thumbs_up'
-      ) ?? undefined,
+    reactionCounts: reactionCounts ?? {},
+    userReactionTypes: userReactionTypes?.filter(isKnownReactionType) ?? undefined,
   };
 }
 
@@ -3965,10 +3992,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
           }
         }
 
-        const reactionCountMap = new Map<
-          string,
-          { prayer: number; laugh: number; thumbsUp: number }
-        >();
+        const reactionCountMap = new Map<string, PostReactionCounts>();
         const userReactionMap = new Map<string, string[]>();
         const { data: reactionRows } = await getClient()
           .from('discussion_post_reactions')
@@ -3983,12 +4007,9 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
           }[]) {
             const key = row.post_id;
             if (!reactionCountMap.has(key)) {
-              reactionCountMap.set(key, { prayer: 0, laugh: 0, thumbsUp: 0 });
+              reactionCountMap.set(key, {});
             }
-            const counts = reactionCountMap.get(key)!;
-            if (row.reaction_type === 'prayer') counts.prayer++;
-            else if (row.reaction_type === 'laugh') counts.laugh++;
-            else if (row.reaction_type === 'thumbs_up') counts.thumbsUp++;
+            tallyReaction(reactionCountMap.get(key)!, row.reaction_type);
             if (uid && row.user_id === uid) {
               const arr = userReactionMap.get(key) ?? [];
               if (!arr.includes(row.reaction_type)) arr.push(row.reaction_type);
@@ -4817,10 +4838,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
         }
 
         const postIds = posts.map((r) => r.id);
-        const reactionCountMap = new Map<
-          string,
-          { prayer: number; laugh: number; thumbsUp: number }
-        >();
+        const reactionCountMap = new Map<string, PostReactionCounts>();
         const userReactionMap = new Map<string, string[]>();
         const { data: reactionRows } = await getClient()
           .from('chat_message_reactions')
@@ -4835,12 +4853,9 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
           }[]) {
             const key = row.message_id;
             if (!reactionCountMap.has(key)) {
-              reactionCountMap.set(key, { prayer: 0, laugh: 0, thumbsUp: 0 });
+              reactionCountMap.set(key, {});
             }
-            const counts = reactionCountMap.get(key)!;
-            if (row.reaction_type === 'prayer') counts.prayer++;
-            else if (row.reaction_type === 'laugh') counts.laugh++;
-            else if (row.reaction_type === 'thumbs_up') counts.thumbsUp++;
+            tallyReaction(reactionCountMap.get(key)!, row.reaction_type);
             if (uid && row.user_id === uid) {
               const arr = userReactionMap.get(key) ?? [];
               if (!arr.includes(row.reaction_type)) arr.push(row.reaction_type);

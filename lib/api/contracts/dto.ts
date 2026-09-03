@@ -639,14 +639,36 @@ export interface UpdateDiscussionInput {
 }
 
 /** Reaction type on a discussion post reply. */
-export type PostReactionType = 'prayer' | 'laugh' | 'thumbs_up';
+/**
+ * Reaction keys, stored verbatim in `reaction_type`.
+ *
+ * A closed union rather than free text: the database carries the same allowlist, so a typo or a
+ * client sending junk is rejected at both ends, and every key is guaranteed to have an emoji to
+ * render. Adding one means touching this list, the emoji map in components/messages/constants,
+ * and a migration -- deliberately, since an orphaned key would render as a blank badge.
+ *
+ * The first four are the quick picks; the rest live behind the picker's + button.
+ */
+export type PostReactionType =
+  | 'heart'
+  | 'thumbs_up'
+  | 'laugh'
+  | 'sad'
+  | 'prayer'
+  | 'wow'
+  | 'clap'
+  | 'fire'
+  | 'celebrate'
+  | 'thinking'
+  | 'eyes'
+  | 'check';
 
-/** Reaction counts per type for a discussion post. */
-export interface PostReactionCounts {
-  prayer: number;
-  laugh: number;
-  thumbsUp: number;
-}
+/**
+ * Reaction counts per type. Partial because a message carries only the reactions it actually
+ * has -- an absent key means zero, and enumerating every emoji on every message would be a lot
+ * of zeroes over the wire.
+ */
+export type PostReactionCounts = Partial<Record<PostReactionType, number>>;
 
 /** Who gave which reaction on a post. */
 export interface PostReactionDetail {

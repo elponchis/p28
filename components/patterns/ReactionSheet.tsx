@@ -14,7 +14,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/primitives';
-import { REACTION_EMOJI, REACTION_OPTIONS } from '@/components/messages';
+import { ALL_REACTION_OPTIONS, REACTION_EMOJI, REACTION_OPTIONS } from '@/components/messages';
 import { useFadeSheetAnimation } from '@/hooks/useFadeSheetAnimation';
 import type { PostReactionType } from '@/lib/api';
 import { t } from '@/lib/i18n';
@@ -66,6 +66,11 @@ export function ReactionSheet({
 }: ReactionSheetProps) {
   const { sheetSlideAnim, sheetFadeAnim } = useFadeSheetAnimation(visible);
   const insets = useSafeAreaInsets();
+  const [showAllReactions, setShowAllReactions] = React.useState(false);
+  // Each opening starts folded, so the sheet does not remember an expansion from another message.
+  React.useEffect(() => {
+    if (!visible) setShowAllReactions(false);
+  }, [visible]);
 
   return (
     <Modal
@@ -199,27 +204,44 @@ export function ReactionSheet({
             {visible && canReact && (
               <View style={styles.footer}>
                 <View style={styles.addRow}>
-                  {REACTION_OPTIONS.map(({ type, emoji, label }) => {
-                    const isSelected = selectedReactionTypes.includes(type);
-                    const onPress = () =>
-                      isSelected ? onRemoveReaction(type) : onAddReaction(type);
-                    return (
-                      <Pressable
-                        key={type}
-                        onPress={onPress}
-                        style={({ pressed }) => [
-                          styles.addOption,
-                          isSelected && styles.addOptionSelected,
-                          pressed && styles.addOptionPressed,
-                        ]}
-                        disabled={isMutating || !canReact}
-                        accessibilityLabel={isSelected ? `Remove ${label}` : `Add ${label}`}
-                        accessibilityRole="button"
-                      >
-                        <Text style={styles.addEmoji}>{emoji}</Text>
-                      </Pressable>
-                    );
-                  })}
+                  {(showAllReactions ? ALL_REACTION_OPTIONS : REACTION_OPTIONS).map(
+                    ({ type, emoji, label }) => {
+                      const isSelected = selectedReactionTypes.includes(type);
+                      const onPress = () =>
+                        isSelected ? onRemoveReaction(type) : onAddReaction(type);
+                      return (
+                        <Pressable
+                          key={type}
+                          onPress={onPress}
+                          style={({ pressed }) => [
+                            styles.addOption,
+                            isSelected && styles.addOptionSelected,
+                            pressed && styles.addOptionPressed,
+                          ]}
+                          disabled={isMutating || !canReact}
+                          accessibilityLabel={isSelected ? `Remove ${label}` : `Add ${label}`}
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.addEmoji}>{emoji}</Text>
+                        </Pressable>
+                      );
+                    }
+                  )}
+                  {/* The long tail stays folded away until asked for: four covers most of it,
+                      and twelve emoji up front is a menu rather than a reaction. */}
+                  {showAllReactions ? null : (
+                    <Pressable
+                      onPress={() => setShowAllReactions(true)}
+                      style={({ pressed }) => [
+                        styles.addOption,
+                        pressed && styles.addOptionPressed,
+                      ]}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('discussions.moreReactions')}
+                    >
+                      <Ionicons name="add" size={20} color={colors.onSurfaceVariant} />
+                    </Pressable>
+                  )}
                 </View>
               </View>
             )}

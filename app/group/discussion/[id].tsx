@@ -26,6 +26,8 @@ import { Avatar } from '@/components/primitives';
 import {
   FileAttachmentModal,
   MessageAttachmentsBlock,
+  REACTION_EMOJI,
+  REACTION_ORDER,
   VideoAttachmentModal,
   type OutboundMessageStatus,
 } from '@/components/messages';
@@ -138,12 +140,6 @@ function OriginalPostRow({
   );
 }
 
-const REACTION_EMOJI: Record<PostReactionType, string> = {
-  prayer: '🙏',
-  laugh: '😂',
-  thumbs_up: '👍',
-};
-
 type DiscussionReplyPost = DiscussionPost & {
   outboundStatus?: OutboundMessageStatus;
   outboundRetryPayload?: CreateDiscussionPostInput;
@@ -180,9 +176,10 @@ function ReplyRow({
   showSentClockTime?: boolean;
   extraGapAfterPeerChange?: boolean;
 }) {
-  const counts = post.reactionCounts ?? { prayer: 0, laugh: 0, thumbsUp: 0 };
+  const counts = post.reactionCounts ?? {};
   const userReactions = post.userReactionTypes ?? [];
-  const hasReactions = counts.prayer > 0 || counts.laugh > 0 || counts.thumbsUp > 0;
+  const presentReactions = REACTION_ORDER.filter((type) => (counts[type] ?? 0) > 0);
+  const hasReactions = presentReactions.length > 0;
   const isOwnPost = !!currentUserId && post.userId === currentUserId;
   const outboundStatus = post.outboundStatus;
   const showFailedOutbound = isOwnPost && outboundStatus === 'failed' && !!onRetryOutbound;
@@ -293,14 +290,8 @@ function ReplyRow({
             </Pressable>
             {hasReactions ? (
               <View style={styles.reactionBadges} pointerEvents="box-none">
-                {(['prayer', 'laugh', 'thumbs_up'] as PostReactionType[]).map((type) => {
-                  const count =
-                    type === 'thumbs_up'
-                      ? counts.thumbsUp
-                      : type === 'prayer'
-                        ? counts.prayer
-                        : counts.laugh;
-                  if (count <= 0) return null;
+                {presentReactions.map((type) => {
+                  const count = counts[type] ?? 0;
                   const isMine = isUserReaction(type);
                   const onPress =
                     canReact && (isMine ? onRemoveReaction : onAddReaction)

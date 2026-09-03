@@ -5,7 +5,14 @@ export { MessageRow } from './MessageRow';
 export { VoiceMessageBubble } from './VoiceMessageBubble';
 export { VoiceRecorderModal } from './VoiceRecorderModal';
 export type { MessageRowProps } from './MessageRow';
-export { REACTION_OPTIONS, REACTION_EMOJI } from './constants';
+export {
+  ALL_REACTION_OPTIONS,
+  REACTION_EMOJI,
+  REACTION_EXTRA_OPTIONS,
+  REACTION_OPTIONS,
+  REACTION_ORDER,
+} from './constants';
+export type { ReactionOption } from './constants';
 export type {
   MessageLike,
   OutboundMessageStatus,
