@@ -1917,16 +1917,25 @@ export function useFindExisting1on1ChatQuery(
   });
 }
 
+/**
+ * Messages for a chat, capped at the most recent `limit`.
+ *
+ * `limit` is deliberately NOT part of the query key. A dozen call sites invalidate and patch
+ * this cache optimistically by key, and threading the current window size through every one of
+ * them would be a lot of coupling for a number the reader changes by scrolling. Instead the key
+ * stays the identity of the thread, the queryFn closes over whatever limit was last rendered,
+ * and the screen calls refetch() when it wants a bigger window.
+ */
 export function useChatMessagesQuery(
   chatId: string | undefined,
-  options?: { userId?: string; enabled?: boolean }
+  options?: { userId?: string; enabled?: boolean; limit?: number }
 ) {
   return useQuery({
     queryKey: queryKeys.chatMessages(chatId ?? '', options?.userId),
     queryFn: () =>
-      queryFn(api.data.getChatMessages(chatId!, { userId: options?.userId })) as Promise<
-        import('@/lib/api').ChatMessage[]
-      >,
+      queryFn(
+        api.data.getChatMessages(chatId!, { userId: options?.userId, limit: options?.limit })
+      ) as Promise<import('@/lib/api').ChatMessage[]>,
     enabled: !!chatId && (options?.enabled ?? true),
   });
 }

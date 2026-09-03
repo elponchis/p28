@@ -746,6 +746,7 @@ export const ko: TranslationShape = {
     lastMessage: '마지막 메시지',
     unreadByCount: '{{count}}명 안 읽음',
     typingOne: '{{name}}님이 입력 중',
+    loadOlderMessages: '이전 메시지 더 보기',
     peopleInYourGroups: '같은 그룹 사람',
     typingMany: '{{count}}명이 입력 중',
     you: '나',

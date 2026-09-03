@@ -461,7 +461,17 @@ export interface DataContract {
   /** Mark a chat as read by updating last_read_at for the current user. */
   markChatRead(chatId: string, userId: string): Promise<void | ApiError>;
   updateChat(id: string, input: UpdateChatInput): Promise<Chat | ApiError>;
-  getChatMessages(chatId: string, options?: { userId?: string }): Promise<ChatMessage[] | ApiError>;
+  /**
+   * Messages for a chat, oldest first.
+   *
+   * `limit` bounds the window to the most recent N -- a thread is read from the bottom, so the
+   * newest messages are the ones worth fetching. Without it an active group chat eventually
+   * asks for its entire history on every open.
+   */
+  getChatMessages(
+    chatId: string,
+    options?: { userId?: string; limit?: number }
+  ): Promise<ChatMessage[] | ApiError>;
   /** Messages with attachments, legacy images, or URLs in body; ordered newest first. */
   getChatSharedContent(chatId: string): Promise<ChatSharedContentMessage[] | ApiError>;
   createChatMessage(

@@ -378,6 +378,12 @@ async function getUriSizeBytes(uri: string): Promise<number | undefined> {
   return undefined;
 }
 
+/**
+ * How many messages a chat opens with. Large enough that scrolling back is rare, small enough
+ * that a years-old group thread does not arrive in one response.
+ */
+const CHAT_MESSAGE_PAGE_SIZE = 50;
+
 function sanitizeStorageFileSegment(name: string): string {
   const base = name.split(/[/\\]/).pop() ?? 'file';
   const cleaned = base.replace(/[^a-zA-Z0-9._-]+/g, '_').trim();
@@ -4827,18 +4833,21 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
 
     async getChatMessages(
       chatId: string,
-      options?: { userId?: string }
+      options?: { userId?: string; limit?: number }
     ): Promise<ChatMessage[] | ApiError> {
       try {
+        // Newest first with a limit, then reversed: "the most recent N" is what a thread opens
+        // to, and ordering ascending with a limit would return the oldest N instead.
         const { data: rows, error } = await getClient()
           .from('chat_messages')
           .select(
             'id, chat_id, user_id, body, created_at, updated_at, deleted_at, parent_message_id, image_urls, attachments'
           )
           .eq('chat_id', chatId)
-          .order('created_at', { ascending: true });
+          .order('created_at', { ascending: false })
+          .limit(options?.limit ?? CHAT_MESSAGE_PAGE_SIZE);
         if (error) return toApiError(error);
-        const posts = rows ?? [];
+        const posts = (rows ?? []).slice().reverse();
         if (posts.length === 0) return [];
 
         const userIds = [...new Set(posts.map((r) => r.user_id))];

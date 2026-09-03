@@ -734,6 +734,7 @@ export const en = {
     lastMessage: 'Last message',
     unreadByCount: '{{count}} have not read this',
     typingOne: '{{name}} is typing',
+    loadOlderMessages: 'Load earlier messages',
     peopleInYourGroups: 'People in your groups',
     typingMany: '{{count}} people are typing',
     you: 'You',

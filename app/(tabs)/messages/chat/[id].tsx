@@ -87,6 +87,9 @@ import { downloadFileInBrowser } from '@/lib/downloadFile';
 
 import { colors, fontFamily, radius, shadow, spacing, typography } from '@/theme/tokens';
 
+/** Messages fetched per page, and how much each "load older" adds. */
+const CHAT_PAGE_SIZE = 50;
+
 /** At most one typing broadcast per this many ms, however fast someone types. */
 const TYPING_THROTTLE_MS = 2000;
 /** How long a ping keeps the indicator up before silence retires it. */
@@ -141,9 +144,20 @@ export default function ChatDetailScreen() {
   const [copiedToastVisible, setCopiedToastVisible] = useState(false);
 
   const { data: chat, isLoading, isError, error, refetch } = useChatQuery(id);
+  /**
+   * How far back the thread is loaded. A chat opens on the most recent page and grows upward
+   * when the reader asks for more, so an old group thread never arrives in one response.
+   */
+  const [messageLimit, setMessageLimit] = useState(CHAT_PAGE_SIZE);
   const { data: messages = [], refetch: refetchMessages } = useChatMessagesQuery(id, {
     userId,
+    limit: messageLimit,
   });
+  // A full page back means there is probably more behind it; a short page means we reached the
+  // beginning. Cheaper than a count query and wrong only in the case where the total is an
+  // exact multiple, which costs one empty "load older" press.
+  const mayHaveOlder = messages.length >= messageLimit;
+  const [isLoadingOlder, setIsLoadingOlder] = useState(false);
   const { data: reactionDetails = [], isLoading: reactionsLoading } = useChatMessageReactionsQuery(
     reactionMessage?.id,
     {
@@ -162,16 +176,56 @@ export default function ChatDetailScreen() {
   const markReadMutation = useMarkChatReadMutation();
   const [voiceRecorderVisible, setVoiceRecorderVisible] = useState(false);
 
-  const onChatMessagesContentSizeChange = useCallback(() => {
-    if (!shouldStickToEndRef.current) return;
-    const msgs = messages;
-    if (msgs.length === 0) return;
-    const last = msgs[msgs.length - 1];
-    const fp = `${msgs.length}:${last.id}`;
-    if (fp === messagesScrollFingerprintRef.current) return;
-    messagesScrollFingerprintRef.current = fp;
-    scrollViewRef.current?.scrollToEnd({ animated: false });
-  }, [messages]);
+  /**
+   * Prepending older messages moves everything down by however tall they are, which would throw
+   * the reader to a different part of the conversation. The offset and content height are
+   * captured before the fetch and the difference is added back once the taller content lands.
+   */
+  const scrollOffsetRef = useRef(0);
+  const contentHeightRef = useRef(0);
+  const olderAnchorRef = useRef<{ height: number; offset: number } | null>(null);
+
+  const handleLoadOlder = useCallback(async () => {
+    if (isLoadingOlder) return;
+    setIsLoadingOlder(true);
+    olderAnchorRef.current = {
+      height: contentHeightRef.current,
+      offset: scrollOffsetRef.current,
+    };
+    shouldStickToEndRef.current = false;
+    setMessageLimit((prev) => prev + CHAT_PAGE_SIZE);
+    try {
+      await refetchMessages();
+    } finally {
+      setIsLoadingOlder(false);
+    }
+  }, [isLoadingOlder, refetchMessages]);
+
+  const onChatMessagesContentSizeChange = useCallback(
+    (_w: number, height: number) => {
+      const anchor = olderAnchorRef.current;
+      contentHeightRef.current = height;
+      if (anchor) {
+        olderAnchorRef.current = null;
+        if (height > anchor.height) {
+          scrollViewRef.current?.scrollTo({
+            y: anchor.offset + (height - anchor.height),
+            animated: false,
+          });
+        }
+        return;
+      }
+      if (!shouldStickToEndRef.current) return;
+      const msgs = messages;
+      if (msgs.length === 0) return;
+      const last = msgs[msgs.length - 1];
+      const fp = `${msgs.length}:${last.id}`;
+      if (fp === messagesScrollFingerprintRef.current) return;
+      messagesScrollFingerprintRef.current = fp;
+      scrollViewRef.current?.scrollToEnd({ animated: false });
+    },
+    [messages]
+  );
 
   useEffect(() => {
     if (focusMessageId) shouldStickToEndRef.current = false;
@@ -1352,7 +1406,26 @@ export default function ChatDetailScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           onContentSizeChange={onChatMessagesContentSizeChange}
+          onScroll={(e) => {
+            scrollOffsetRef.current = e.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={16}
         >
+          {mayHaveOlder ? (
+            <Pressable
+              onPress={handleLoadOlder}
+              disabled={isLoadingOlder}
+              style={({ pressed }) => [styles.loadOlder, pressed && { opacity: 0.6 }]}
+              accessibilityRole="button"
+              accessibilityLabel={t('messages.loadOlderMessages')}
+            >
+              {isLoadingOlder ? (
+                <ActivityIndicator size="small" color={colors.onSurfaceVariant} />
+              ) : (
+                <Text style={styles.loadOlderText}>{t('messages.loadOlderMessages')}</Text>
+              )}
+            </Pressable>
+          ) : null}
           {messages.map((msg, idx) => {
             const prevMsg = idx > 0 ? messages[idx - 1] : null;
             const nextMsg = idx < messages.length - 1 ? messages[idx + 1] : null;
@@ -1616,6 +1689,18 @@ export default function ChatDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  loadOlder: {
+    alignSelf: 'center',
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    borderRadius: radius.chip,
+    backgroundColor: colors.surfaceContainerHigh,
+  },
+  loadOlderText: {
+    ...typography.caption,
+    color: colors.onSurfaceVariant,
+  },
   copiedToast: {
     position: 'absolute',
     alignSelf: 'center',
