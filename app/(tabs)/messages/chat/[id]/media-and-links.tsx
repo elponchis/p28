@@ -3,13 +3,13 @@ import { Image } from 'expo-image';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Dimensions,
   Modal,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -23,10 +23,18 @@ import { useChatSharedContentQuery } from '@/hooks/useApiQueries';
 import { getUserFacingError } from '@/lib/api';
 import type { ChatSharedContentMessage, MessageAttachment } from '@/lib/api';
 import { extractUrlsFromText } from '@/lib/extractUrlsFromText';
+import { getMediaViewerSize } from '@/lib/mediaViewerBounds';
 import { t } from '@/lib/i18n';
 import { notify } from '@/lib/dialogs';
 import { downloadFileInBrowser } from '@/lib/downloadFile';
 import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
+
+/** Roughly the size a thumbnail wants to be: big enough to recognise, small enough to scan. */
+const TARGET_CELL_PX = 150;
+/** The grid stops widening here; past this the window buys more columns, not bigger cells. */
+const MAX_GRID_PX = 900;
+const MIN_COLUMNS = 2;
+const MAX_COLUMNS = 6;
 
 type MediaGridItem = {
   key: string;
@@ -80,13 +88,24 @@ export default function ChatMediaAndLinksScreen() {
     mimeType?: string;
   } | null>(null);
 
-  const { cellW, gap } = useMemo(() => {
-    const width = Dimensions.get('window').width;
-    const contentPad = spacing.md * 2;
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+
+  /**
+   * A thumbnail grid, sized by how many cells fit rather than by a fixed column count.
+   *
+   * Two columns of half the window is fine on a phone and absurd on a desktop browser, where
+   * it made every photo about 780px wide -- a gallery you scroll past one image at a time. The
+   * column count now grows with the window so a cell stays near TARGET_CELL_PX, and the grid
+   * itself stops widening past MAX_GRID_PX so an ultra-wide monitor gets more columns rather
+   * than a row of billboards.
+   */
+  const { cellW, gap, columns } = useMemo(() => {
     const g = spacing.sm;
-    const cw = (width - contentPad - g) / 2;
-    return { cellW: cw, gap: g };
-  }, []);
+    const available = Math.max(0, Math.min(windowWidth, MAX_GRID_PX) - spacing.md * 2);
+    const fits = Math.floor((available + g) / (TARGET_CELL_PX + g));
+    const cols = Math.min(MAX_COLUMNS, Math.max(MIN_COLUMNS, fits));
+    return { cellW: (available - g * (cols - 1)) / cols, gap: g, columns: cols };
+  }, [windowWidth]);
 
   const mediaItems = useMemo(() => {
     const items: MediaGridItem[] = [];
@@ -198,11 +217,11 @@ export default function ChatMediaAndLinksScreen() {
 
   const mediaRows = useMemo(() => {
     const out: MediaGridItem[][] = [];
-    for (let i = 0; i < mediaItems.length; i += 2) {
-      out.push(mediaItems.slice(i, i + 2));
+    for (let i = 0; i < mediaItems.length; i += columns) {
+      out.push(mediaItems.slice(i, i + columns));
     }
     return out;
-  }, [mediaItems]);
+  }, [mediaItems, columns]);
 
   useEffect(() => {
     if (!id) router.back();
@@ -372,13 +391,9 @@ export default function ChatMediaAndLinksScreen() {
             <>
               <Image
                 source={{ uri: previewImageUrl }}
-                style={[
-                  styles.imageFull,
-                  {
-                    width: Dimensions.get('window').width,
-                    height: Dimensions.get('window').height,
-                  },
-                ]}
+                // Same theater box the chat screen's viewer uses: full-bleed on a phone,
+                // a centered bound past the desktop breakpoint rather than a wall of image.
+                style={[styles.imageFull, getMediaViewerSize(windowWidth, windowHeight)]}
                 contentFit="contain"
               />
               <Pressable
