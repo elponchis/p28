@@ -276,6 +276,19 @@ export default function ChatDetailScreen() {
     });
   }, [navigation]);
 
+  /**
+   * Back always lands on the conversation list, whatever route opened this chat.
+   *
+   * router.back() returns to whatever happened to be underneath, so opening a chat from a
+   * profile (or a notification, or a deep link) sent the user back there instead of to their
+   * messages -- the one place from which they can reach a different conversation. dismissTo
+   * pops to the list when it is already in the stack and replaces this screen with it when it
+   * is not, so neither entry route leaves a stale chat behind.
+   */
+  const handleBack = useCallback(() => {
+    router.dismissTo('/messages');
+  }, [router]);
+
   const chatMenuOptions = useMemo(
     () => [
       {
@@ -1072,7 +1085,7 @@ export default function ChatDetailScreen() {
     <View {...parentContainerProps} style={styles.container}>
       <View style={[styles.chatHeader, { paddingTop: insets.top }]}>
         <Pressable
-          onPress={() => router.back()}
+          onPress={handleBack}
           style={styles.backButton}
           accessibilityLabel={t('common.back')}
           accessibilityRole="button"
