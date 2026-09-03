@@ -281,8 +281,11 @@ export function MessageRow({
                                 isOwnMessage && styles.replyPreviewAuthorOwn,
                               ]}
                             >
-                              {t('discussions.replyingTo')}{' '}
-                              {parentPost.authorDisplayName ?? t('common.loading')}
+                              {currentUserId && parentPost.userId === currentUserId
+                                ? t('discussions.replyingToYou')
+                                : t('discussions.replyingToPerson', {
+                                    name: parentPost.authorDisplayName ?? t('common.loading'),
+                                  })}
                             </Text>
                             <Text
                               style={[

@@ -36,6 +36,8 @@ export interface MessageLike {
 export interface ParentMessageLike {
   body?: string;
   authorDisplayName?: string;
+  /** Lets the quote say "replying to you" when the message being answered is the viewer's. */
+  userId?: string;
 }
 
 export { type PostReactionType } from '@/lib/api';

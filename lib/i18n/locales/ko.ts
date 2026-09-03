@@ -624,6 +624,8 @@ export const ko: TranslationShape = {
     sheetEditHint: '이 메시지 수정',
     sheetCopy: '복사',
     jumpToOriginal: '원본 메시지로 이동',
+    replyingToYou: '나에게 답장',
+    replyingToPerson: '{{name}}에게 답장',
     sheetCopyHint: '이 메시지 내용을 복사합니다',
     copied: '복사했습니다',
     copyFailed: '메시지를 복사하지 못했습니다.',
