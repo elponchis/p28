@@ -129,6 +129,14 @@ export function createSupabaseRealtimeAdapter(getClient: () => SupabaseClient): 
               handlers.onReadReceipt?.(payload as Record<string, unknown>);
             }
           )
+          // Typing travels as a broadcast: it is only true for the next second or two, so
+          // there is nothing worth writing to a table and nothing to clean up afterwards.
+          .on('broadcast', { event: 'typing' }, (message) => {
+            const userId = (message?.payload as { userId?: unknown } | undefined)?.userId;
+            if (typeof userId === 'string' && userId.length > 0) {
+              handlers.onTyping?.({ userId });
+            }
+          })
           .subscribe((status, err) => {
             if (status === 'CHANNEL_ERROR' && err && handlers.onError) {
               handlers.onError({
@@ -148,6 +156,14 @@ export function createSupabaseRealtimeAdapter(getClient: () => SupabaseClient): 
           code: 'VALIDATION_ERROR',
         },
       };
+    },
+
+    sendTyping(channelId: RealtimeChannelId, userId: string): void {
+      const channel = channels.get(channelId);
+      if (!channel) return;
+      // Dropped rather than queued when the socket is not ready: a typing ping that arrives
+      // late is worse than one that never arrives.
+      void channel.send({ type: 'broadcast', event: 'typing', payload: { userId } });
     },
 
     async unsubscribe(channelId: RealtimeChannelId): Promise<void> {

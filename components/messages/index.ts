@@ -2,6 +2,7 @@ export { FileAttachmentModal, VideoAttachmentModal } from './AttachmentPreviewMo
 export { MessageAttachmentsBlock } from './MessageAttachmentsBlock';
 export { FriendPickerSheet } from './FriendPickerSheet';
 export { MessageRow } from './MessageRow';
+export { TypingIndicator } from './TypingIndicator';
 export { VoiceMessageBubble } from './VoiceMessageBubble';
 export { VoiceRecorderModal } from './VoiceRecorderModal';
 export type { MessageRowProps } from './MessageRow';

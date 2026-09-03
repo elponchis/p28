@@ -734,6 +734,8 @@ export const en = {
     noFriendsSubtitle: 'Add friends to start a chat with them.',
     lastMessage: 'Last message',
     unreadByCount: '{{count}} have not read this',
+    typingOne: '{{name}} is typing',
+    typingMany: '{{count}} people are typing',
     you: 'You',
     editFolder: 'Edit folder',
     editFolderHint: 'Opens screen to rename this folder',

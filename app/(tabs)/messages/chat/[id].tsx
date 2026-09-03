@@ -28,6 +28,7 @@ import {
   FileAttachmentModal,
   FriendPickerSheet,
   MessageRow,
+  TypingIndicator,
   VideoAttachmentModal,
   VoiceRecorderModal,
 } from '@/components/messages';
@@ -84,6 +85,11 @@ import { countUnreadMembers } from '@/lib/readReceipts';
 import { downloadFileInBrowser } from '@/lib/downloadFile';
 
 import { colors, fontFamily, radius, shadow, spacing, typography } from '@/theme/tokens';
+
+/** At most one typing broadcast per this many ms, however fast someone types. */
+const TYPING_THROTTLE_MS = 2000;
+/** How long a ping keeps the indicator up before silence retires it. */
+const TYPING_EXPIRY_MS = 5000;
 
 export default function ChatDetailScreen() {
   const { id, focusMessageId: focusMessageIdParam } = useLocalSearchParams<{
@@ -267,10 +273,67 @@ export default function ChatDetailScreen() {
         onReadReceipt: () => {
           qc.invalidateQueries({ queryKey: queryKeys.chat(id) });
         },
+        onTyping: ({ userId: typistId }) => {
+          if (!typistId || typistId === userId) return;
+          setTypingAt((prev) => ({ ...prev, [typistId]: Date.now() }));
+        },
       });
       return () => api.realtime.unsubscribe(channelId);
     }, [id, userId, qc])
   );
+
+  /**
+   * Typing indicator.
+   *
+   * Outgoing: a broadcast at most once every THROTTLE, because the interesting fact is "still
+   * typing", not each keystroke. Incoming: each ping records a timestamp, and a ticker drops
+   * anyone who has gone quiet for longer than EXPIRY -- there is no "stopped typing" message to
+   * wait for, and there should not be one, since a sender who closes the tab would never send it.
+   */
+  const [typingAt, setTypingAt] = useState<Record<string, number>>({});
+  const lastTypingSentRef = useRef(0);
+
+  const handleComposeTextChange = useCallback(
+    (next: string) => {
+      setComposeText(next);
+      if (!id || !userId || next.length === 0) return;
+      const now = Date.now();
+      if (now - lastTypingSentRef.current < TYPING_THROTTLE_MS) return;
+      lastTypingSentRef.current = now;
+      api.realtime.sendTyping(`messages:chat:${id}`, userId);
+    },
+    [id, userId]
+  );
+
+  useEffect(() => {
+    if (Object.keys(typingAt).length === 0) return;
+    const interval = setInterval(() => {
+      const cutoff = Date.now() - TYPING_EXPIRY_MS;
+      setTypingAt((prev) => {
+        const next: Record<string, number> = {};
+        let changed = false;
+        for (const [uid, at] of Object.entries(prev)) {
+          if (at >= cutoff) next[uid] = at;
+          else changed = true;
+        }
+        return changed ? next : prev;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [typingAt]);
+
+  const typingNames = useMemo(() => {
+    const members = chat?.members ?? [];
+    return Object.keys(typingAt)
+      .filter((uid) => uid !== userId)
+      .map((uid) => members.find((m) => m.userId === uid)?.displayName ?? t('common.loading'));
+  }, [typingAt, chat?.members, userId]);
+
+  const typingAvatarUrl = useMemo(() => {
+    const uids = Object.keys(typingAt).filter((uid) => uid !== userId);
+    if (uids.length !== 1) return undefined;
+    return (chat?.members ?? []).find((m) => m.userId === uids[0])?.avatarUrl;
+  }, [typingAt, chat?.members, userId]);
 
   const memberUserIds = useMemo(
     () => (chat?.members ?? []).map((m) => m.userId).filter(Boolean),
@@ -1384,6 +1447,7 @@ export default function ChatDetailScreen() {
               </Animated.View>
             );
           })}
+          <TypingIndicator names={typingNames} avatarUrl={typingAvatarUrl} />
         </ScrollView>
 
         <View
@@ -1395,7 +1459,7 @@ export default function ChatDetailScreen() {
         >
           <ComposeBar
             text={composeText}
-            onChangeText={setComposeText}
+            onChangeText={handleComposeTextChange}
             onSend={handlePost}
             canSend={canPost}
             isSending={

@@ -753,6 +753,8 @@ export const km: TranslationShape = {
     noFriendsSubtitle: 'បន្ថែមមិត្ត ដើម្បីចាប់ផ្ដើមការសន្ទនាជាមួយពួកគេ។',
     lastMessage: 'សារចុងក្រោយ',
     unreadByCount: '{{count}} នាក់មិនទាន់អាន',
+    typingOne: '{{name}} កំពុងវាយបញ្ចូល',
+    typingMany: '{{count}} នាក់កំពុងវាយបញ្ចូល',
     you: 'អ្នក',
     editFolder: 'កែថត',
     editFolderHint: 'បើកអេក្រង់ដើម្បីប្ដូរឈ្មោះថតនេះ',

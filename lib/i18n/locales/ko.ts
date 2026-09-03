@@ -745,6 +745,8 @@ export const ko: TranslationShape = {
     noFriendsSubtitle: '친구를 추가하면 대화를 시작할 수 있어요.',
     lastMessage: '마지막 메시지',
     unreadByCount: '{{count}}명 안 읽음',
+    typingOne: '{{name}}님이 입력 중',
+    typingMany: '{{count}}명이 입력 중',
     you: '나',
     editFolder: '폴더 수정',
     editFolderHint: '폴더 이름을 바꾸는 화면을 열어요',

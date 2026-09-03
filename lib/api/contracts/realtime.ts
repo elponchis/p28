@@ -14,6 +14,11 @@ export interface RealtimeHandlers {
    * only refreshes the members and must not itself count as "the reader is looking".
    */
   onReadReceipt?: (payload: Record<string, unknown>) => void;
+  /**
+   * Someone else is typing in this chat. Carries the typist's user id so a group chat can name
+   * them, and fires repeatedly while they type -- the receiver decides when to stop showing it.
+   */
+  onTyping?: (payload: { userId: string }) => void;
   onPresence?: (payload: unknown) => void;
   onError?: (error: ApiError) => void;
 }
@@ -28,4 +33,10 @@ export interface RealtimeContract {
     handlers: RealtimeHandlers
   ): Promise<{ error?: ApiError }>;
   unsubscribe(channelId: RealtimeChannelId): Promise<void>;
+  /**
+   * Announce that this user is typing. Fire-and-forget and deliberately not persisted: a typing
+   * indicator is worthless a second later, so it travels as a broadcast rather than a row.
+   * No-ops when the channel is not subscribed.
+   */
+  sendTyping(channelId: RealtimeChannelId, userId: string): void;
 }
