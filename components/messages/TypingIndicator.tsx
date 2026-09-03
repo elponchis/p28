@@ -9,6 +9,7 @@ import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 
 import { Avatar } from '@/components/primitives';
+import { USE_NATIVE_DRIVER } from '@/lib/animation';
 import { t } from '@/lib/i18n';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
@@ -28,13 +29,13 @@ function useDotAnimation(index: number): Animated.Value {
           toValue: 1,
           duration: DOT_DURATION_MS,
           easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
         Animated.timing(value, {
           toValue: 0,
           duration: DOT_DURATION_MS,
           easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
         // Holds the dot down until the others have had their turn, keeping the cycle even.
         Animated.delay((DOT_COUNT - 1 - index) * DOT_STAGGER_MS),

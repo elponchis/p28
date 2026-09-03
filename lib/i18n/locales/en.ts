@@ -656,7 +656,7 @@ export const en = {
     sheetDelete: 'Delete',
     sheetDeleteHint: 'Delete this message',
     deleteMessageConfirmTitle: 'Delete message?',
-    deleteMessageConfirmBody: 'This cannot be undone.',
+    deleteMessageConfirmBody: 'Delete this message?',
     messageDeleted: 'This message was deleted',
     reactions: 'Reactions',
     tapToRemove: 'Tap to remove',

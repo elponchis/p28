@@ -648,7 +648,7 @@ export const ko: TranslationShape = {
     sheetDelete: '삭제',
     sheetDeleteHint: '이 메시지를 삭제합니다',
     deleteMessageConfirmTitle: '메시지를 삭제할까요?',
-    deleteMessageConfirmBody: '이 작업은 되돌릴 수 없어요.',
+    deleteMessageConfirmBody: '정말 삭제할까요?',
     messageDeleted: '삭제된 메시지입니다',
     reactions: '반응',
     tapToRemove: '탭하여 제거',

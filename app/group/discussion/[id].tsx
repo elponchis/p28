@@ -93,6 +93,7 @@ import {
   isGroupEventDiscussionReadOnly,
   messageLocalMinuteKey,
 } from '@/lib/dates';
+import { USE_NATIVE_DRIVER } from '@/lib/animation';
 import { t } from '@/lib/i18n';
 import { confirm, notify } from '@/lib/dialogs';
 import { downloadFileInBrowser } from '@/lib/downloadFile';
@@ -453,10 +454,10 @@ export default function DiscussionDetailScreen() {
       Animated.sequence([
         // Waits out the scroll so the movement happens once the post is actually visible.
         Animated.delay(260),
-        Animated.timing(nudge, { toValue: -9, duration: 90, useNativeDriver: true }),
-        Animated.timing(nudge, { toValue: 6, duration: 90, useNativeDriver: true }),
-        Animated.timing(nudge, { toValue: -3, duration: 80, useNativeDriver: true }),
-        Animated.timing(nudge, { toValue: 0, duration: 90, useNativeDriver: true }),
+        Animated.timing(nudge, { toValue: -9, duration: 90, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.timing(nudge, { toValue: 6, duration: 90, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.timing(nudge, { toValue: -3, duration: 80, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.timing(nudge, { toValue: 0, duration: 90, useNativeDriver: USE_NATIVE_DRIVER }),
       ]).start();
       if (nudgeTimerRef.current) clearTimeout(nudgeTimerRef.current);
       nudgeTimerRef.current = setTimeout(() => setNudgedPostId(null), 1400);

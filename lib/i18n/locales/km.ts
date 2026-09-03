@@ -655,7 +655,7 @@ export const km: TranslationShape = {
     sheetDelete: 'លុប',
     sheetDeleteHint: 'លុបសារនេះ',
     deleteMessageConfirmTitle: 'លុបសារនេះឬ?',
-    deleteMessageConfirmBody: 'សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។',
+    deleteMessageConfirmBody: 'លុបសារនេះមែនទេ?',
     messageDeleted: 'សារនេះត្រូវបានលុប',
     reactions: 'អារម្មណ៍',
     tapToRemove: 'ចុចដើម្បីយកចេញ',

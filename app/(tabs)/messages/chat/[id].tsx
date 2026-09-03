@@ -76,6 +76,7 @@ import {
 } from '@/lib/api/messageAttachments';
 import { queryKeys } from '@/lib/api/queryKeys';
 import type { ChatMessage, CreateChatMessageInput, PostReactionType } from '@/lib/api';
+import { USE_NATIVE_DRIVER } from '@/lib/animation';
 import { formatDateHeader, isSameDay, messageLocalMinuteKey } from '@/lib/dates';
 import { t } from '@/lib/i18n';
 import { confirm, notify } from '@/lib/dialogs';
@@ -188,10 +189,10 @@ export default function ChatDetailScreen() {
     Animated.sequence([
       // Waits out the scroll, so the movement happens once the message is actually on screen.
       Animated.delay(260),
-      Animated.timing(nudge, { toValue: -9, duration: 90, useNativeDriver: true }),
-      Animated.timing(nudge, { toValue: 6, duration: 90, useNativeDriver: true }),
-      Animated.timing(nudge, { toValue: -3, duration: 80, useNativeDriver: true }),
-      Animated.timing(nudge, { toValue: 0, duration: 90, useNativeDriver: true }),
+      Animated.timing(nudge, { toValue: -9, duration: 90, useNativeDriver: USE_NATIVE_DRIVER }),
+      Animated.timing(nudge, { toValue: 6, duration: 90, useNativeDriver: USE_NATIVE_DRIVER }),
+      Animated.timing(nudge, { toValue: -3, duration: 80, useNativeDriver: USE_NATIVE_DRIVER }),
+      Animated.timing(nudge, { toValue: 0, duration: 90, useNativeDriver: USE_NATIVE_DRIVER }),
     ]).start();
   }, [nudge]);
 
