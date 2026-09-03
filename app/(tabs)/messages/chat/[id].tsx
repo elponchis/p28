@@ -316,14 +316,6 @@ export default function ChatDetailScreen() {
           router.push(`/messages/chat/${id}/edit`);
         },
       },
-      {
-        icon: 'folder-open-outline' as const,
-        label: t('messages.addToFolder'),
-        onPress: () => {
-          setChatMenuVisible(false);
-          router.push(`/messages/add-chat-to-folder/${id}`);
-        },
-      },
     ],
     [id, router]
   );

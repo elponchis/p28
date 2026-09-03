@@ -17,20 +17,17 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Avatar, avatarFallbackInitial, StackedAvatars } from '@/components/primitives';
 import { FriendPickerSheet } from '@/components/messages';
 import { EmptyState } from '@/components/patterns/EmptyState';
-import { FadeActionSheet } from '@/components/patterns/FadeActionSheet';
 import { useAuth } from '@/hooks/useAuth';
 import {
-  useChatFoldersQuery,
   useChatRequestsQuery,
   useChatsForUserQuery,
   useCreateChatMutation,
-  useDeleteChatFolderMutation,
   useSearchProfilesQuery,
 } from '@/hooks/useApiQueries';
-import { api, getUserFacingError, type ApiError, type Chat, type ChatFolder } from '@/lib/api';
+import { api, getUserFacingError, type ApiError, type Chat } from '@/lib/api';
 import { formatRelativeTime } from '@/lib/dates';
 import { t } from '@/lib/i18n';
-import { confirm, notify } from '@/lib/dialogs';
+import { notify } from '@/lib/dialogs';
 import {
   colors,
   fontFamily,
@@ -179,8 +176,6 @@ export default function MessagesIndexScreen() {
   const insets = useSafeAreaInsets();
   const userId = session?.user?.id;
 
-  const [selectedFolderId, setSelectedFolderId] = useState<string | undefined>(undefined);
-  const [folderOptionsFolder, setFolderOptionsFolder] = useState<ChatFolder | null>(null);
   const [friendPickerVisible, setFriendPickerVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   // Searching people used to mean leaving this screen for the friends list first.
@@ -198,19 +193,13 @@ export default function MessagesIndexScreen() {
     };
   }, [searchQuery]);
 
-  const {
-    data: chats = [],
-    isLoading,
-    refetch,
-  } = useChatsForUserQuery(userId, { folderId: selectedFolderId });
+  const { data: chats = [], isLoading, refetch } = useChatsForUserQuery(userId);
   const { data: chatRequests = [] } = useChatRequestsQuery(userId);
-  const { data: folders = [] } = useChatFoldersQuery(userId);
   const { data: peopleResults = [], isFetching: isSearchingPeople } = useSearchProfilesQuery(
     debouncedPeopleSearch,
     userId,
     { enabled: debouncedPeopleSearch.length >= 1 }
   );
-  const deleteFolderMutation = useDeleteChatFolderMutation();
   const createChatMutation = useCreateChatMutation();
 
   useFocusEffect(
@@ -347,52 +336,9 @@ export default function MessagesIndexScreen() {
             accessibilityLabel={t('messages.searchPlaceholder')}
           />
         </View>
-
-        {/* Filter pills */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.pillsContent}
-          style={styles.pillsScroll}
-        >
-          <Pressable
-            onPress={() => setSelectedFolderId(undefined)}
-            style={[styles.pill, !selectedFolderId && styles.pillSelected]}
-            accessibilityLabel={t('messages.folderAll')}
-            accessibilityRole="button"
-          >
-            <Text style={[styles.pillText, !selectedFolderId && styles.pillTextSelected]}>
-              {t('messages.folderAll')}
-            </Text>
-          </Pressable>
-          {folders.map((f) => (
-            <Pressable
-              key={f.id}
-              onPress={() => setSelectedFolderId(f.id)}
-              onLongPress={() => setFolderOptionsFolder(f)}
-              style={[styles.pill, selectedFolderId === f.id && styles.pillSelected]}
-              accessibilityLabel={f.name}
-              accessibilityHint={t('messages.folderOptionsHint')}
-              accessibilityRole="button"
-            >
-              <Text style={[styles.pillText, selectedFolderId === f.id && styles.pillTextSelected]}>
-                {f.name}
-              </Text>
-            </Pressable>
-          ))}
-          <Pressable
-            onPress={() => router.push('/messages/create-folder')}
-            style={styles.pillAdd}
-            accessibilityLabel={t('messages.createFolder')}
-            accessibilityHint={t('messages.createFolderHint')}
-            accessibilityRole="button"
-          >
-            <Ionicons name="add" size={16} color={colors.primary} />
-          </Pressable>
-        </ScrollView>
       </View>
     ),
-    [selectedFolderId, folders, searchQuery, handleOpenFriends, router, chatRequests.length]
+    [searchQuery, handleOpenFriends, router, chatRequests.length]
   );
 
   const renderPeopleResults = useCallback(() => {
@@ -505,60 +451,6 @@ export default function MessagesIndexScreen() {
         onSelectFriend={handleSelectFriend}
         userId={userId}
       />
-
-      <FadeActionSheet
-        visible={!!folderOptionsFolder}
-        onRequestClose={() => setFolderOptionsFolder(null)}
-        options={
-          folderOptionsFolder
-            ? [
-                {
-                  icon: 'create-outline' as const,
-                  label: t('messages.editFolder'),
-                  accessibilityHint: t('messages.editFolderHint'),
-                  onPress: () => {
-                    const fid = folderOptionsFolder.id;
-                    setFolderOptionsFolder(null);
-                    router.push(`/messages/edit-folder/${fid}`);
-                  },
-                },
-                {
-                  icon: 'trash-outline' as const,
-                  label: t('messages.deleteFolder'),
-                  destructive: true,
-                  accessibilityHint: t('messages.deleteFolderHint'),
-                  onPress: async () => {
-                    const fid = folderOptionsFolder.id;
-                    setFolderOptionsFolder(null);
-                    const confirmed = await confirm({
-                      title: t('messages.deleteFolder'),
-                      message: t('messages.deleteFolderConfirm'),
-                      confirmLabel: t('common.delete'),
-                      cancelLabel: t('common.cancel'),
-                      destructive: true,
-                    });
-                    if (!confirmed || !userId) return;
-                    deleteFolderMutation.mutate(
-                      { folderId: fid, userId },
-                      {
-                        onSuccess: () => {
-                          if (selectedFolderId === fid) {
-                            setSelectedFolderId(undefined);
-                          }
-                        },
-                        onError: (err) =>
-                          void notify({
-                            title: t('common.error'),
-                            message: getUserFacingError(err),
-                          }),
-                      }
-                    );
-                  },
-                },
-              ]
-            : []
-        }
-      />
     </View>
   );
 }
@@ -572,7 +464,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // ── List header (heading + search + pills) ──
+  // ── List header (heading + search) ──
   listHeader: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.xs,
@@ -661,40 +553,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.onSurface,
     paddingVertical: 14,
-  },
-
-  // ── Filter pills ──
-  pillsScroll: {
-    marginBottom: spacing.lg,
-  },
-  pillsContent: {
-    gap: spacing.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  pill: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.chip,
-    backgroundColor: colors.surfaceContainerHigh,
-  },
-  pillSelected: {
-    backgroundColor: colors.primary,
-  },
-  pillText: {
-    ...typography.labelMd,
-    color: colors.onSurfaceVariant,
-  },
-  pillTextSelected: {
-    color: colors.onPrimary,
-  },
-  pillAdd: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.surfaceContainerHigh,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 
   // ── Chat rows ──
