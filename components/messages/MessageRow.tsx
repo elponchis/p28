@@ -1,16 +1,15 @@
-import { useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { Avatar } from '@/components/primitives';
 import { MessageVideoEmbed } from '@/components/patterns/MessageVideoEmbed';
 import type { MessageAttachment } from '@/lib/api';
-import { formatMessageSentClockTime } from '@/lib/dates';
 import { t } from '@/lib/i18n';
 import { colors, spacing, typography, fontFamily } from '@/theme/tokens';
 
-import { REACTION_EMOJI, REACTION_ORDER } from './constants';
-import { HOVER_ACTIONS_SUPPORTED, MessageHoverActions } from './MessageHoverActions';
+import { REACTION_EMOJI } from './constants';
+import { MessageHoverActions } from './MessageHoverActions';
+import { useMessageRowState } from './useMessageRowState';
 import { MessageAttachmentsBlock } from './MessageAttachmentsBlock';
 import type { MessageLike, ParentMessageLike, PostReactionType } from './types';
 
@@ -73,50 +72,31 @@ export function MessageRow({
   onEdit,
   onDelete,
 }: MessageRowProps) {
-  const counts = post.reactionCounts ?? {};
-  const userReactions = post.userReactionTypes ?? [];
-  // Rendered in catalogue order rather than whatever order the keys arrived in, so a message's
-  // badges do not reshuffle when someone adds a reaction.
-  const presentReactions = REACTION_ORDER.filter((type) => (counts[type] ?? 0) > 0);
-  const hasReactions = !post.deletedAt && presentReactions.length > 0;
-  const isOwnMessage = !!currentUserId && post.userId === currentUserId;
-  const outboundStatus = post.outboundStatus;
-  const showFailedOutbound = isOwnMessage && outboundStatus === 'failed' && !!onRetrySend;
-  const showSendingOutbound = isOwnMessage && outboundStatus === 'sending';
-
-  const handleLongPress = () => {
-    if (canReact && onLongPress && !outboundStatus) onLongPress();
-  };
-
-  const isUserReaction = (type: PostReactionType) =>
-    !!currentUserId && userReactions.includes(type);
-
-  const isDeleted = !!post.deletedAt;
-  const clockTime = formatMessageSentClockTime(post.createdAt);
-  const isEdited = !isDeleted && post.updatedAt && post.updatedAt !== post.createdAt;
-  const canReactNow = canReact && !isDeleted;
-
-  /**
-   * Desktop hover toolbar.
-   *
-   * Reacting and replying already worked, but only through a long press -- which with a mouse
-   * means click-and-hold, something nobody discovers. Hovering is how every desktop chat
-   * surfaces these, so the same two actions get a toolbar beside the bubble.
-   *
-   * The listeners sit on the row rather than the bubble so that moving the pointer onto the
-   * toolbar does not count as leaving the message and dismiss the thing being reached for.
-   * react-native-web forwards these to the DOM node; React Native's types do not describe
-   * them, hence the cast, and on native the object is empty.
-   */
-  const [hovered, setHovered] = useState(false);
-  const hoverProps =
-    Platform.OS === 'web'
-      ? ({
-          onMouseEnter: () => setHovered(true),
-          onMouseLeave: () => setHovered(false),
-        } as object)
-      : {};
-  const showHoverActions = HOVER_ACTIONS_SUPPORTED && hovered && canReactNow && !outboundStatus;
+  const {
+    isOwn: isOwnMessage,
+    isDeleted,
+    isEdited,
+    clockTime,
+    outboundStatus,
+    showFailedOutbound,
+    showSendingOutbound,
+    presentReactions,
+    reactionCount,
+    isUserReaction,
+    hasReactions,
+    userReactionTypes: userReactions,
+    canReactNow,
+    handleLongPress,
+    longPressHint,
+    hoverProps,
+    showHoverActions,
+  } = useMessageRowState({
+    post,
+    currentUserId,
+    canReact,
+    canRetry: !!onRetrySend,
+    onLongPress,
+  });
 
   const hoverActions = showHoverActions ? (
     <MessageHoverActions
@@ -130,14 +110,6 @@ export function MessageRow({
       onDelete={onDelete}
     />
   ) : null;
-
-  const longPressHint = showFailedOutbound
-    ? undefined
-    : canReactNow
-      ? isOwnMessage
-        ? t('discussions.messageRowLongPressHintOwn')
-        : t('discussions.messageRowLongPressHintOther')
-      : undefined;
 
   return (
     <View
@@ -341,7 +313,7 @@ export function MessageRow({
               {hasReactions ? (
                 <View style={styles.reactionBadges}>
                   {presentReactions.map((type) => {
-                    const count = counts[type] ?? 0;
+                    const count = reactionCount(type);
                     const isMine = isUserReaction(type);
                     const onPress =
                       canReact && (isMine ? onRemoveReaction : onAddReaction)

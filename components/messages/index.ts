@@ -3,6 +3,8 @@ export { MessageAttachmentsBlock } from './MessageAttachmentsBlock';
 export { FriendPickerSheet } from './FriendPickerSheet';
 export { MessageRow } from './MessageRow';
 export { HOVER_ACTIONS_SUPPORTED, MessageHoverActions } from './MessageHoverActions';
+export { useMessageRowState } from './useMessageRowState';
+export type { MessageRowState } from './useMessageRowState';
 export { TypingIndicator } from './TypingIndicator';
 export { VoiceMessageBubble } from './VoiceMessageBubble';
 export { VoiceRecorderModal } from './VoiceRecorderModal';

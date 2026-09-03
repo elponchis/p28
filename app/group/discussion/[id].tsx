@@ -26,12 +26,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Avatar } from '@/components/primitives';
 import {
   FileAttachmentModal,
-  HOVER_ACTIONS_SUPPORTED,
   MessageAttachmentsBlock,
   MessageHoverActions,
   REACTION_EMOJI,
-  REACTION_ORDER,
   VideoAttachmentModal,
+  useMessageRowState,
   type OutboundMessageStatus,
 } from '@/components/messages';
 import { ComposeBar, type PendingComposeAttachment } from '@/components/patterns/ComposeBar';
@@ -88,7 +87,6 @@ import type {
   PostReactionType,
 } from '@/lib/api';
 import {
-  formatMessageSentClockTime,
   formatRelativeTime,
   isGroupEventDiscussionReadOnly,
   messageLocalMinuteKey,
@@ -188,41 +186,29 @@ function ReplyRow({
   onEdit?: () => void;
   onDelete?: () => void;
 }) {
-  const counts = post.reactionCounts ?? {};
-  const userReactions = post.userReactionTypes ?? [];
-  const presentReactions = REACTION_ORDER.filter((type) => (counts[type] ?? 0) > 0);
-  const hasReactions = presentReactions.length > 0;
-  const isOwnPost = !!currentUserId && post.userId === currentUserId;
-  const outboundStatus = post.outboundStatus;
-  const showFailedOutbound = isOwnPost && outboundStatus === 'failed' && !!onRetryOutbound;
-  const showSendingOutbound = isOwnPost && outboundStatus === 'sending';
-  const isEdited = post.updatedAt && post.updatedAt !== post.createdAt;
-
-  const handleLongPress = useCallback(() => {
-    if (!canReact || !onLongPress || outboundStatus) return;
-    onLongPress();
-  }, [canReact, onLongPress, outboundStatus]);
-
-  const isUserReaction = (type: PostReactionType) =>
-    !!currentUserId && userReactions.includes(type);
-
-  const longPressHint = showFailedOutbound
-    ? undefined
-    : canReact
-      ? isOwnPost
-        ? t('discussions.messageRowLongPressHintOwn')
-        : t('discussions.messageRowLongPressHintOther')
-      : undefined;
-
-  const sentClock = formatMessageSentClockTime(post.createdAt);
-
-  // Same arrangement as the chat row: listeners on the whole row, so moving onto the toolbar
-  // does not read as leaving the message.
-  const [hovered, setHovered] = useState(false);
-  const hoverProps = HOVER_ACTIONS_SUPPORTED
-    ? ({ onMouseEnter: () => setHovered(true), onMouseLeave: () => setHovered(false) } as object)
-    : {};
-  const showHoverActions = HOVER_ACTIONS_SUPPORTED && hovered && !!canReact && !outboundStatus;
+  const {
+    isOwn: isOwnPost,
+    isEdited,
+    clockTime: sentClock,
+    outboundStatus,
+    showFailedOutbound,
+    showSendingOutbound,
+    presentReactions,
+    reactionCount,
+    isUserReaction,
+    hasReactions,
+    userReactionTypes: userReactions,
+    handleLongPress,
+    longPressHint,
+    hoverProps,
+    showHoverActions,
+  } = useMessageRowState({
+    post,
+    currentUserId,
+    canReact,
+    canRetry: !!onRetryOutbound,
+    onLongPress,
+  });
 
   return (
     <View
@@ -345,7 +331,7 @@ function ReplyRow({
             {hasReactions ? (
               <View style={styles.reactionBadges} pointerEvents="box-none">
                 {presentReactions.map((type) => {
-                  const count = counts[type] ?? 0;
+                  const count = reactionCount(type);
                   const isMine = isUserReaction(type);
                   const onPress =
                     canReact && (isMine ? onRemoveReaction : onAddReaction)
