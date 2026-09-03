@@ -60,6 +60,12 @@ import {
   storedMessageToPendingAttachments,
 } from '@/lib/composeAttachments';
 import { tryGetVideoPosterUri } from '@/lib/videoPoster';
+import {
+  CLOUDINARY_MAX_VIDEO_BYTES,
+  isCloudinaryConfigured,
+  uploadVideoToCloudinary,
+} from '@/lib/cloudinaryVideo';
+import { tooLargeMessage } from '@/lib/uploadErrors';
 import { getMediaViewerSize } from '@/lib/mediaViewerBounds';
 import {
   isAllowedMessageAttachmentMimeType,
@@ -640,6 +646,17 @@ export default function DiscussionDetailScreen() {
     });
     if (result.canceled || !result.assets[0]?.uri) return;
     const asset = result.assets[0];
+    // Same rule as the chat composer: the cap depends on where the clip is about to go, and
+    // rejecting it up front beats rejecting it after a long upload.
+    const viaCloudinary = isCloudinaryConfigured();
+    const maxBytes = viaCloudinary ? CLOUDINARY_MAX_VIDEO_BYTES : MAX_MESSAGE_ATTACHMENT_BYTES;
+    if (asset.fileSize != null && asset.fileSize > maxBytes) {
+      void notify({
+        title: t('common.error'),
+        message: tooLargeMessage(asset.fileSize, maxBytes),
+      });
+      return;
+    }
     const attachmentId = newComposeAttachmentId();
     const posterUri = await tryGetVideoPosterUri(asset.uri);
     const fileName = asset.fileName ?? `video-${Date.now()}.mp4`;
@@ -654,15 +671,46 @@ export default function DiscussionDetailScreen() {
         mimeType: mime,
         sourceUri: asset.uri,
         uploading: true,
+        progress: 0,
       },
     ]);
+    const reportProgress = (fraction: number) =>
+      setPendingAttachments((prev) =>
+        prev.map((p) => (p.id === attachmentId ? { ...p, progress: fraction } : p))
+      );
     try {
+      if (viaCloudinary) {
+        // Phone cameras produce HEVC, which no browser decodes -- it plays as a black
+        // rectangle and yields no poster. Cloudinary re-encodes on ingest. Removed here by
+        // 97f6840 along with the chat copy; restored for the same reason.
+        const file = (asset as { file?: File }).file;
+        const transcoded = await uploadVideoToCloudinary(
+          file ?? { uri: asset.uri, name: fileName, type: mime },
+          { folder: userId, onProgress: reportProgress }
+        );
+        setPendingAttachments((prev) =>
+          prev.map((p) =>
+            p.id === attachmentId
+              ? {
+                  ...p,
+                  displayUri: transcoded.posterUrl,
+                  uploadedUrl: transcoded.url,
+                  uploadedThumbnailUrl: transcoded.posterUrl,
+                  uploading: false,
+                  progress: undefined,
+                }
+              : p
+          )
+        );
+        return;
+      }
       const videoUrl = await uploadDiscussionAttachmentMutation.mutateAsync({
         userId,
         localUri: asset.uri,
         contentType: normalizeMimeTypeForAllowlist(mime),
         fileName,
         objectKind: 'post',
+        onProgress: reportProgress,
       });
       let uploadedThumbnailUrl: string | undefined;
       if (posterUri) {
@@ -682,6 +730,7 @@ export default function DiscussionDetailScreen() {
                 uploadedUrl: videoUrl,
                 uploadedThumbnailUrl,
                 uploading: false,
+                progress: undefined,
               }
             : p
         )
@@ -789,6 +838,37 @@ export default function DiscussionDetailScreen() {
               p.id === attachmentId ? { ...p, uploadedUrl: url, uploading: false } : p
             )
           );
+        } else if (att.kind === 'video' && isCloudinaryConfigured()) {
+          // Retry has to take the same road as the first attempt; a retried video sent to
+          // Supabase Storage "succeeds" and then plays as a black rectangle.
+          const transcoded = await uploadVideoToCloudinary(
+            {
+              uri: att.sourceUri,
+              name: att.fileName ?? 'video.mp4',
+              type: att.mimeType ?? 'video/mp4',
+            },
+            {
+              folder: userId,
+              onProgress: (fraction) =>
+                setPendingAttachments((prev) =>
+                  prev.map((p) => (p.id === attachmentId ? { ...p, progress: fraction } : p))
+                ),
+            }
+          );
+          setPendingAttachments((prev) =>
+            prev.map((p) =>
+              p.id === attachmentId
+                ? {
+                    ...p,
+                    displayUri: transcoded.posterUrl,
+                    uploadedUrl: transcoded.url,
+                    uploadedThumbnailUrl: transcoded.posterUrl,
+                    uploading: false,
+                    progress: undefined,
+                  }
+                : p
+            )
+          );
         } else {
           const url = await uploadDiscussionAttachmentMutation.mutateAsync({
             userId,
@@ -796,10 +876,16 @@ export default function DiscussionDetailScreen() {
             contentType: att.mimeType ?? 'application/octet-stream',
             fileName: att.fileName ?? 'file',
             objectKind: 'post',
+            onProgress: (fraction) =>
+              setPendingAttachments((prev) =>
+                prev.map((p) => (p.id === attachmentId ? { ...p, progress: fraction } : p))
+              ),
           });
           setPendingAttachments((prev) =>
             prev.map((p) =>
-              p.id === attachmentId ? { ...p, uploadedUrl: url, uploading: false } : p
+              p.id === attachmentId
+                ? { ...p, uploadedUrl: url, uploading: false, progress: undefined }
+                : p
             )
           );
         }

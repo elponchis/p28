@@ -32,6 +32,11 @@ export interface MessageRowProps {
   onRetrySend?: () => void;
   /** When false, hide the trailing sent-time label (e.g. same-minute cluster). */
   showSentClockTime?: boolean;
+  /**
+   * KakaoTalk-style: how many chat members have not read this message yet. Rendered beside the
+   * clock time on your own messages and gone at zero, so an all-read thread stays quiet.
+   */
+  unreadCount?: number;
   /** Extra top margin when the previous message was from the other side (you vs someone else). */
   extraGapAfterPeerChange?: boolean;
 }
@@ -52,6 +57,7 @@ export function MessageRow({
   currentUserId,
   onRetrySend,
   showSentClockTime = true,
+  unreadCount = 0,
   extraGapAfterPeerChange = false,
 }: MessageRowProps) {
   const counts = post.reactionCounts ?? { prayer: 0, laugh: 0, thumbsUp: 0 };
@@ -141,13 +147,27 @@ export function MessageRow({
 
             <View style={styles.messageBubbleColumn}>
               <View style={[styles.bubbleAndTimeRow, isOwnMessage && styles.bubbleAndTimeRowOwn]}>
-                {isOwnMessage && showSentClockTime ? (
-                  <Text
-                    style={[styles.sentClockTime, styles.sentClockTimeOwn]}
-                    accessibilityLabel={clockTime}
-                  >
-                    {clockTime}
-                  </Text>
+                {isOwnMessage && (showSentClockTime || unreadCount > 0) ? (
+                  <View style={styles.ownMetaColumn}>
+                    {unreadCount > 0 ? (
+                      <Text
+                        style={styles.unreadCount}
+                        accessibilityLabel={t('messages.unreadByCount', {
+                          count: String(unreadCount),
+                        })}
+                      >
+                        {unreadCount}
+                      </Text>
+                    ) : null}
+                    {showSentClockTime ? (
+                      <Text
+                        style={[styles.sentClockTime, styles.sentClockTimeOwn]}
+                        accessibilityLabel={clockTime}
+                      >
+                        {clockTime}
+                      </Text>
+                    ) : null}
+                  </View>
                 ) : null}
                 <View style={styles.bubbleStack}>
                   <Pressable
@@ -312,6 +332,16 @@ export function MessageRow({
 const BUBBLE_RADIUS = 16;
 
 const styles = StyleSheet.create({
+  ownMetaColumn: {
+    alignItems: 'flex-end',
+    justifyContent: 'flex-end',
+    gap: 2,
+  },
+  unreadCount: {
+    ...typography.caption,
+    fontFamily: fontFamily.sansSemiBold,
+    color: colors.secondary,
+  },
   messageWrapper: {
     position: 'relative',
     marginBottom: 1,

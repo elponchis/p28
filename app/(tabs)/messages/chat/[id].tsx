@@ -79,7 +79,7 @@ import { t } from '@/lib/i18n';
 import { confirm, notify } from '@/lib/dialogs';
 import { copyTextToClipboard } from '@/lib/clipboard';
 import { describeUploadError, tooLargeMessage } from '@/lib/uploadErrors';
-import { summarizeReadReceipt } from '@/lib/readReceipts';
+import { countUnreadMembers } from '@/lib/readReceipts';
 import { downloadFileInBrowser } from '@/lib/downloadFile';
 
 import { colors, fontFamily, radius, shadow, spacing, typography } from '@/theme/tokens';
@@ -959,32 +959,25 @@ export default function ChatDetailScreen() {
   }, []);
 
   /**
-   * Read receipts, Instagram-style: one marker, under the last message you sent, and only once
-   * someone else has actually reached it. Showing it on every own message turns the thread into
-   * a column of "Seen"; showing nothing until the whole group reads makes a busy group chat look
-   * permanently unread, so a partial group read is reported as a count.
+   * Read receipts, KakaoTalk-style: a count of who has NOT read each message you sent, beside
+   * the message, gone once it reaches zero. Chosen over a single "Seen" marker on the last
+   * message because it keeps working when a chat has more than two people in it -- the count
+   * tells you how many are still behind, which a boolean cannot.
    */
-  const lastOwnMessageId = useMemo(() => {
-    if (!userId) return null;
-    for (let i = messages.length - 1; i >= 0; i -= 1) {
-      const m = messages[i];
+  const unreadCountByMessageId = useMemo(() => {
+    const counts = new Map<string, number>();
+    if (!userId) return counts;
+    for (const m of messages) {
+      if (m.userId !== userId || m.deletedAt) continue;
       const outbound = (m as ChatMessage & { outboundStatus?: 'sending' | 'failed' })
         .outboundStatus;
-      if (m.userId === userId && !outbound && !m.deletedAt) return m.id;
+      // A message still in flight has no read state to report yet.
+      if (outbound) continue;
+      const unread = countUnreadMembers(chat?.members, userId, m.createdAt);
+      if (unread > 0) counts.set(m.id, unread);
     }
-    return null;
-  }, [messages, userId]);
-
-  const readReceiptLabel = useMemo(() => {
-    if (!lastOwnMessageId) return null;
-    const msg = messages.find((m) => m.id === lastOwnMessageId);
-    if (!msg) return null;
-    const summary = summarizeReadReceipt(chat?.members, userId, msg.createdAt);
-    if (!summary) return null;
-    return summary.otherCount === 1
-      ? t('messages.seen')
-      : t('messages.seenByCount', { count: String(summary.readerCount) });
-  }, [userId, lastOwnMessageId, messages, chat?.members]);
+    return counts;
+  }, [messages, userId, chat?.members]);
 
   const reactionSheetPrimaryActions = useMemo((): ReactionSheetPrimaryAction[] => {
     const msg = reactionMessage;
@@ -1221,10 +1214,8 @@ export default function ChatDetailScreen() {
                   }
                   showSentClockTime={showSentClockTime}
                   extraGapAfterPeerChange={extraGapAfterPeerChange}
+                  unreadCount={unreadCountByMessageId.get(msg.id) ?? 0}
                 />
-                {msg.id === lastOwnMessageId && readReceiptLabel ? (
-                  <Text style={styles.readReceipt}>{readReceiptLabel}</Text>
-                ) : null}
               </View>
             );
           })}
@@ -1388,13 +1379,6 @@ export default function ChatDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  readReceipt: {
-    ...typography.caption,
-    color: colors.onSurfaceVariant,
-    alignSelf: 'flex-end',
-    marginTop: spacing.xxs,
-    marginRight: spacing.xs,
-  },
   copiedToast: {
     position: 'absolute',
     alignSelf: 'center',
