@@ -19,11 +19,17 @@ export function bytesToMb(bytes: number): string {
 
 export const MAX_ATTACHMENT_MB = Math.floor(MAX_MESSAGE_ATTACHMENT_BYTES / (1024 * 1024));
 
-/** Message for a file rejected before the upload starts, naming both sizes. */
-export function tooLargeMessage(bytes: number): string {
+/**
+ * Message for a file rejected before the upload starts, naming both sizes.
+ *
+ * The cap is a parameter because video does not share it: a clip routed through Cloudinary is
+ * bounded by Cloudinary's own limit, not by the Supabase Storage policy.
+ */
+export function tooLargeMessage(bytes: number, maxBytes?: number): string {
+  const cap = maxBytes ?? MAX_MESSAGE_ATTACHMENT_BYTES;
   return t('attachments.fileTooLargeWithSize', {
     size: bytesToMb(bytes),
-    max: String(MAX_ATTACHMENT_MB),
+    max: String(Math.floor(cap / (1024 * 1024))),
   });
 }
 

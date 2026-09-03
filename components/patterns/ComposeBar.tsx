@@ -28,6 +28,11 @@ export interface PendingComposeAttachment {
   uploading: boolean;
   /** True when the upload failed; the attachment stays in the list with a retry affordance. */
   failed?: boolean;
+  /**
+   * 0..1 of bytes sent, when the upload path reports it. A spinner on a video that takes a
+   * minute says nothing about whether it is moving, which is what "it hangs" usually means.
+   */
+  progress?: number;
   /** Duration in seconds (voice messages). */
   durationSec?: number;
   /** Original local file URI to re-upload from on retry (undefined for audio, which isn't retryable here). */
@@ -279,7 +284,13 @@ export function ComposeBar({
                   </View>
                   {att.uploading ? (
                     <View style={styles.uploadingOverlay}>
-                      <ActivityIndicator size="small" color={colors.primary} />
+                      {typeof att.progress === 'number' ? (
+                        <Text style={styles.uploadingPercent}>
+                          {`${Math.round(Math.min(1, Math.max(0, att.progress)) * 100)}%`}
+                        </Text>
+                      ) : (
+                        <ActivityIndicator size="small" color={colors.primary} />
+                      )}
                     </View>
                   ) : att.failed ? (
                     <View style={styles.uploadingOverlay}>
@@ -308,7 +319,13 @@ export function ComposeBar({
                   ) : null}
                   {att.uploading ? (
                     <View style={styles.uploadingOverlay}>
-                      <ActivityIndicator size="small" color={colors.primary} />
+                      {typeof att.progress === 'number' ? (
+                        <Text style={styles.uploadingPercent}>
+                          {`${Math.round(Math.min(1, Math.max(0, att.progress)) * 100)}%`}
+                        </Text>
+                      ) : (
+                        <ActivityIndicator size="small" color={colors.primary} />
+                      )}
                     </View>
                   ) : att.failed ? (
                     <View style={styles.uploadingOverlay}>
@@ -414,6 +431,11 @@ export function ComposeBar({
 }
 
 const styles = StyleSheet.create({
+  uploadingPercent: {
+    ...typography.caption,
+    color: colors.primary,
+    fontFamily: fontFamily.sansSemiBold,
+  },
   contextBanner: {
     flexDirection: 'row',
     alignItems: 'center',

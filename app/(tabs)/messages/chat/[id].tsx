@@ -61,6 +61,11 @@ import {
   storedMessageToPendingAttachments,
 } from '@/lib/composeAttachments';
 import { tryGetVideoPosterUri } from '@/lib/videoPoster';
+import {
+  CLOUDINARY_MAX_VIDEO_BYTES,
+  isCloudinaryConfigured,
+  uploadVideoToCloudinary,
+} from '@/lib/cloudinaryVideo';
 import { getMediaViewerSize } from '@/lib/mediaViewerBounds';
 import {
   isAllowedMessageAttachmentMimeType,
@@ -501,12 +506,18 @@ export default function ChatDetailScreen() {
     });
     if (result.canceled || !result.assets[0]?.uri) return;
     const asset = result.assets[0];
-    // Checked before the upload starts, not after: a phone video is easily several hundred
-    // megabytes, and letting it climb the wire only to be rejected by the storage policy costs
-    // the user minutes and tells them nothing. ImagePicker does not always report fileSize, so
-    // this is a fast path -- readBinaryFile still enforces the cap for the cases it misses.
-    if (asset.fileSize != null && asset.fileSize > MAX_MESSAGE_ATTACHMENT_BYTES) {
-      void notify({ title: t('common.error'), message: tooLargeMessage(asset.fileSize) });
+    // Cloudinary and Supabase Storage cap video at different sizes, so the gate has to know
+    // which path this upload is about to take. Checked before the upload starts, not after: a
+    // phone video is easily several hundred megabytes, and letting it climb the wire only to be
+    // rejected costs the user minutes and tells them nothing. ImagePicker does not always
+    // report fileSize, so this is a fast path -- readBinaryFile still enforces the Supabase cap.
+    const viaCloudinary = isCloudinaryConfigured();
+    const maxBytes = viaCloudinary ? CLOUDINARY_MAX_VIDEO_BYTES : MAX_MESSAGE_ATTACHMENT_BYTES;
+    if (asset.fileSize != null && asset.fileSize > maxBytes) {
+      void notify({
+        title: t('common.error'),
+        message: tooLargeMessage(asset.fileSize, maxBytes),
+      });
       return;
     }
     const attachmentId = newComposeAttachmentId();
@@ -523,15 +534,46 @@ export default function ChatDetailScreen() {
         mimeType: mime,
         sourceUri: asset.uri,
         uploading: true,
+        progress: 0,
       },
     ]);
+    const reportProgress = (fraction: number) =>
+      setPendingAttachments((prev) =>
+        prev.map((p) => (p.id === attachmentId ? { ...p, progress: fraction } : p))
+      );
     try {
+      if (viaCloudinary) {
+        // Phone cameras produce HEVC, which no browser decodes -- it plays as a black
+        // rectangle and yields no poster. Cloudinary re-encodes on ingest. This path existed
+        // and was dropped in 97f6840; without it the black rectangle is back.
+        const file = (asset as { file?: File }).file;
+        const transcoded = await uploadVideoToCloudinary(
+          file ?? { uri: asset.uri, name: fileName, type: mime },
+          { folder: userId, onProgress: reportProgress }
+        );
+        setPendingAttachments((prev) =>
+          prev.map((p) =>
+            p.id === attachmentId
+              ? {
+                  ...p,
+                  displayUri: transcoded.posterUrl,
+                  uploadedUrl: transcoded.url,
+                  uploadedThumbnailUrl: transcoded.posterUrl,
+                  uploading: false,
+                  progress: undefined,
+                }
+              : p
+          )
+        );
+        return;
+      }
       const videoUrl = await uploadChatAttachmentMutation.mutateAsync({
         userId,
         localUri: asset.uri,
         contentType: normalizeMimeTypeForAllowlist(mime),
         fileName,
         objectKind: 'message',
+        onProgress: reportProgress,
       });
       let uploadedThumbnailUrl: string | undefined;
       if (posterUri) {
@@ -551,13 +593,16 @@ export default function ChatDetailScreen() {
                 uploadedUrl: videoUrl,
                 uploadedThumbnailUrl,
                 uploading: false,
+                progress: undefined,
               }
             : p
         )
       );
     } catch (e) {
       setPendingAttachments((prev) =>
-        prev.map((p) => (p.id === attachmentId ? { ...p, uploading: false, failed: true } : p))
+        prev.map((p) =>
+          p.id === attachmentId ? { ...p, uploading: false, failed: true, progress: undefined } : p
+        )
       );
       void notify({ title: t('common.error'), message: describeUploadError(e) });
     }
@@ -626,7 +671,9 @@ export default function ChatDetailScreen() {
       );
     } catch (e) {
       setPendingAttachments((prev) =>
-        prev.map((p) => (p.id === attachmentId ? { ...p, uploading: false, failed: true } : p))
+        prev.map((p) =>
+          p.id === attachmentId ? { ...p, uploading: false, failed: true, progress: undefined } : p
+        )
       );
       void notify({ title: t('common.error'), message: describeUploadError(e) });
     }
@@ -656,6 +703,37 @@ export default function ChatDetailScreen() {
               p.id === attachmentId ? { ...p, uploadedUrl: url, uploading: false } : p
             )
           );
+        } else if (att.kind === 'video' && isCloudinaryConfigured()) {
+          // Retry has to take the same road as the first attempt. Sending a retried video to
+          // Supabase Storage instead would "succeed" and then play as a black rectangle.
+          const transcoded = await uploadVideoToCloudinary(
+            {
+              uri: att.sourceUri,
+              name: att.fileName ?? 'video.mp4',
+              type: att.mimeType ?? 'video/mp4',
+            },
+            {
+              folder: userId,
+              onProgress: (fraction) =>
+                setPendingAttachments((prev) =>
+                  prev.map((p) => (p.id === attachmentId ? { ...p, progress: fraction } : p))
+                ),
+            }
+          );
+          setPendingAttachments((prev) =>
+            prev.map((p) =>
+              p.id === attachmentId
+                ? {
+                    ...p,
+                    displayUri: transcoded.posterUrl,
+                    uploadedUrl: transcoded.url,
+                    uploadedThumbnailUrl: transcoded.posterUrl,
+                    uploading: false,
+                    progress: undefined,
+                  }
+                : p
+            )
+          );
         } else {
           const url = await uploadChatAttachmentMutation.mutateAsync({
             userId,
@@ -663,17 +741,28 @@ export default function ChatDetailScreen() {
             contentType: att.mimeType ?? 'application/octet-stream',
             fileName: att.fileName ?? 'file',
             objectKind: 'message',
+            onProgress: (fraction) =>
+              setPendingAttachments((prev) =>
+                prev.map((p) => (p.id === attachmentId ? { ...p, progress: fraction } : p))
+              ),
           });
           setPendingAttachments((prev) =>
             prev.map((p) =>
-              p.id === attachmentId ? { ...p, uploadedUrl: url, uploading: false } : p
+              p.id === attachmentId
+                ? { ...p, uploadedUrl: url, uploading: false, progress: undefined }
+                : p
             )
           );
         }
-      } catch {
+      } catch (e) {
         setPendingAttachments((prev) =>
-          prev.map((p) => (p.id === attachmentId ? { ...p, uploading: false, failed: true } : p))
+          prev.map((p) =>
+            p.id === attachmentId
+              ? { ...p, uploading: false, failed: true, progress: undefined }
+              : p
+          )
         );
+        void notify({ title: t('common.error'), message: describeUploadError(e) });
       }
     },
     [userId, pendingAttachments, uploadImageMutation, uploadChatAttachmentMutation]
