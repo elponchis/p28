@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -58,10 +58,6 @@ export default function CreateChatScreen() {
   const createMutation = useCreateChatMutation();
   const uploadMutation = useUploadChatImageMutation();
   const updateMutation = useUpdateChatMutation();
-
-  useEffect(() => {
-    router.replace('/messages');
-  }, [router]);
 
   const handleToggleFriend = useCallback((id: string) => {
     setSelectedIds((prev) => {
