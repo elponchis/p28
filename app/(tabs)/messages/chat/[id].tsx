@@ -1125,7 +1125,7 @@ export default function ChatDetailScreen() {
       if (status !== 'granted') {
         void notify({
           title: t('common.error'),
-          message: t('discussions.downloadPermissionDenied'),
+          message: t('message.downloadPermissionDenied'),
         });
         return;
       }
@@ -1134,14 +1134,14 @@ export default function ChatDetailScreen() {
       await MediaLibrary.createAssetAsync(localUri);
       setPreviewImageUrl(null);
       void notify({
-        title: t('discussions.downloadSuccess'),
-        message: t('discussions.downloadSuccessMessage'),
+        title: t('message.downloadSuccess'),
+        message: t('message.downloadSuccessMessage'),
       });
     } catch (err) {
       const msg =
         err && typeof err === 'object' && typeof (err as Error).message === 'string'
           ? (err as Error).message
-          : t('discussions.downloadError');
+          : t('message.downloadError');
       void notify({
         title: t('common.error'),
         message: msg,
@@ -1195,9 +1195,9 @@ export default function ChatDetailScreen() {
     async (msg: ChatMessage) => {
       if (!userId || !id) return;
       const confirmed = await confirm({
-        title: t('discussions.deleteMessageConfirmTitle'),
-        message: t('discussions.deleteMessageConfirmBody'),
-        confirmLabel: t('discussions.sheetDelete'),
+        title: t('message.deleteMessageConfirmTitle'),
+        message: t('message.deleteMessageConfirmBody'),
+        confirmLabel: t('message.sheetDelete'),
         cancelLabel: t('common.cancel'),
         destructive: true,
       });
@@ -1222,7 +1222,7 @@ export default function ChatDetailScreen() {
     if (!body) return;
     const ok = await copyTextToClipboard(body);
     if (!ok) {
-      void notify({ title: t('common.error'), message: t('discussions.copyFailed') });
+      void notify({ title: t('common.error'), message: t('message.copyFailed') });
       return;
     }
     setCopiedToastVisible(true);
@@ -1260,10 +1260,10 @@ export default function ChatDetailScreen() {
     const actions: ReactionSheetPrimaryAction[] = [
       {
         key: 'reply',
-        label: t('discussions.sheetReply'),
+        label: t('message.sheetReply'),
         icon: 'arrow-undo-outline',
-        accessibilityLabel: t('discussions.sheetReply'),
-        accessibilityHint: t('discussions.sheetReplyHint'),
+        accessibilityLabel: t('message.sheetReply'),
+        accessibilityHint: t('message.sheetReplyHint'),
         onPress: () => {
           setReactionMessage(null);
           setEditingMessage(null);
@@ -1276,10 +1276,10 @@ export default function ChatDetailScreen() {
     if (msg.body?.trim()) {
       actions.push({
         key: 'copy',
-        label: t('discussions.sheetCopy'),
+        label: t('message.sheetCopy'),
         icon: 'copy-outline',
-        accessibilityLabel: t('discussions.sheetCopy'),
-        accessibilityHint: t('discussions.sheetCopyHint'),
+        accessibilityLabel: t('message.sheetCopy'),
+        accessibilityHint: t('message.sheetCopyHint'),
         onPress: () => {
           setReactionMessage(null);
           void handleCopyMessage(msg);
@@ -1289,10 +1289,10 @@ export default function ChatDetailScreen() {
     if (msg.userId === userId) {
       actions.push({
         key: 'edit',
-        label: t('discussions.sheetEdit'),
+        label: t('message.sheetEdit'),
         icon: 'pencil-outline',
-        accessibilityLabel: t('discussions.sheetEdit'),
-        accessibilityHint: t('discussions.sheetEditHint'),
+        accessibilityLabel: t('message.sheetEdit'),
+        accessibilityHint: t('message.sheetEditHint'),
         onPress: () => {
           setReactionMessage(null);
           handleStartEdit(msg);
@@ -1300,10 +1300,10 @@ export default function ChatDetailScreen() {
       });
       actions.push({
         key: 'delete',
-        label: t('discussions.sheetDelete'),
+        label: t('message.sheetDelete'),
         icon: 'trash-outline',
-        accessibilityLabel: t('discussions.sheetDelete'),
-        accessibilityHint: t('discussions.sheetDeleteHint'),
+        accessibilityLabel: t('message.sheetDelete'),
+        accessibilityHint: t('message.sheetDeleteHint'),
         destructive: true,
         onPress: () => {
           setReactionMessage(null);
@@ -1541,7 +1541,7 @@ export default function ChatDetailScreen() {
             isSending={
               editingMessage ? updateMessageMutation.isPending : createMessageMutation.isPending
             }
-            sendLabel={editingMessage ? t('discussions.updateReply') : t('discussions.postReply')}
+            sendLabel={editingMessage ? t('message.updateReply') : t('message.postReply')}
             pendingAttachments={pendingAttachments}
             onRemoveAttachment={removePendingAttachment}
             onRetryAttachment={retryPendingAttachment}
@@ -1617,7 +1617,7 @@ export default function ChatDetailScreen() {
       {copiedToastVisible ? (
         <View style={styles.copiedToast} pointerEvents="none" accessibilityRole="alert">
           <Ionicons name="checkmark-circle" size={16} color={colors.onPrimary} />
-          <Text style={styles.copiedToastText}>{t('discussions.copied')}</Text>
+          <Text style={styles.copiedToastText}>{t('message.copied')}</Text>
         </View>
       ) : null}
 
@@ -1648,7 +1648,7 @@ export default function ChatDetailScreen() {
                   handleDownloadImage();
                 }}
                 disabled={isDownloading}
-                accessibilityLabel={t('discussions.downloadImage')}
+                accessibilityLabel={t('message.downloadImage')}
                 accessibilityRole="button"
               >
                 {isDownloading ? (

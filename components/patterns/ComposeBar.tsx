@@ -194,7 +194,7 @@ export function ComposeBar({
         <View style={isChat ? chatStyles.contextBanner : styles.contextBanner}>
           <View style={isChat ? chatStyles.contextBannerContent : styles.contextBannerContent}>
             <Text style={isChat ? chatStyles.contextBannerLabel : styles.contextBannerLabel}>
-              {t('discussions.editingReply')}
+              {t('message.editingReply')}
             </Text>
             <Text
               style={isChat ? chatStyles.contextBannerPreview : styles.contextBannerPreview}
@@ -206,8 +206,8 @@ export function ComposeBar({
           <Pressable
             onPress={editingContext.onCancel}
             style={isChat ? chatStyles.contextBannerClose : styles.contextBannerClose}
-            accessibilityLabel={t('discussions.cancelEdit')}
-            accessibilityHint={t('discussions.cancelEdit')}
+            accessibilityLabel={t('message.cancelEdit')}
+            accessibilityHint={t('message.cancelEdit')}
             accessibilityRole="button"
           >
             <Ionicons
@@ -221,7 +221,7 @@ export function ComposeBar({
         <View style={isChat ? chatStyles.contextBanner : styles.contextBanner}>
           <View style={isChat ? chatStyles.contextBannerContent : styles.contextBannerContent}>
             <Text style={isChat ? chatStyles.contextBannerLabel : styles.contextBannerLabel}>
-              {t('discussions.replyingTo')}{' '}
+              {t('message.replyingTo')}{' '}
               <Text style={isChat ? chatStyles.contextBannerAuthor : styles.contextBannerAuthor}>
                 {replyingToContext.authorName}
               </Text>
@@ -236,8 +236,8 @@ export function ComposeBar({
           <Pressable
             onPress={replyingToContext.onCancel}
             style={isChat ? chatStyles.contextBannerClose : styles.contextBannerClose}
-            accessibilityLabel={t('discussions.cancelReply')}
-            accessibilityHint={t('discussions.cancelReply')}
+            accessibilityLabel={t('message.cancelReply')}
+            accessibilityHint={t('message.cancelReply')}
             accessibilityRole="button"
           >
             <Ionicons
@@ -380,7 +380,7 @@ export function ComposeBar({
               <Pressable
                 style={styles.removeAttachedButton}
                 onPress={() => onRemoveAttachment(att.id)}
-                accessibilityLabel={t('discussions.removeImage')}
+                accessibilityLabel={t('message.removeImage')}
                 accessibilityRole="button"
               >
                 <Ionicons
@@ -402,7 +402,7 @@ export function ComposeBar({
           accessibilityLabel={t('attachments.addAttachment')}
           accessibilityHint={
             isUploadingAttachment
-              ? t('discussions.uploadingImages')
+              ? t('message.uploadingImages')
               : t('attachments.addAttachmentHint')
           }
           accessibilityRole="button"
@@ -429,7 +429,7 @@ export function ComposeBar({
         <TextInput
           ref={inputRef}
           style={isChat ? chatStyles.composeInput : styles.composeInput}
-          placeholder={placeholder ?? t('discussions.replyPlaceholder')}
+          placeholder={placeholder ?? t('message.replyPlaceholder')}
           placeholderTextColor={isChat ? colors.outlineVariant : colors.ink300}
           value={text}
           onChangeText={onChangeText}
@@ -437,8 +437,8 @@ export function ComposeBar({
           multiline
           maxLength={2000}
           editable={!isSending}
-          accessibilityLabel={placeholder ?? t('discussions.replyPlaceholder')}
-          accessibilityHint={sendLabel ?? t('discussions.postReply')}
+          accessibilityLabel={placeholder ?? t('message.replyPlaceholder')}
+          accessibilityHint={sendLabel ?? t('message.postReply')}
         />
 
         {isChat ? (
@@ -446,7 +446,7 @@ export function ComposeBar({
             style={[chatStyles.sendButton, canSend && !isSending && chatStyles.sendButtonActive]}
             onPress={onSend}
             disabled={!canSend || isSending || isUploadingAttachment}
-            accessibilityLabel={sendLabel ?? t('discussions.postReply')}
+            accessibilityLabel={sendLabel ?? t('message.postReply')}
           >
             <Ionicons
               name="send"
@@ -459,7 +459,7 @@ export function ComposeBar({
             style={[styles.sendButton, (!canSend || isSending) && styles.sendButtonDisabled]}
             onPress={onSend}
             disabled={!canSend || isSending || isUploadingAttachment}
-            accessibilityLabel={sendLabel ?? t('discussions.postReply')}
+            accessibilityLabel={sendLabel ?? t('message.postReply')}
             accessibilityHint={sendLabel ? `Posts your message` : 'Posts your reply'}
           >
             <Ionicons

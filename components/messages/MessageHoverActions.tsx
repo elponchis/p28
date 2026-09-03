@@ -72,7 +72,7 @@ export function MessageHoverActions({
           onPress={onMore}
           style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
           accessibilityRole="button"
-          accessibilityLabel={t('discussions.moreReactions')}
+          accessibilityLabel={t('message.moreReactions')}
         >
           <Ionicons name="add" size={15} color={colors.onSurfaceVariant} />
         </Pressable>
@@ -82,8 +82,8 @@ export function MessageHoverActions({
           onPress={onReply}
           style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
           accessibilityRole="button"
-          accessibilityLabel={t('discussions.sheetReply')}
-          accessibilityHint={t('discussions.sheetReplyHint')}
+          accessibilityLabel={t('message.sheetReply')}
+          accessibilityHint={t('message.sheetReplyHint')}
         >
           <Ionicons name="arrow-undo-outline" size={15} color={colors.onSurfaceVariant} />
         </Pressable>
@@ -93,8 +93,8 @@ export function MessageHoverActions({
           onPress={onEdit}
           style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
           accessibilityRole="button"
-          accessibilityLabel={t('discussions.sheetEdit')}
-          accessibilityHint={t('discussions.sheetEditHint')}
+          accessibilityLabel={t('message.sheetEdit')}
+          accessibilityHint={t('message.sheetEditHint')}
         >
           <Ionicons name="pencil-outline" size={15} color={colors.onSurfaceVariant} />
         </Pressable>
@@ -106,8 +106,8 @@ export function MessageHoverActions({
           onPress={onDelete}
           style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
           accessibilityRole="button"
-          accessibilityLabel={t('discussions.sheetDelete')}
-          accessibilityHint={t('discussions.sheetDeleteHint')}
+          accessibilityLabel={t('message.sheetDelete')}
+          accessibilityHint={t('message.sheetDeleteHint')}
         >
           <Ionicons name="trash-outline" size={15} color={colors.error} />
         </Pressable>

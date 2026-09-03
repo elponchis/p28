@@ -189,7 +189,7 @@ export default function ChatMediaAndLinksScreen() {
       if (status !== 'granted') {
         void notify({
           title: t('common.error'),
-          message: t('discussions.downloadPermissionDenied'),
+          message: t('message.downloadPermissionDenied'),
         });
         return;
       }
@@ -198,14 +198,14 @@ export default function ChatMediaAndLinksScreen() {
       await MediaLibrary.createAssetAsync(localUri);
       setPreviewImageUrl(null);
       void notify({
-        title: t('discussions.downloadSuccess'),
-        message: t('discussions.downloadSuccessMessage'),
+        title: t('message.downloadSuccess'),
+        message: t('message.downloadSuccessMessage'),
       });
     } catch (err) {
       const msg =
         err && typeof err === 'object' && typeof (err as Error).message === 'string'
           ? (err as Error).message
-          : t('discussions.downloadError');
+          : t('message.downloadError');
       void notify({
         title: t('common.error'),
         message: msg,
@@ -403,7 +403,7 @@ export default function ChatMediaAndLinksScreen() {
                   void handleDownloadImage();
                 }}
                 disabled={isDownloadingImage}
-                accessibilityLabel={t('discussions.downloadImage')}
+                accessibilityLabel={t('message.downloadImage')}
                 accessibilityRole="button"
               >
                 {isDownloadingImage ? (

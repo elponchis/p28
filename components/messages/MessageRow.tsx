@@ -122,8 +122,8 @@ export function MessageRow({
             <Pressable
               onPress={onRetrySend}
               style={styles.retryButton}
-              accessibilityLabel={t('discussions.retrySend')}
-              accessibilityHint={t('discussions.retrySendHint')}
+              accessibilityLabel={t('message.retrySend')}
+              accessibilityHint={t('message.retrySendHint')}
               accessibilityRole="button"
             >
               <Ionicons name="refresh" size={22} color={colors.error} />
@@ -202,17 +202,17 @@ export function MessageRow({
                     ]}
                     accessibilityLabel={
                       isDeleted
-                        ? t('discussions.messageDeleted')
+                        ? t('message.messageDeleted')
                         : showFailedOutbound
-                          ? t('discussions.sendFailed')
-                          : t('discussions.reactToReply')
+                          ? t('message.sendFailed')
+                          : t('message.reactToReply')
                     }
                     accessibilityHint={longPressHint}
                     accessibilityRole="button"
                   >
                     {isDeleted ? (
                       <Text style={[styles.deletedLabel, isOwnMessage && styles.deletedLabelOwn]}>
-                        {t('discussions.messageDeleted')}
+                        {t('message.messageDeleted')}
                       </Text>
                     ) : (
                       <>
@@ -228,7 +228,7 @@ export function MessageRow({
                               pressed && onParentPress ? styles.replyPreviewPressed : null,
                             ]}
                             accessibilityRole={onParentPress ? 'button' : 'text'}
-                            accessibilityLabel={t('discussions.jumpToOriginal')}
+                            accessibilityLabel={t('message.jumpToOriginal')}
                           >
                             <Text
                               style={[
@@ -237,8 +237,8 @@ export function MessageRow({
                               ]}
                             >
                               {currentUserId && parentPost.userId === currentUserId
-                                ? t('discussions.replyingToYou')
-                                : t('discussions.replyingToPerson', {
+                                ? t('message.replyingToYou')
+                                : t('message.replyingToPerson', {
                                     name: parentPost.authorDisplayName ?? t('common.loading'),
                                   })}
                             </Text>
@@ -280,7 +280,7 @@ export function MessageRow({
 
                         {isEdited ? (
                           <Text style={[styles.editedLabel, isOwnMessage && styles.editedLabelOwn]}>
-                            {t('discussions.edited')}
+                            {t('message.edited')}
                           </Text>
                         ) : null}
 
@@ -293,7 +293,7 @@ export function MessageRow({
                         />
                         {showFailedOutbound ? (
                           <Text style={styles.failedOutboundLabel}>
-                            {t('discussions.sendFailed')}
+                            {t('message.sendFailed')}
                           </Text>
                         ) : null}
                       </>

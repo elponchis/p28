@@ -133,7 +133,7 @@ function OriginalPostRow({
           <View style={styles.postHeaderMeta}>
             <Text style={styles.date}>{formatRelativeTime(discussion.createdAt)}</Text>
             {discussion.updatedAt && discussion.updatedAt !== discussion.createdAt ? (
-              <Text style={styles.editedLabel}> [{t('discussions.edited')}]</Text>
+              <Text style={styles.editedLabel}> [{t('message.edited')}]</Text>
             ) : null}
           </View>
         </View>
@@ -239,7 +239,7 @@ function ReplyRow({
                 pressed && canReact && !outboundStatus && styles.replyCardPressed,
               ]}
               accessibilityLabel={
-                showFailedOutbound ? t('discussions.sendFailed') : t('discussions.reactToReply')
+                showFailedOutbound ? t('message.sendFailed') : t('message.reactToReply')
               }
               accessibilityHint={longPressHint}
               accessibilityRole="button"
@@ -269,7 +269,7 @@ function ReplyRow({
                         </Text>
                       </Pressable>
                       {isEdited ? (
-                        <Text style={styles.replyEditedInline}> [{t('discussions.edited')}]</Text>
+                        <Text style={styles.replyEditedInline}> [{t('message.edited')}]</Text>
                       ) : null}
                     </View>
                   </View>
@@ -293,12 +293,12 @@ function ReplyRow({
                     pressed && onParentPress ? styles.replyToPreviewPressed : null,
                   ]}
                   accessibilityRole={onParentPress ? 'button' : 'text'}
-                  accessibilityLabel={t('discussions.jumpToOriginal')}
+                  accessibilityLabel={t('message.jumpToOriginal')}
                 >
                   <Text style={styles.replyToAuthor}>
                     {currentUserId && parentPost.userId === currentUserId
-                      ? t('discussions.replyingToYou')
-                      : t('discussions.replyingToPerson', {
+                      ? t('message.replyingToYou')
+                      : t('message.replyingToPerson', {
                           name: parentPost.authorDisplayName ?? t('common.loading'),
                         })}
                   </Text>
@@ -325,7 +325,7 @@ function ReplyRow({
                 onFilePress={onFilePress}
               />
               {showFailedOutbound ? (
-                <Text style={styles.replyFailedLabel}>{t('discussions.sendFailed')}</Text>
+                <Text style={styles.replyFailedLabel}>{t('message.sendFailed')}</Text>
               ) : null}
             </Pressable>
             {hasReactions ? (
@@ -374,8 +374,8 @@ function ReplyRow({
         <Pressable
           onPress={onRetryOutbound}
           style={styles.replyRetryButton}
-          accessibilityLabel={t('discussions.retrySend')}
-          accessibilityHint={t('discussions.retrySendHint')}
+          accessibilityLabel={t('message.retrySend')}
+          accessibilityHint={t('message.retrySendHint')}
           accessibilityRole="button"
         >
           <Ionicons name="refresh" size={24} color={colors.error} />
@@ -1096,7 +1096,7 @@ export default function DiscussionDetailScreen() {
       if (status !== 'granted') {
         void notify({
           title: t('common.error'),
-          message: t('discussions.downloadPermissionDenied'),
+          message: t('message.downloadPermissionDenied'),
         });
         return;
       }
@@ -1105,14 +1105,14 @@ export default function DiscussionDetailScreen() {
       await MediaLibrary.createAssetAsync(localUri);
       setPreviewImageUrl(null);
       void notify({
-        title: t('discussions.downloadSuccess'),
-        message: t('discussions.downloadSuccessMessage'),
+        title: t('message.downloadSuccess'),
+        message: t('message.downloadSuccessMessage'),
       });
     } catch (err) {
       const msg =
         err && typeof err === 'object' && typeof (err as Error).message === 'string'
           ? (err as Error).message
-          : t('discussions.downloadError');
+          : t('message.downloadError');
       void notify({
         title: t('common.error'),
         message: msg,
@@ -1185,9 +1185,9 @@ export default function DiscussionDetailScreen() {
     async (post: DiscussionPost) => {
       if (!userId) return;
       const confirmed = await confirm({
-        title: t('discussions.deleteMessageConfirmTitle'),
-        message: t('discussions.deleteMessageConfirmBody'),
-        confirmLabel: t('discussions.sheetDelete'),
+        title: t('message.deleteMessageConfirmTitle'),
+        message: t('message.deleteMessageConfirmBody'),
+        confirmLabel: t('message.sheetDelete'),
         cancelLabel: t('common.cancel'),
         destructive: true,
       });
@@ -1213,10 +1213,10 @@ export default function DiscussionDetailScreen() {
     const actions: ReactionSheetPrimaryAction[] = [
       {
         key: 'reply',
-        label: t('discussions.sheetReply'),
+        label: t('message.sheetReply'),
         icon: 'arrow-undo-outline',
-        accessibilityLabel: t('discussions.sheetReply'),
-        accessibilityHint: t('discussions.sheetReplyHint'),
+        accessibilityLabel: t('message.sheetReply'),
+        accessibilityHint: t('message.sheetReplyHint'),
         onPress: () => {
           setReactionPost(null);
           setEditingPost(null);
@@ -1227,11 +1227,11 @@ export default function DiscussionDetailScreen() {
     if (post.userId === userId) {
       actions.push({
         key: 'delete',
-        label: t('discussions.sheetDelete'),
+        label: t('message.sheetDelete'),
         icon: 'trash-outline',
         destructive: true,
-        accessibilityLabel: t('discussions.sheetDelete'),
-        accessibilityHint: t('discussions.sheetDeleteHint'),
+        accessibilityLabel: t('message.sheetDelete'),
+        accessibilityHint: t('message.sheetDeleteHint'),
         onPress: () => {
           setReactionPost(null);
           void handleDeletePost(post);
@@ -1239,10 +1239,10 @@ export default function DiscussionDetailScreen() {
       });
       actions.push({
         key: 'edit',
-        label: t('discussions.sheetEdit'),
+        label: t('message.sheetEdit'),
         icon: 'pencil-outline',
-        accessibilityLabel: t('discussions.sheetEdit'),
-        accessibilityHint: t('discussions.sheetEditHint'),
+        accessibilityLabel: t('message.sheetEdit'),
+        accessibilityHint: t('message.sheetEditHint'),
         onPress: () => {
           setReactionPost(null);
           handleStartEditReply(post);
@@ -1451,7 +1451,7 @@ export default function DiscussionDetailScreen() {
               onSend={handlePostReply}
               canSend={canPost}
               isSending={editingPost ? updatePostMutation.isPending : createPostMutation.isPending}
-              sendLabel={isEditing ? t('discussions.updateReply') : t('discussions.postReply')}
+              sendLabel={isEditing ? t('message.updateReply') : t('message.postReply')}
               pendingAttachments={pendingAttachments}
               onRemoveAttachment={removePendingAttachment}
               onRetryAttachment={retryPendingAttachment}
@@ -1520,7 +1520,7 @@ export default function DiscussionDetailScreen() {
                   handleDownloadImage();
                 }}
                 disabled={isDownloading}
-                accessibilityLabel={t('discussions.downloadImage')}
+                accessibilityLabel={t('message.downloadImage')}
                 accessibilityHint={t('discussions.downloadImageHint')}
                 accessibilityRole="button"
               >

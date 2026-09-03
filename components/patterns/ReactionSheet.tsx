@@ -96,7 +96,7 @@ export function ReactionSheet({
           <Pressable
             style={[styles.sheet, { paddingBottom: spacing.lg + insets.bottom }]}
             onPress={(e) => e.stopPropagation()}
-            accessibilityLabel={t('discussions.reactions')}
+            accessibilityLabel={t('message.reactions')}
             accessibilityRole="none"
           >
             {primaryActions.length > 0 ? (
@@ -132,7 +132,7 @@ export function ReactionSheet({
             ) : null}
 
             <View style={styles.header}>
-              <Text style={styles.title}>{t('discussions.reactions')}</Text>
+              <Text style={styles.title}>{t('message.reactions')}</Text>
               <Pressable
                 onPress={onClose}
                 style={styles.closeButton}
@@ -175,7 +175,7 @@ export function ReactionSheet({
                         disabled={!isCurrentUser || !canReact}
                         accessibilityLabel={
                           isCurrentUser
-                            ? `${r.displayName ?? 'You'}, ${REACTION_EMOJI[r.reactionType]}, ${t('discussions.tapToRemove')}`
+                            ? `${r.displayName ?? 'You'}, ${REACTION_EMOJI[r.reactionType]}, ${t('message.tapToRemove')}`
                             : `${r.displayName ?? t('common.loading')}, ${REACTION_EMOJI[r.reactionType]}`
                         }
                         accessibilityRole={isCurrentUser && canReact ? 'button' : 'text'}
@@ -189,7 +189,7 @@ export function ReactionSheet({
                         <View style={styles.rowContent}>
                           <Text style={styles.rowName}>{r.displayName ?? t('common.loading')}</Text>
                           {isCurrentUser && canReact ? (
-                            <Text style={styles.rowHint}>{t('discussions.tapToRemove')}</Text>
+                            <Text style={styles.rowHint}>{t('message.tapToRemove')}</Text>
                           ) : null}
                         </View>
                         <Text style={styles.rowEmoji}>{REACTION_EMOJI[r.reactionType]}</Text>
@@ -237,7 +237,7 @@ export function ReactionSheet({
                         pressed && styles.addOptionPressed,
                       ]}
                       accessibilityRole="button"
-                      accessibilityLabel={t('discussions.moreReactions')}
+                      accessibilityLabel={t('message.moreReactions')}
                     >
                       <Ionicons name="add" size={20} color={colors.onSurfaceVariant} />
                     </Pressable>

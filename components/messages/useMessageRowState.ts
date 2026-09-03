@@ -115,8 +115,8 @@ export function useMessageRowState({
       ? undefined
       : canReactNow
         ? isOwn
-          ? t('discussions.messageRowLongPressHintOwn')
-          : t('discussions.messageRowLongPressHintOther')
+          ? t('message.messageRowLongPressHintOwn')
+          : t('message.messageRowLongPressHintOther')
         : undefined,
     hoverProps,
     showHoverActions: HOVER_ACTIONS_SUPPORTED && hovered && canReactNow && !outboundStatus,
