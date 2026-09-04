@@ -651,6 +651,8 @@ export const km: TranslationShape = {
     messageDeleted: 'សារនេះត្រូវបានលុប',
     reactions: 'អារម្មណ៍',
     tapToRemove: 'ចុចដើម្បីយកចេញ',
+    noReactionsYet: 'មិនទាន់មានប្រតិកម្មទេ...',
+    noReactionsYetInvite: 'មិនទាន់មានប្រតិកម្មទេ... ធ្វើជាអ្នកដំបូង!',
     sendFailed: 'មិនអាចផ្ញើបានទេ',
     retrySend: 'ព្យាយាមផ្ញើម្តងទៀត',
     retrySendHint: 'ព្យាយាមផ្ញើសារនេះម្តងទៀត',

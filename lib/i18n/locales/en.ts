@@ -652,6 +652,8 @@ export const en = {
     messageDeleted: 'This message was deleted',
     reactions: 'Reactions',
     tapToRemove: 'Tap to remove',
+    noReactionsYet: 'No reactions so far...',
+    noReactionsYetInvite: 'No reactions so far... be the first one!',
     sendFailed: "Couldn't send",
     retrySend: 'Retry send',
     retrySendHint: 'Attempts to send this message again',

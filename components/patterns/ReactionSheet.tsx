@@ -150,7 +150,11 @@ export function ReactionSheet({
                 </View>
               ) : reactionDetails.length === 0 ? (
                 <View style={styles.empty}>
-                  <Text style={styles.emptyText}>No reactions so far...be the first one!</Text>
+                  {/* Inviting a first reaction only makes sense where one can be left. On your
+                      own message the emoji row is absent, so the sentence stops at the fact. */}
+                  <Text style={styles.emptyText}>
+                    {canReact ? t('message.noReactionsYetInvite') : t('message.noReactionsYet')}
+                  </Text>
                 </View>
               ) : (
                 <ScrollView

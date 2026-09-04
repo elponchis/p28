@@ -645,6 +645,8 @@ export const ko: TranslationShape = {
     messageDeleted: '삭제된 메시지입니다',
     reactions: '반응',
     tapToRemove: '탭하여 제거',
+    noReactionsYet: '아직 반응이 없어요...',
+    noReactionsYetInvite: '아직 반응이 없어요... 먼저 남겨보세요!',
     sendFailed: '전송하지 못했습니다',
     retrySend: '다시 보내기',
     retrySendHint: '이 메시지를 다시 보냅니다',
