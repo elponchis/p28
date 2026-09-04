@@ -1,8 +1,6 @@
 import { useFocusEffect, useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
-import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Image } from 'expo-image';
-import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -33,13 +31,14 @@ import {
   useMessageRowState,
   type OutboundMessageStatus,
 } from '@/components/messages';
-import { ComposeBar, type PendingComposeAttachment } from '@/components/patterns/ComposeBar';
+import { ComposeBar } from '@/components/patterns/ComposeBar';
 import { FadeActionSheet, FADE_SHEET_PICKER_DEFER_MS } from '@/components/patterns/FadeActionSheet';
 import {
   ReactionSheet,
   type ReactionSheetPrimaryAction,
 } from '@/components/patterns/ReactionSheet';
 import { useAuth } from '@/hooks/useAuth';
+import { useComposeAttachments } from '@/hooks/useComposeAttachments';
 import { useIosKeyboardAvoidingParentOffset } from '@/hooks/useIosKeyboardAvoidingParentOffset';
 import {
   useCreateDiscussionPostMutation,
@@ -58,26 +57,11 @@ import {
   useUploadDiscussionPostImageMutation,
 } from '@/hooks/useApiQueries';
 import {
-  DOCUMENT_PICKER_MIME_WHITELIST,
-  newComposeAttachmentId,
   pendingToMessageAttachments,
   storedMessageToPendingAttachments,
 } from '@/lib/composeAttachments';
-import { tryGetVideoPosterUri } from '@/lib/videoPoster';
-import {
-  CLOUDINARY_MAX_VIDEO_BYTES,
-  isCloudinaryConfigured,
-  uploadVideoToCloudinary,
-} from '@/lib/cloudinaryVideo';
-import { tooLargeMessage } from '@/lib/uploadErrors';
 import { getMediaViewerSize } from '@/lib/mediaViewerBounds';
-import {
-  isAllowedMessageAttachmentMimeType,
-  MAX_MESSAGE_ATTACHMENT_BYTES,
-  normalizeMimeTypeForAllowlist,
-} from '@/lib/api/messageAttachments';
 import { api, describeError, getUserFacingError } from '@/lib/api';
-import { enqueueDocumentPick } from '@/lib/documentPickerLock';
 import { queryKeys } from '@/lib/api/queryKeys';
 import type {
   CreateDiscussionPostInput,
@@ -141,6 +125,9 @@ function OriginalPostRow({
     </View>
   );
 }
+
+/** Attachments allowed on one reply. */
+const MAX_ATTACHMENTS = 5;
 
 type DiscussionReplyPost = DiscussionPost & {
   outboundStatus?: OutboundMessageStatus;
@@ -397,7 +384,6 @@ export default function DiscussionDetailScreen() {
 
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   const [composeText, setComposeText] = useState('');
-  const [pendingAttachments, setPendingAttachments] = useState<PendingComposeAttachment[]>([]);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null);
@@ -517,6 +503,33 @@ export default function DiscussionDetailScreen() {
   const deletePostMutation = useDeleteDiscussionPostMutation();
   const uploadImageMutation = useUploadDiscussionPostImageMutation();
   const uploadDiscussionAttachmentMutation = useUploadDiscussionPostAttachmentMutation();
+
+  const {
+    pendingAttachments,
+    setPendingAttachments,
+    isUploading: isUploadingAttachment,
+    pickPhotos,
+    pickVideo,
+    pickDocument,
+    pasteFiles: handlePasteFiles,
+    retryAttachment: retryPendingAttachment,
+    removeAttachment: removePendingAttachment,
+  } = useComposeAttachments({
+    userId,
+    maxAttachments: MAX_ATTACHMENTS,
+    logLabel: 'discussion',
+    uploadImage: ({ localUri, base64Data }) =>
+      uploadImageMutation.mutateAsync({ userId: userId!, imageUri: localUri, base64Data }),
+    uploadFile: ({ localUri, contentType, fileName, slot, onProgress }) =>
+      uploadDiscussionAttachmentMutation.mutateAsync({
+        userId: userId!,
+        localUri,
+        contentType,
+        fileName,
+        objectKind: slot === 'thumbnail' ? 'thumbnail' : 'post',
+        onProgress,
+      }),
+  });
   const joinMutation = useJoinGroupMutation();
   const reactMutation = useReactToPostMutation();
   const removeReactionMutation = useRemovePostReactionMutation();
@@ -556,9 +569,6 @@ export default function DiscussionDetailScreen() {
     };
   }, []);
 
-  const MAX_ATTACHMENTS = 5;
-  const isUploadingAttachment =
-    uploadImageMutation.isPending || uploadDiscussionAttachmentMutation.isPending;
   const allPendingReady =
     pendingAttachments.length === 0 ||
     pendingAttachments.every((a) => !a.uploading && !!a.uploadedUrl);
@@ -614,6 +624,7 @@ export default function DiscussionDetailScreen() {
     editingPost,
     createPostMutation,
     updatePostMutation,
+    setPendingAttachments,
   ]);
 
   const handleRetryOutboundDiscussionPost = useCallback(
@@ -638,420 +649,6 @@ export default function DiscussionDetailScreen() {
       );
     },
     [userId, id, createPostMutation]
-  );
-
-  const pickPhotos = useCallback(async () => {
-    if (!userId) return;
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      void notify({
-        title: t('common.error'),
-        message: t('profile.photoPermissionRequired'),
-      });
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsMultipleSelection: true,
-      quality: 0.8,
-      base64: true,
-    });
-    if (result.canceled || !result.assets.length) return;
-    const slotsLeft = MAX_ATTACHMENTS - pendingAttachments.length;
-    const toUpload = result.assets.slice(0, Math.max(0, slotsLeft));
-    let uploadError: string | null = null;
-    for (const asset of toUpload) {
-      if (!asset.uri) continue;
-      const attId = newComposeAttachmentId();
-      setPendingAttachments((prev) => [
-        ...prev,
-        {
-          id: attId,
-          kind: 'image',
-          displayUri: asset.uri,
-          sourceUri: asset.uri,
-          sourceBase64: asset.base64 ?? undefined,
-          uploading: true,
-        },
-      ]);
-      try {
-        const url = await uploadImageMutation.mutateAsync({
-          userId,
-          imageUri: asset.uri,
-          base64Data: asset.base64 ?? undefined,
-        });
-        setPendingAttachments((prev) =>
-          prev.map((p) => (p.id === attId ? { ...p, uploadedUrl: url, uploading: false } : p))
-        );
-      } catch (e) {
-        console.error('[discussion] image upload failed', e);
-        uploadError = describeError(e);
-        setPendingAttachments((prev) =>
-          prev.map((p) => (p.id === attId ? { ...p, uploading: false, failed: true } : p))
-        );
-      }
-    }
-    // One message for the batch, so picking five photos can't stack five dialogs.
-    if (uploadError) {
-      void notify({ title: t('attachments.uploadFailed'), message: uploadError });
-    }
-  }, [userId, pendingAttachments.length, uploadImageMutation]);
-
-  const pickVideo = useCallback(async () => {
-    if (!userId) return;
-    if (pendingAttachments.length >= MAX_ATTACHMENTS) return;
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      void notify({
-        title: t('common.error'),
-        message: t('profile.photoPermissionRequired'),
-      });
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['videos'],
-      allowsMultipleSelection: false,
-      videoExportPreset: ImagePicker.VideoExportPreset.Passthrough,
-    });
-    if (result.canceled || !result.assets[0]?.uri) return;
-    const asset = result.assets[0];
-    // Same rule as the chat composer: the cap depends on where the clip is about to go, and
-    // rejecting it up front beats rejecting it after a long upload.
-    const viaCloudinary = isCloudinaryConfigured();
-    const maxBytes = viaCloudinary ? CLOUDINARY_MAX_VIDEO_BYTES : MAX_MESSAGE_ATTACHMENT_BYTES;
-    if (asset.fileSize != null && asset.fileSize > maxBytes) {
-      void notify({
-        title: t('common.error'),
-        message: tooLargeMessage(asset.fileSize, maxBytes),
-      });
-      return;
-    }
-    const attachmentId = newComposeAttachmentId();
-    const posterUri = await tryGetVideoPosterUri(asset.uri);
-    const fileName = asset.fileName ?? `video-${Date.now()}.mp4`;
-    const mime = asset.mimeType ?? 'video/mp4';
-    setPendingAttachments((prev) => [
-      ...prev,
-      {
-        id: attachmentId,
-        kind: 'video',
-        displayUri: posterUri ?? '',
-        fileName,
-        mimeType: mime,
-        sourceUri: asset.uri,
-        uploading: true,
-        progress: 0,
-      },
-    ]);
-    const reportProgress = (fraction: number) =>
-      setPendingAttachments((prev) =>
-        prev.map((p) => (p.id === attachmentId ? { ...p, progress: fraction } : p))
-      );
-    try {
-      if (viaCloudinary) {
-        // Phone cameras produce HEVC, which no browser decodes -- it plays as a black
-        // rectangle and yields no poster. Cloudinary re-encodes on ingest. Removed here by
-        // 97f6840 along with the chat copy; restored for the same reason.
-        const file = (asset as { file?: File }).file;
-        const transcoded = await uploadVideoToCloudinary(
-          file ?? { uri: asset.uri, name: fileName, type: mime },
-          { folder: userId, onProgress: reportProgress }
-        );
-        setPendingAttachments((prev) =>
-          prev.map((p) =>
-            p.id === attachmentId
-              ? {
-                  ...p,
-                  displayUri: transcoded.posterUrl,
-                  uploadedUrl: transcoded.url,
-                  uploadedThumbnailUrl: transcoded.posterUrl,
-                  uploading: false,
-                  progress: undefined,
-                }
-              : p
-          )
-        );
-        return;
-      }
-      const videoUrl = await uploadDiscussionAttachmentMutation.mutateAsync({
-        userId,
-        localUri: asset.uri,
-        contentType: normalizeMimeTypeForAllowlist(mime),
-        fileName,
-        objectKind: 'post',
-        onProgress: reportProgress,
-      });
-      let uploadedThumbnailUrl: string | undefined;
-      if (posterUri) {
-        uploadedThumbnailUrl = await uploadDiscussionAttachmentMutation.mutateAsync({
-          userId,
-          localUri: posterUri,
-          contentType: 'image/jpeg',
-          fileName: 'thumb.jpg',
-          objectKind: 'thumbnail',
-        });
-      }
-      setPendingAttachments((prev) =>
-        prev.map((p) =>
-          p.id === attachmentId
-            ? {
-                ...p,
-                uploadedUrl: videoUrl,
-                uploadedThumbnailUrl,
-                uploading: false,
-                progress: undefined,
-              }
-            : p
-        )
-      );
-    } catch (e) {
-      console.error('[discussion] video upload failed', e);
-      void notify({ title: t('attachments.uploadFailed'), message: describeError(e) });
-      setPendingAttachments((prev) =>
-        prev.map((p) => (p.id === attachmentId ? { ...p, uploading: false, failed: true } : p))
-      );
-    }
-  }, [userId, pendingAttachments.length, uploadDiscussionAttachmentMutation]);
-
-  /**
-   * Files pasted into the composer (web), the same path chat uses: same allowlist, same size
-   * cap, same upload. A web File has no local URI, so it gets a blob: URL that is revoked once
-   * the upload has read it -- except after a failure, where it is all retry has to work from.
-   */
-  const handlePasteFiles = useCallback(
-    async (files: File[]) => {
-      if (!userId) return;
-      const slotsLeft = MAX_ATTACHMENTS - pendingAttachments.length;
-      if (slotsLeft <= 0) {
-        void notify({ title: t('common.error'), message: t('attachments.tooManyFiles') });
-        return;
-      }
-      for (const file of files.slice(0, slotsLeft)) {
-        const mime = normalizeMimeTypeForAllowlist(file.type || 'application/octet-stream');
-        if (!isAllowedMessageAttachmentMimeType(mime)) {
-          void notify({ title: t('common.error'), message: t('attachments.unsupportedFileType') });
-          continue;
-        }
-        if (file.size > MAX_MESSAGE_ATTACHMENT_BYTES) {
-          void notify({ title: t('common.error'), message: tooLargeMessage(file.size) });
-          continue;
-        }
-        const attachmentId = newComposeAttachmentId();
-        const objectUrl = URL.createObjectURL(file);
-        const kind = mime.startsWith('image/')
-          ? 'image'
-          : mime.startsWith('video/')
-            ? 'video'
-            : 'file';
-        const fileName = file.name || `pasted-${Date.now()}`;
-        setPendingAttachments((prev) => [
-          ...prev,
-          {
-            id: attachmentId,
-            kind,
-            displayUri: kind === 'image' ? objectUrl : '',
-            fileName,
-            mimeType: mime,
-            sourceUri: objectUrl,
-            uploading: true,
-            progress: 0,
-          },
-        ]);
-        try {
-          const url = await uploadDiscussionAttachmentMutation.mutateAsync({
-            userId,
-            localUri: objectUrl,
-            contentType: mime,
-            fileName,
-            objectKind: 'post',
-            onProgress: (fraction) =>
-              setPendingAttachments((prev) =>
-                prev.map((p) => (p.id === attachmentId ? { ...p, progress: fraction } : p))
-              ),
-          });
-          setPendingAttachments((prev) =>
-            prev.map((p) =>
-              p.id === attachmentId
-                ? {
-                    ...p,
-                    uploadedUrl: url,
-                    displayUri: kind === 'image' ? url : p.displayUri,
-                    uploading: false,
-                    progress: undefined,
-                  }
-                : p
-            )
-          );
-          URL.revokeObjectURL(objectUrl);
-        } catch (e) {
-          setPendingAttachments((prev) =>
-            prev.map((p) =>
-              p.id === attachmentId
-                ? { ...p, uploading: false, failed: true, progress: undefined }
-                : p
-            )
-          );
-          void notify({ title: t('attachments.uploadFailed'), message: describeError(e) });
-        }
-      }
-    },
-    [userId, pendingAttachments.length, uploadDiscussionAttachmentMutation]
-  );
-
-  const pickDocument = useCallback(async () => {
-    if (!userId) return;
-    if (pendingAttachments.length >= MAX_ATTACHMENTS) return;
-    let result: Awaited<ReturnType<typeof DocumentPicker.getDocumentAsync>>;
-    try {
-      result = await enqueueDocumentPick(() =>
-        DocumentPicker.getDocumentAsync({
-          type: DOCUMENT_PICKER_MIME_WHITELIST,
-          multiple: false,
-          copyToCacheDirectory: true,
-        })
-      );
-    } catch (e) {
-      void notify({
-        title: t('common.error'),
-        message: e instanceof Error ? e.message : String(e),
-      });
-      return;
-    }
-    if (result.canceled || !result.assets?.[0]) return;
-    const doc = result.assets[0];
-    const mime = normalizeMimeTypeForAllowlist(doc.mimeType ?? 'application/octet-stream');
-    if (!isAllowedMessageAttachmentMimeType(mime)) {
-      void notify({
-        title: t('common.error'),
-        message: t('attachments.unsupportedFileType'),
-      });
-      return;
-    }
-    if (doc.size != null && doc.size > MAX_MESSAGE_ATTACHMENT_BYTES) {
-      void notify({
-        title: t('common.error'),
-        message: t('attachments.fileTooLarge'),
-      });
-      return;
-    }
-    const attachmentId = newComposeAttachmentId();
-    const name = doc.name || 'file';
-    setPendingAttachments((prev) => [
-      ...prev,
-      {
-        id: attachmentId,
-        kind: 'file',
-        fileName: name,
-        mimeType: mime,
-        displayUri: doc.uri,
-        sourceUri: doc.uri,
-        uploading: true,
-      },
-    ]);
-    try {
-      const url = await uploadDiscussionAttachmentMutation.mutateAsync({
-        userId,
-        localUri: doc.uri,
-        contentType: mime,
-        fileName: name,
-        objectKind: 'post',
-      });
-      setPendingAttachments((prev) =>
-        prev.map((p) => (p.id === attachmentId ? { ...p, uploadedUrl: url, uploading: false } : p))
-      );
-    } catch (e) {
-      console.error('[discussion] file upload failed', e);
-      void notify({ title: t('attachments.uploadFailed'), message: describeError(e) });
-      setPendingAttachments((prev) =>
-        prev.map((p) => (p.id === attachmentId ? { ...p, uploading: false, failed: true } : p))
-      );
-    }
-  }, [userId, pendingAttachments.length, uploadDiscussionAttachmentMutation]);
-
-  const removePendingAttachment = useCallback((attachmentId: string) => {
-    setPendingAttachments((prev) => prev.filter((p) => p.id !== attachmentId));
-  }, []);
-
-  const retryPendingAttachment = useCallback(
-    async (attachmentId: string) => {
-      if (!userId) return;
-      const att = pendingAttachments.find((p) => p.id === attachmentId);
-      if (!att || !att.sourceUri) return;
-      setPendingAttachments((prev) =>
-        prev.map((p) => (p.id === attachmentId ? { ...p, uploading: true, failed: false } : p))
-      );
-      try {
-        if (att.kind === 'image') {
-          const url = await uploadImageMutation.mutateAsync({
-            userId,
-            imageUri: att.sourceUri,
-            base64Data: att.sourceBase64 ?? undefined,
-          });
-          setPendingAttachments((prev) =>
-            prev.map((p) =>
-              p.id === attachmentId ? { ...p, uploadedUrl: url, uploading: false } : p
-            )
-          );
-        } else if (att.kind === 'video' && isCloudinaryConfigured()) {
-          // Retry has to take the same road as the first attempt; a retried video sent to
-          // Supabase Storage "succeeds" and then plays as a black rectangle.
-          const transcoded = await uploadVideoToCloudinary(
-            {
-              uri: att.sourceUri,
-              name: att.fileName ?? 'video.mp4',
-              type: att.mimeType ?? 'video/mp4',
-            },
-            {
-              folder: userId,
-              onProgress: (fraction) =>
-                setPendingAttachments((prev) =>
-                  prev.map((p) => (p.id === attachmentId ? { ...p, progress: fraction } : p))
-                ),
-            }
-          );
-          setPendingAttachments((prev) =>
-            prev.map((p) =>
-              p.id === attachmentId
-                ? {
-                    ...p,
-                    displayUri: transcoded.posterUrl,
-                    uploadedUrl: transcoded.url,
-                    uploadedThumbnailUrl: transcoded.posterUrl,
-                    uploading: false,
-                    progress: undefined,
-                  }
-                : p
-            )
-          );
-        } else {
-          const url = await uploadDiscussionAttachmentMutation.mutateAsync({
-            userId,
-            localUri: att.sourceUri,
-            contentType: att.mimeType ?? 'application/octet-stream',
-            fileName: att.fileName ?? 'file',
-            objectKind: 'post',
-            onProgress: (fraction) =>
-              setPendingAttachments((prev) =>
-                prev.map((p) => (p.id === attachmentId ? { ...p, progress: fraction } : p))
-              ),
-          });
-          setPendingAttachments((prev) =>
-            prev.map((p) =>
-              p.id === attachmentId
-                ? { ...p, uploadedUrl: url, uploading: false, progress: undefined }
-                : p
-            )
-          );
-        }
-      } catch (e) {
-        console.error('[discussion] attachment retry failed', e);
-        void notify({ title: t('attachments.uploadFailed'), message: describeError(e) });
-        setPendingAttachments((prev) =>
-          prev.map((p) => (p.id === attachmentId ? { ...p, uploading: false, failed: true } : p))
-        );
-      }
-    },
-    [userId, pendingAttachments, uploadImageMutation, uploadDiscussionAttachmentMutation]
   );
 
   const attachmentMenuOptions = useMemo(
@@ -1174,12 +771,15 @@ export default function DiscussionDetailScreen() {
     [userId, id, reactMutation]
   );
 
-  const handleStartEditReply = useCallback((post: DiscussionPost) => {
-    setReplyingToPost(null);
-    setEditingPost(post);
-    setComposeText(post.body ?? '');
-    setPendingAttachments(storedMessageToPendingAttachments(post));
-  }, []);
+  const handleStartEditReply = useCallback(
+    (post: DiscussionPost) => {
+      setReplyingToPost(null);
+      setEditingPost(post);
+      setComposeText(post.body ?? '');
+      setPendingAttachments(storedMessageToPendingAttachments(post));
+    },
+    [setPendingAttachments]
+  );
 
   const handleDeletePost = useCallback(
     async (post: DiscussionPost) => {
@@ -1256,7 +856,7 @@ export default function DiscussionDetailScreen() {
     setEditingPost(null);
     setComposeText('');
     setPendingAttachments([]);
-  }, []);
+  }, [setPendingAttachments]);
 
   const handleRemoveReaction = useCallback(
     (post: DiscussionPost, reactionType: PostReactionType) => {

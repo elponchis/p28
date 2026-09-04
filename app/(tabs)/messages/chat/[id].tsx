@@ -1,8 +1,6 @@
 import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
-import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Image } from 'expo-image';
-import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -32,13 +30,14 @@ import {
   VideoAttachmentModal,
   VoiceRecorderModal,
 } from '@/components/messages';
-import { ComposeBar, type PendingComposeAttachment } from '@/components/patterns/ComposeBar';
+import { ComposeBar } from '@/components/patterns/ComposeBar';
 import { FadeActionSheet, FADE_SHEET_PICKER_DEFER_MS } from '@/components/patterns/FadeActionSheet';
 import {
   ReactionSheet,
   type ReactionSheetPrimaryAction,
 } from '@/components/patterns/ReactionSheet';
 import { useAuth } from '@/hooks/useAuth';
+import { useComposeAttachments } from '@/hooks/useComposeAttachments';
 import { useIosKeyboardAvoidingParentOffset } from '@/hooks/useIosKeyboardAvoidingParentOffset';
 import {
   useChatMessageReactionsQuery,
@@ -55,25 +54,12 @@ import {
   useUploadChatMessageAttachmentMutation,
 } from '@/hooks/useApiQueries';
 import { api, getUserFacingError } from '@/lib/api';
-import { enqueueDocumentPick } from '@/lib/documentPickerLock';
 import {
-  DOCUMENT_PICKER_MIME_WHITELIST,
   newComposeAttachmentId,
   pendingToMessageAttachments,
   storedMessageToPendingAttachments,
 } from '@/lib/composeAttachments';
-import { tryGetVideoPosterUri } from '@/lib/videoPoster';
-import {
-  CLOUDINARY_MAX_VIDEO_BYTES,
-  isCloudinaryConfigured,
-  uploadVideoToCloudinary,
-} from '@/lib/cloudinaryVideo';
 import { getMediaViewerSize } from '@/lib/mediaViewerBounds';
-import {
-  isAllowedMessageAttachmentMimeType,
-  MAX_MESSAGE_ATTACHMENT_BYTES,
-  normalizeMimeTypeForAllowlist,
-} from '@/lib/api/messageAttachments';
 import { queryKeys } from '@/lib/api/queryKeys';
 import type { ChatMessage, CreateChatMessageInput, PostReactionType } from '@/lib/api';
 import { USE_NATIVE_DRIVER } from '@/lib/animation';
@@ -81,11 +67,13 @@ import { formatDateHeader, isSameDay, messageLocalMinuteKey } from '@/lib/dates'
 import { t } from '@/lib/i18n';
 import { confirm, notify } from '@/lib/dialogs';
 import { copyTextToClipboard } from '@/lib/clipboard';
-import { describeUploadError, tooLargeMessage } from '@/lib/uploadErrors';
 import { countUnreadMembers } from '@/lib/readReceipts';
 import { downloadFileInBrowser } from '@/lib/downloadFile';
 
 import { colors, fontFamily, radius, shadow, spacing, typography } from '@/theme/tokens';
+
+/** Attachments allowed on one message. */
+const MAX_ATTACHMENTS = 5;
 
 /** Messages fetched per page, and how much each "load older" adds. */
 const CHAT_PAGE_SIZE = 50;
@@ -122,7 +110,6 @@ export default function ChatDetailScreen() {
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   const { iosKeyboardVerticalOffset, parentContainerProps } = useIosKeyboardAvoidingParentOffset();
   const [composeText, setComposeText] = useState('');
-  const [pendingAttachments, setPendingAttachments] = useState<PendingComposeAttachment[]>([]);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [previewVideo, setPreviewVideo] = useState<{
@@ -174,6 +161,33 @@ export default function ChatDetailScreen() {
   const removeReactionMutation = useRemoveChatMessageReactionMutation();
   const deleteMessageMutation = useDeleteChatMessageMutation();
   const markReadMutation = useMarkChatReadMutation();
+
+  const {
+    pendingAttachments,
+    setPendingAttachments,
+    isUploading: isUploadingAttachment,
+    pickPhotos,
+    pickVideo,
+    pickDocument,
+    pasteFiles: handlePasteFiles,
+    retryAttachment: retryPendingAttachment,
+    removeAttachment: removePendingAttachment,
+  } = useComposeAttachments({
+    userId,
+    maxAttachments: MAX_ATTACHMENTS,
+    logLabel: 'chat',
+    uploadImage: ({ localUri, base64Data }) =>
+      uploadImageMutation.mutateAsync({ userId: userId!, imageUri: localUri, base64Data }),
+    uploadFile: ({ localUri, contentType, fileName, slot, onProgress }) =>
+      uploadChatAttachmentMutation.mutateAsync({
+        userId: userId!,
+        localUri,
+        contentType,
+        fileName,
+        objectKind: slot === 'thumbnail' ? 'thumbnail' : 'message',
+        onProgress,
+      }),
+  });
   const [voiceRecorderVisible, setVoiceRecorderVisible] = useState(false);
 
   /**
@@ -531,10 +545,6 @@ export default function ChatDetailScreen() {
     [userId, id, memberUserIds, createChatMutation, router]
   );
 
-  const MAX_ATTACHMENTS = 5;
-  const isUploadingAttachment =
-    uploadImageMutation.isPending || uploadChatAttachmentMutation.isPending;
-
   const allPendingReady =
     pendingAttachments.length === 0 ||
     pendingAttachments.every((a) => !a.uploading && !!a.uploadedUrl);
@@ -594,6 +604,7 @@ export default function ChatDetailScreen() {
     editingMessage,
     createMessageMutation,
     updateMessageMutation,
+    setPendingAttachments,
   ]);
 
   const handleRetryOutboundMessage = useCallback(
@@ -615,429 +626,6 @@ export default function ChatDetailScreen() {
       });
     },
     [userId, id, createMessageMutation]
-  );
-
-  const pickPhotos = useCallback(async () => {
-    if (!userId) return;
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      void notify({
-        title: t('common.error'),
-        message: t('profile.photoPermissionRequired'),
-      });
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsMultipleSelection: true,
-      quality: 0.8,
-      base64: true,
-    });
-    if (result.canceled || !result.assets.length) return;
-    const slotsLeft = MAX_ATTACHMENTS - pendingAttachments.length;
-    const toUpload = result.assets.slice(0, Math.max(0, slotsLeft));
-    for (const asset of toUpload) {
-      if (!asset.uri) continue;
-      const attId = newComposeAttachmentId();
-      setPendingAttachments((prev) => [
-        ...prev,
-        {
-          id: attId,
-          kind: 'image',
-          displayUri: asset.uri,
-          sourceUri: asset.uri,
-          sourceBase64: asset.base64 ?? undefined,
-          uploading: true,
-        },
-      ]);
-      try {
-        const url = await uploadImageMutation.mutateAsync({
-          userId,
-          imageUri: asset.uri,
-          base64Data: asset.base64 ?? undefined,
-        });
-        setPendingAttachments((prev) =>
-          prev.map((p) => (p.id === attId ? { ...p, uploadedUrl: url, uploading: false } : p))
-        );
-      } catch (e) {
-        setPendingAttachments((prev) =>
-          prev.map((p) => (p.id === attId ? { ...p, uploading: false, failed: true } : p))
-        );
-        void notify({ title: t('common.error'), message: describeUploadError(e) });
-      }
-    }
-  }, [userId, pendingAttachments.length, uploadImageMutation]);
-
-  const pickVideo = useCallback(async () => {
-    if (!userId) return;
-    if (pendingAttachments.length >= MAX_ATTACHMENTS) return;
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      void notify({
-        title: t('common.error'),
-        message: t('profile.photoPermissionRequired'),
-      });
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['videos'],
-      allowsMultipleSelection: false,
-      videoExportPreset: ImagePicker.VideoExportPreset.Passthrough,
-    });
-    if (result.canceled || !result.assets[0]?.uri) return;
-    const asset = result.assets[0];
-    // Cloudinary and Supabase Storage cap video at different sizes, so the gate has to know
-    // which path this upload is about to take. Checked before the upload starts, not after: a
-    // phone video is easily several hundred megabytes, and letting it climb the wire only to be
-    // rejected costs the user minutes and tells them nothing. ImagePicker does not always
-    // report fileSize, so this is a fast path -- readBinaryFile still enforces the Supabase cap.
-    const viaCloudinary = isCloudinaryConfigured();
-    const maxBytes = viaCloudinary ? CLOUDINARY_MAX_VIDEO_BYTES : MAX_MESSAGE_ATTACHMENT_BYTES;
-    if (asset.fileSize != null && asset.fileSize > maxBytes) {
-      void notify({
-        title: t('common.error'),
-        message: tooLargeMessage(asset.fileSize, maxBytes),
-      });
-      return;
-    }
-    const attachmentId = newComposeAttachmentId();
-    const posterUri = await tryGetVideoPosterUri(asset.uri);
-    const fileName = asset.fileName ?? `video-${Date.now()}.mp4`;
-    const mime = asset.mimeType ?? 'video/mp4';
-    setPendingAttachments((prev) => [
-      ...prev,
-      {
-        id: attachmentId,
-        kind: 'video',
-        displayUri: posterUri ?? '',
-        fileName,
-        mimeType: mime,
-        sourceUri: asset.uri,
-        uploading: true,
-        progress: 0,
-      },
-    ]);
-    const reportProgress = (fraction: number) =>
-      setPendingAttachments((prev) =>
-        prev.map((p) => (p.id === attachmentId ? { ...p, progress: fraction } : p))
-      );
-    try {
-      if (viaCloudinary) {
-        // Phone cameras produce HEVC, which no browser decodes -- it plays as a black
-        // rectangle and yields no poster. Cloudinary re-encodes on ingest. This path existed
-        // and was dropped in 97f6840; without it the black rectangle is back.
-        const file = (asset as { file?: File }).file;
-        const transcoded = await uploadVideoToCloudinary(
-          file ?? { uri: asset.uri, name: fileName, type: mime },
-          { folder: userId, onProgress: reportProgress }
-        );
-        setPendingAttachments((prev) =>
-          prev.map((p) =>
-            p.id === attachmentId
-              ? {
-                  ...p,
-                  displayUri: transcoded.posterUrl,
-                  uploadedUrl: transcoded.url,
-                  uploadedThumbnailUrl: transcoded.posterUrl,
-                  uploading: false,
-                  progress: undefined,
-                }
-              : p
-          )
-        );
-        return;
-      }
-      const videoUrl = await uploadChatAttachmentMutation.mutateAsync({
-        userId,
-        localUri: asset.uri,
-        contentType: normalizeMimeTypeForAllowlist(mime),
-        fileName,
-        objectKind: 'message',
-        onProgress: reportProgress,
-      });
-      let uploadedThumbnailUrl: string | undefined;
-      if (posterUri) {
-        uploadedThumbnailUrl = await uploadChatAttachmentMutation.mutateAsync({
-          userId,
-          localUri: posterUri,
-          contentType: 'image/jpeg',
-          fileName: 'thumb.jpg',
-          objectKind: 'thumbnail',
-        });
-      }
-      setPendingAttachments((prev) =>
-        prev.map((p) =>
-          p.id === attachmentId
-            ? {
-                ...p,
-                uploadedUrl: videoUrl,
-                uploadedThumbnailUrl,
-                uploading: false,
-                progress: undefined,
-              }
-            : p
-        )
-      );
-    } catch (e) {
-      setPendingAttachments((prev) =>
-        prev.map((p) =>
-          p.id === attachmentId ? { ...p, uploading: false, failed: true, progress: undefined } : p
-        )
-      );
-      void notify({ title: t('common.error'), message: describeUploadError(e) });
-    }
-  }, [userId, pendingAttachments.length, uploadChatAttachmentMutation]);
-
-  /**
-   * Files pasted into the composer (web): screenshots, an image copied from a page, a file
-   * dragged onto the clipboard. Same validation and same upload as picking one, so a pasted
-   * screenshot behaves exactly like an attached one -- including the size message.
-   *
-   * A web File has no local URI, so it gets a blob: URL. readBinaryFile fetches it like any
-   * other, and the URL is revoked once the bytes are read.
-   */
-  const handlePasteFiles = useCallback(
-    async (files: File[]) => {
-      if (!userId) return;
-      const slotsLeft = MAX_ATTACHMENTS - pendingAttachments.length;
-      if (slotsLeft <= 0) {
-        void notify({ title: t('common.error'), message: t('attachments.tooManyFiles') });
-        return;
-      }
-      for (const file of files.slice(0, slotsLeft)) {
-        const mime = normalizeMimeTypeForAllowlist(file.type || 'application/octet-stream');
-        if (!isAllowedMessageAttachmentMimeType(mime)) {
-          void notify({ title: t('common.error'), message: t('attachments.unsupportedFileType') });
-          continue;
-        }
-        if (file.size > MAX_MESSAGE_ATTACHMENT_BYTES) {
-          void notify({ title: t('common.error'), message: tooLargeMessage(file.size) });
-          continue;
-        }
-        const attachmentId = newComposeAttachmentId();
-        const objectUrl = URL.createObjectURL(file);
-        const kind = mime.startsWith('image/')
-          ? 'image'
-          : mime.startsWith('video/')
-            ? 'video'
-            : 'file';
-        const fileName = file.name || `pasted-${Date.now()}`;
-        setPendingAttachments((prev) => [
-          ...prev,
-          {
-            id: attachmentId,
-            kind,
-            displayUri: kind === 'image' ? objectUrl : '',
-            fileName,
-            mimeType: mime,
-            sourceUri: objectUrl,
-            uploading: true,
-            progress: 0,
-          },
-        ]);
-        try {
-          const url = await uploadChatAttachmentMutation.mutateAsync({
-            userId,
-            localUri: objectUrl,
-            contentType: mime,
-            fileName,
-            objectKind: 'message',
-            onProgress: (fraction) =>
-              setPendingAttachments((prev) =>
-                prev.map((p) => (p.id === attachmentId ? { ...p, progress: fraction } : p))
-              ),
-          });
-          setPendingAttachments((prev) =>
-            prev.map((p) =>
-              p.id === attachmentId
-                ? {
-                    ...p,
-                    uploadedUrl: url,
-                    // Point the thumbnail at the uploaded copy before dropping the blob, or the
-                    // preview goes blank the moment the URL is revoked.
-                    displayUri: kind === 'image' ? url : p.displayUri,
-                    uploading: false,
-                    progress: undefined,
-                  }
-                : p
-            )
-          );
-          URL.revokeObjectURL(objectUrl);
-        } catch (e) {
-          // The blob URL is deliberately kept alive here: it is the attachment's sourceUri,
-          // and retry has nothing else to re-read the bytes from.
-          setPendingAttachments((prev) =>
-            prev.map((p) =>
-              p.id === attachmentId
-                ? { ...p, uploading: false, failed: true, progress: undefined }
-                : p
-            )
-          );
-          void notify({ title: t('common.error'), message: describeUploadError(e) });
-        }
-      }
-    },
-    [userId, pendingAttachments.length, uploadChatAttachmentMutation]
-  );
-
-  const pickDocument = useCallback(async () => {
-    if (!userId) return;
-    if (pendingAttachments.length >= MAX_ATTACHMENTS) return;
-    let result: Awaited<ReturnType<typeof DocumentPicker.getDocumentAsync>>;
-    try {
-      result = await enqueueDocumentPick(() =>
-        DocumentPicker.getDocumentAsync({
-          type: DOCUMENT_PICKER_MIME_WHITELIST,
-          multiple: false,
-          copyToCacheDirectory: true,
-        })
-      );
-    } catch (e) {
-      void notify({
-        title: t('common.error'),
-        message: e instanceof Error ? e.message : String(e),
-      });
-      return;
-    }
-    if (result.canceled || !result.assets?.[0]) return;
-    const doc = result.assets[0];
-    const mime = normalizeMimeTypeForAllowlist(doc.mimeType ?? 'application/octet-stream');
-    if (!isAllowedMessageAttachmentMimeType(mime)) {
-      void notify({
-        title: t('common.error'),
-        message: t('attachments.unsupportedFileType'),
-      });
-      return;
-    }
-    if (doc.size != null && doc.size > MAX_MESSAGE_ATTACHMENT_BYTES) {
-      void notify({
-        title: t('common.error'),
-        message: t('attachments.fileTooLarge'),
-      });
-      return;
-    }
-    const attachmentId = newComposeAttachmentId();
-    const name = doc.name || 'file';
-    setPendingAttachments((prev) => [
-      ...prev,
-      {
-        id: attachmentId,
-        kind: 'file',
-        fileName: name,
-        mimeType: mime,
-        displayUri: doc.uri,
-        sourceUri: doc.uri,
-        uploading: true,
-      },
-    ]);
-    try {
-      const url = await uploadChatAttachmentMutation.mutateAsync({
-        userId,
-        localUri: doc.uri,
-        contentType: mime,
-        fileName: name,
-        objectKind: 'message',
-      });
-      setPendingAttachments((prev) =>
-        prev.map((p) => (p.id === attachmentId ? { ...p, uploadedUrl: url, uploading: false } : p))
-      );
-    } catch (e) {
-      setPendingAttachments((prev) =>
-        prev.map((p) =>
-          p.id === attachmentId ? { ...p, uploading: false, failed: true, progress: undefined } : p
-        )
-      );
-      void notify({ title: t('common.error'), message: describeUploadError(e) });
-    }
-  }, [userId, pendingAttachments.length, uploadChatAttachmentMutation]);
-
-  const removePendingAttachment = useCallback((attachmentId: string) => {
-    setPendingAttachments((prev) => prev.filter((p) => p.id !== attachmentId));
-  }, []);
-
-  const retryPendingAttachment = useCallback(
-    async (attachmentId: string) => {
-      if (!userId) return;
-      const att = pendingAttachments.find((p) => p.id === attachmentId);
-      if (!att || !att.sourceUri) return;
-      setPendingAttachments((prev) =>
-        prev.map((p) => (p.id === attachmentId ? { ...p, uploading: true, failed: false } : p))
-      );
-      try {
-        if (att.kind === 'image') {
-          const url = await uploadImageMutation.mutateAsync({
-            userId,
-            imageUri: att.sourceUri,
-            base64Data: att.sourceBase64 ?? undefined,
-          });
-          setPendingAttachments((prev) =>
-            prev.map((p) =>
-              p.id === attachmentId ? { ...p, uploadedUrl: url, uploading: false } : p
-            )
-          );
-        } else if (att.kind === 'video' && isCloudinaryConfigured()) {
-          // Retry has to take the same road as the first attempt. Sending a retried video to
-          // Supabase Storage instead would "succeed" and then play as a black rectangle.
-          const transcoded = await uploadVideoToCloudinary(
-            {
-              uri: att.sourceUri,
-              name: att.fileName ?? 'video.mp4',
-              type: att.mimeType ?? 'video/mp4',
-            },
-            {
-              folder: userId,
-              onProgress: (fraction) =>
-                setPendingAttachments((prev) =>
-                  prev.map((p) => (p.id === attachmentId ? { ...p, progress: fraction } : p))
-                ),
-            }
-          );
-          setPendingAttachments((prev) =>
-            prev.map((p) =>
-              p.id === attachmentId
-                ? {
-                    ...p,
-                    displayUri: transcoded.posterUrl,
-                    uploadedUrl: transcoded.url,
-                    uploadedThumbnailUrl: transcoded.posterUrl,
-                    uploading: false,
-                    progress: undefined,
-                  }
-                : p
-            )
-          );
-        } else {
-          const url = await uploadChatAttachmentMutation.mutateAsync({
-            userId,
-            localUri: att.sourceUri,
-            contentType: att.mimeType ?? 'application/octet-stream',
-            fileName: att.fileName ?? 'file',
-            objectKind: 'message',
-            onProgress: (fraction) =>
-              setPendingAttachments((prev) =>
-                prev.map((p) => (p.id === attachmentId ? { ...p, progress: fraction } : p))
-              ),
-          });
-          setPendingAttachments((prev) =>
-            prev.map((p) =>
-              p.id === attachmentId
-                ? { ...p, uploadedUrl: url, uploading: false, progress: undefined }
-                : p
-            )
-          );
-        }
-      } catch (e) {
-        setPendingAttachments((prev) =>
-          prev.map((p) =>
-            p.id === attachmentId
-              ? { ...p, uploading: false, failed: true, progress: undefined }
-              : p
-          )
-        );
-        void notify({ title: t('common.error'), message: describeUploadError(e) });
-      }
-    },
-    [userId, pendingAttachments, uploadImageMutation, uploadChatAttachmentMutation]
   );
 
   const handleVoiceRecorded = useCallback(
@@ -1073,7 +661,7 @@ export default function ChatDetailScreen() {
         setPendingAttachments((prev) => prev.filter((p) => p.id !== attachmentId));
       }
     },
-    [userId, pendingAttachments.length, uploadChatAttachmentMutation]
+    [userId, pendingAttachments.length, uploadChatAttachmentMutation, setPendingAttachments]
   );
 
   const attachmentMenuOptions = useMemo(
@@ -1178,18 +766,21 @@ export default function ChatDetailScreen() {
     [reactionMessage, userId, id, removeReactionMutation]
   );
 
-  const handleStartEdit = useCallback((msg: ChatMessage) => {
-    setReplyingTo(null);
-    setEditingMessage(msg);
-    setComposeText(msg.body ?? '');
-    setPendingAttachments(storedMessageToPendingAttachments(msg));
-  }, []);
+  const handleStartEdit = useCallback(
+    (msg: ChatMessage) => {
+      setReplyingTo(null);
+      setEditingMessage(msg);
+      setComposeText(msg.body ?? '');
+      setPendingAttachments(storedMessageToPendingAttachments(msg));
+    },
+    [setPendingAttachments]
+  );
 
   const handleCancelEdit = useCallback(() => {
     setEditingMessage(null);
     setComposeText('');
     setPendingAttachments([]);
-  }, []);
+  }, [setPendingAttachments]);
 
   const handleDeleteMessage = useCallback(
     async (msg: ChatMessage) => {
