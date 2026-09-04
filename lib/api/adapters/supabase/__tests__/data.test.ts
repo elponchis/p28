@@ -1081,13 +1081,16 @@ describe('Supabase data adapter', () => {
           }),
           from: jest.fn().mockImplementation((table: string) => {
             if (table === 'discussions') {
-              return {
-                select: jest.fn().mockReturnValue({
-                  order: jest.fn().mockReturnValue({
-                    eq: jest.fn().mockResolvedValue({ data: allRows, error: null }),
-                  }),
-                }),
+              // The group query narrows with .eq(...).is(...).is(...), so the builder has to keep
+              // returning itself and only resolve when awaited.
+              const builder: Record<string, unknown> = {
+                then: (resolve: (value: unknown) => unknown) =>
+                  Promise.resolve({ data: allRows, error: null }).then(resolve),
               };
+              for (const method of ['select', 'order', 'eq', 'is']) {
+                builder[method] = jest.fn().mockReturnValue(builder);
+              }
+              return builder;
             }
             if (table === 'profiles') {
               return {

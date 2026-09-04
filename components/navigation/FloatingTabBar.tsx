@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Avatar } from '@/components/primitives';
 import { useOpenChats } from '@/contexts/OpenChatsContext';
+import { useChatsForUserQuery } from '@/hooks/useApiQueries';
 import { useAuth } from '@/hooks/useAuth';
 import { t } from '@/lib/i18n';
 import { breakpoints, colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
@@ -88,24 +89,49 @@ function TabItem({
 }
 
 /**
- * The chats someone currently has open, pinned under the Messages tab.
+ * The chats someone currently has open, listed under the Messages tab.
  *
  * Switching conversations otherwise means going back to the list and finding the row, which is
- * fine for one chat and tedious for the handful someone keeps up with. Closing a pin removes it
+ * fine for one chat and tedious for the handful someone keeps up with. Closing a row removes it
  * from here and nothing else — the conversation is untouched, and opening it again brings the
- * pin back.
+ * row back.
+ *
+ * Ordered by whichever came later, the last visit or the last message, so both "the one I was
+ * just in" and "the one that just got a reply" end up at the top where they are looked for. The
+ * unread count comes from the same query that feeds the Messages badge, which realtime already
+ * keeps fresh.
  */
 function OpenChatsList() {
   const { openChats, closeChat } = useOpenChats();
   const router = useRouter();
   const pathname = usePathname();
+  const { session } = useAuth();
+  const { data: chats = [] } = useChatsForUserQuery(session?.user?.id);
 
-  if (openChats.length === 0) return null;
+  const rows = useMemo(() => {
+    const byId = new Map(chats.map((c) => [c.id, c]));
+    return openChats
+      .map((open) => {
+        const chat = byId.get(open.id);
+        const lastMessageAt = chat?.lastMessageAt ? Date.parse(chat.lastMessageAt) : NaN;
+        return {
+          ...open,
+          unreadCount: chat?.unreadCount ?? 0,
+          sortAt: Math.max(open.activatedAt, Number.isNaN(lastMessageAt) ? 0 : lastMessageAt),
+        };
+      })
+      .sort((a, b) => b.sortAt - a.sortAt);
+  }, [openChats, chats]);
+
+  if (rows.length === 0) return null;
 
   return (
     <View style={styles.openChats}>
-      {openChats.map((chat) => {
+      {rows.map((chat) => {
         const isCurrent = pathname === `/messages/chat/${chat.id}`;
+        // Reading a chat clears its count server-side, but the query behind it settles a moment
+        // later; the row you are standing in should never accuse you of not having read it.
+        const unread = isCurrent ? 0 : chat.unreadCount;
         return (
           <View key={chat.id} style={[styles.openChatRow, isCurrent && styles.openChatRowActive]}>
             <Pressable
@@ -113,15 +139,28 @@ function OpenChatsList() {
               style={styles.openChatOpen}
               accessibilityRole="button"
               accessibilityState={{ selected: isCurrent }}
-              accessibilityLabel={chat.title}
+              accessibilityLabel={
+                unread > 0
+                  ? `${chat.title}, ${t('messages.unreadMessages', { count: unread })}`
+                  : chat.title
+              }
             >
               <Text
-                style={[styles.openChatLabel, isCurrent && styles.openChatLabelActive]}
+                style={[
+                  styles.openChatLabel,
+                  isCurrent && styles.openChatLabelActive,
+                  unread > 0 && styles.openChatLabelUnread,
+                ]}
                 numberOfLines={1}
               >
                 {chat.title}
               </Text>
             </Pressable>
+            {unread > 0 ? (
+              <View style={styles.openChatBadge}>
+                <Text style={styles.openChatBadgeText}>{unread > 99 ? '99+' : unread}</Text>
+              </View>
+            ) : null}
             <Pressable
               onPress={() => closeChat(chat.id)}
               style={({ pressed }) => [styles.openChatClose, pressed && { opacity: 0.6 }]}
@@ -452,6 +491,26 @@ const styles = StyleSheet.create({
   openChatLabelActive: {
     color: colors.onSurface,
     fontFamily: fontFamily.sansSemiBold,
+  },
+  openChatLabelUnread: {
+    color: colors.onSurface,
+    fontFamily: fontFamily.sansSemiBold,
+  },
+  openChatBadge: {
+    minWidth: 16,
+    height: 16,
+    paddingHorizontal: 4,
+    borderRadius: 8,
+    backgroundColor: colors.error,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  openChatBadgeText: {
+    ...typography.caption,
+    fontSize: 10,
+    lineHeight: 16,
+    fontFamily: fontFamily.sansSemiBold,
+    color: '#fff',
   },
   openChatClose: {
     padding: 6,

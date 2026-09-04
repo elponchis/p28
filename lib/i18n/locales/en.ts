@@ -747,6 +747,7 @@ export const en = {
     typingOne: '{{name}} is typing',
     loadOlderMessages: 'Load earlier messages',
     closeOpenChat: 'Close {{name}}',
+    unreadMessages: '{{count}} unread messages',
     peopleInYourGroups: 'People in your groups',
     typingMany: '{{count}} people are typing',
     you: 'You',

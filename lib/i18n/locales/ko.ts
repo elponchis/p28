@@ -759,6 +759,7 @@ export const ko: TranslationShape = {
     typingOne: '{{name}}님이 입력 중',
     loadOlderMessages: '이전 메시지 더 보기',
     closeOpenChat: '{{name}} 닫기',
+    unreadMessages: '안 읽은 메시지 {{count}}개',
     peopleInYourGroups: '같은 그룹 사람',
     typingMany: '{{count}}명이 입력 중',
     you: '나',

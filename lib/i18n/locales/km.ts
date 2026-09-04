@@ -766,6 +766,7 @@ export const km: TranslationShape = {
     typingOne: '{{name}} កំពុងវាយបញ្ចូល',
     loadOlderMessages: 'ផ្ទុកសារមុន',
     closeOpenChat: 'បិទ {{name}}',
+    unreadMessages: 'សារមិនទាន់អាន {{count}}',
     peopleInYourGroups: 'មនុស្សក្នុងក្រុមរបស់អ្នក',
     typingMany: '{{count}} នាក់កំពុងវាយបញ្ចូល',
     you: 'អ្នក',
