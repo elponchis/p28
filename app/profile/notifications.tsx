@@ -27,6 +27,9 @@ import { getUserFacingError } from '@/lib/api';
 import { t } from '@/lib/i18n';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
+/** How long the switch waits on the browser's permission prompt before becoming usable again. */
+const WEB_PUSH_PROMPT_TIMEOUT_MS = 30000;
+
 export default function NotificationPreferencesScreen() {
   const { session } = useAuth();
   const userId = session?.user?.id;
@@ -56,19 +59,22 @@ export default function NotificationPreferencesScreen() {
     async (next: boolean) => {
       if (!userId) return;
       setWebPushBusy(true);
-      try {
-        if (next) {
-          const ok = await enableWebPush(userId);
-          setWebPushOn(ok);
-          // Declining the browser prompt is a real answer, not an error to shout about; the
-          // switch springing back says it.
-        } else {
-          await disableWebPush();
-          setWebPushOn(false);
-        }
-      } finally {
-        setWebPushBusy(false);
-      }
+
+      // Declining the browser prompt is a real answer, not an error to shout about; the switch
+      // springing back says it.
+      const attempt = next ? enableWebPush(userId) : disableWebPush().then(() => false);
+
+      // The permission prompt has no deadline: a user who ignores it rather than answering
+      // leaves requestPermission() pending forever, and awaiting that alone would leave the
+      // switch disabled for the rest of the session. So the busy state stops waiting after
+      // WEB_PUSH_PROMPT_TIMEOUT_MS while the attempt itself keeps running -- if the answer
+      // arrives late, the switch still catches up.
+      void attempt.then(setWebPushOn).catch(() => setWebPushOn(false));
+      await Promise.race([
+        attempt.catch(() => undefined),
+        new Promise((resolve) => setTimeout(resolve, WEB_PUSH_PROMPT_TIMEOUT_MS)),
+      ]);
+      setWebPushBusy(false);
     },
     [userId]
   );
