@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Button } from '@/components/primitives';
 import { colors, radius, spacing, typography, shadow } from '@/theme/tokens';
+import { USE_NATIVE_DRIVER } from '@/lib/animation';
 
 export interface AddSheetProps {
   visible: boolean;
@@ -41,13 +42,29 @@ export function AddSheet({
     if (visible) {
       setValue('');
       Animated.parallel([
-        Animated.timing(slideAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
-        Animated.timing(fadeAnim, { toValue: 1, duration: 220, useNativeDriver: true }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: USE_NATIVE_DRIVER,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 220,
+          useNativeDriver: USE_NATIVE_DRIVER,
+        }),
       ]).start();
     } else {
       Animated.parallel([
-        Animated.timing(slideAnim, { toValue: 300, duration: 240, useNativeDriver: true }),
-        Animated.timing(fadeAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
+        Animated.timing(slideAnim, {
+          toValue: 300,
+          duration: 240,
+          useNativeDriver: USE_NATIVE_DRIVER,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: USE_NATIVE_DRIVER,
+        }),
       ]).start();
     }
   }, [visible, slideAnim, fadeAnim]);

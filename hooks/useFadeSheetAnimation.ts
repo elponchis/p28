@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Animated, InteractionManager } from 'react-native';
+import { USE_NATIVE_DRIVER } from '@/lib/animation';
 
 /**
  * Provides animated values for a bottom sheet that fades in (backdrop + content).
@@ -18,12 +19,12 @@ export function useFadeSheetAnimation(visible: boolean) {
           Animated.timing(sheetSlideAnim, {
             toValue: 0,
             duration: 300,
-            useNativeDriver: true,
+            useNativeDriver: USE_NATIVE_DRIVER,
           }),
           Animated.timing(sheetFadeAnim, {
             toValue: 1,
             duration: 220,
-            useNativeDriver: true,
+            useNativeDriver: USE_NATIVE_DRIVER,
           }),
         ]).start();
       });
@@ -33,12 +34,12 @@ export function useFadeSheetAnimation(visible: boolean) {
         Animated.timing(sheetSlideAnim, {
           toValue: 300,
           duration: 240,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
         Animated.timing(sheetFadeAnim, {
           toValue: 0,
           duration: 200,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
       ]).start();
     }

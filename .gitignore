@@ -46,3 +46,6 @@ mcp-deploy-inline.json
 /ios
 /android
 .env
+
+# Playwright MCP session artefacts (snapshots, console logs)
+.playwright-mcp/

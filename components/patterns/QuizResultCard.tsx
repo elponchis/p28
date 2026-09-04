@@ -4,6 +4,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { t } from '@/lib/i18n';
 import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
+import { USE_NATIVE_DRIVER } from '@/lib/animation';
 
 export interface QuizResultCardProps {
   /** Points earned on the auto-scored questions. */
@@ -69,7 +70,12 @@ export function QuizResultCard({
     pop.setValue(0);
     fill.setValue(0);
     Animated.sequence([
-      Animated.spring(pop, { toValue: 1, friction: 5, tension: 90, useNativeDriver: true }),
+      Animated.spring(pop, {
+        toValue: 1,
+        friction: 5,
+        tension: 90,
+        useNativeDriver: USE_NATIVE_DRIVER,
+      }),
       Animated.timing(fill, {
         toValue: 1,
         duration: 600,
@@ -89,13 +95,13 @@ export function QuizResultCard({
           toValue: 1,
           duration: 900,
           easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
         Animated.timing(shine, {
           toValue: 0,
           duration: 900,
           easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
       ]),
       { iterations: 3 }
