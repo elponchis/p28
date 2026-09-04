@@ -13,6 +13,10 @@
  *
  * A pending request DOES notify: an unanswered message request the recipient never hears about
  * is the same as no message at all.
+ *
+ * Only the FIRST unread message in a chat notifies a given recipient. A burst of messages
+ * produces one push, not one per message; the next arrives once they have caught up and fallen
+ * behind again. The badge count is unaffected -- it keeps counting regardless.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.95.3';
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.95.3';
@@ -39,6 +43,7 @@ type MemberRow = {
   user_id: string;
   request_state: string | null;
   last_read_at: string | null;
+  joined_at: string | null;
 };
 
 type ChatMessageExpoMessage = {
@@ -137,12 +142,12 @@ async function sendChatMessagePushes(
 
   const { data: memberRows, error: memErr } = await supabase
     .from('chat_members')
-    .select('user_id, request_state, last_read_at')
+    .select('user_id, request_state, last_read_at, joined_at')
     .eq('chat_id', msg.chat_id);
   if (memErr) return { error: memErr.message };
 
   const sentAt = new Date(msg.created_at).getTime();
-  const recipients = (memberRows ?? [])
+  const candidates = (memberRows ?? [])
     .map((m) => m as MemberRow)
     .filter((m) => m.user_id !== msg.user_id)
     .filter((m) => m.request_state !== 'declined')
@@ -150,6 +155,49 @@ async function sendChatMessagePushes(
       if (!m.last_read_at) return true;
       const readAt = new Date(m.last_read_at).getTime();
       return !(Number.isFinite(readAt) && Number.isFinite(sentAt) && readAt >= sentAt);
+    });
+
+  /**
+   * Only the first unread message in a chat notifies.
+   *
+   * Ten people writing in a group produced ten pushes, which is how a chat app teaches people to
+   * turn notifications off. A recipient who already has something unread here has already been
+   * told; the badge keeps counting, and the next push waits until they have read and fallen
+   * behind again.
+   *
+   * "Unread" is measured from last_read_at, or from joined_at for someone who has never opened
+   * the chat -- otherwise a new member's entire backlog would count as prior unread and they
+   * would never be notified at all.
+   */
+  const earliestThreshold = candidates
+    .map((m) => m.last_read_at ?? m.joined_at)
+    .filter((v): v is string => !!v)
+    .sort()[0];
+
+  let priorMessages: { user_id: string; created_at: string }[] = [];
+  if (candidates.length > 0) {
+    let query = supabase
+      .from('chat_messages')
+      .select('user_id, created_at')
+      .eq('chat_id', msg.chat_id)
+      .neq('id', msg.id)
+      .lt('created_at', msg.created_at)
+      .order('created_at', { ascending: false })
+      .limit(200);
+    if (earliestThreshold) query = query.gt('created_at', earliestThreshold);
+    const { data: priorRows, error: priorErr } = await query;
+    if (priorErr) return { error: priorErr.message };
+    priorMessages = (priorRows ?? []) as { user_id: string; created_at: string }[];
+  }
+
+  const recipients = candidates
+    .filter((m) => {
+      const threshold = m.last_read_at ?? m.joined_at;
+      const thresholdAt = threshold ? new Date(threshold).getTime() : 0;
+      const hasPriorUnread = priorMessages.some(
+        (row) => row.user_id !== m.user_id && new Date(row.created_at).getTime() > thresholdAt
+      );
+      return !hasPriorUnread;
     })
     .map((m) => m.user_id);
 

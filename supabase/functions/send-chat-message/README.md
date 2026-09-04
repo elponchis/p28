@@ -33,6 +33,16 @@ Every other member of the chat, minus:
 | `notification_preferences.messages_enabled = false` | They turned message pushes off.              |
 | `chat_members.request_state = 'declined'`           | They declined the conversation.              |
 | `last_read_at >= message.created_at`                | They are in the thread reading it right now. |
+| Already has an unread message here                  | They have been told once; see below.         |
+
+**Only the first unread message notifies.** Ten people writing in a group used to produce ten
+pushes, which is how a chat app teaches people to turn notifications off. Someone who already
+has something unread in this chat has been told; the next push waits until they have caught up
+and fallen behind again. The badge count is unaffected — it keeps counting either way.
+
+"Unread" is measured from `last_read_at`, falling back to `joined_at` for a member who has never
+opened the chat. Without that fallback a new member's entire backlog would count as prior unread
+and they would never be notified at all.
 
 A **pending** request still notifies — an unanswered message request the recipient never hears
 about is the same as no message at all.
