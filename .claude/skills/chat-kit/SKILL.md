@@ -5,7 +5,7 @@ description: Scaffold a complete one-to-one and group chat feature into an Expo/
   and push notifications — then adapt it to the host project's theme, i18n and API layer. Use
   when asked to add chat, direct messages, or a messaging feature to an app.
 metadata:
-  version: '1.0.0'
+  version: '1.1.0'
 ---
 
 # chat-kit
@@ -29,7 +29,8 @@ Messages with text, photos, video, files and voice notes. Reactions (twelve emoj
 person). Replies that jump to the original. KakaoTalk-style unread counts. Typing indicator.
 Message requests for people who are not friends. Push notifications, coalesced so a busy group
 sends one push rather than one per message. Paste-to-attach, hover actions and Enter-to-send on
-desktop web.
+desktop web. A switcher listing the conversations someone has open, ordered by who last wrote,
+foldable, and remembered across reloads.
 
 ## Before touching anything: read the host
 
@@ -66,6 +67,18 @@ fail silently-ish without one.
 From `files/source/`, preserving paths. If the host puts screens somewhere else, move them and
 fix the route references in `_layout.tsx`.
 
+Two of them are not just files, and are easy to copy and then forget to wire:
+
+- `contexts/OpenChatsContext.tsx` — wrap the app in `OpenChatsProvider`, below whatever provides
+  the session, since it keys its storage by user id.
+- `components/messages/OpenChatsList.tsx` — render `<OpenChatsList />` wherever the host's
+  navigation lives. The source app puts it under the Messages item of its desktop sidebar and
+  nowhere else, because a bottom tab bar has no room for it; a host with a persistent side nav on
+  every platform can render it everywhere.
+
+The chat screen registers itself with `openChat({ id, title })` once its query resolves — that
+call is already in `chat/[id].tsx`, and it is what puts a conversation in the list.
+
 ### 3. Merge the `merge` files
 
 Never overwrite. Open the host's version and move only the chat parts in, in this order —
@@ -92,7 +105,8 @@ shipping a dead button.
 ### 7. Verify — actually run these
 
 - `npx tsc --noEmit` — expect errors only in `supabase/functions/**`, which is Deno.
-- `npx jest` — the bundled tests cover read receipts, upload errors and the push invoke.
+- `npx jest` — the bundled tests cover read receipts, upload errors, the push invoke, the
+  open-chats ordering rules and the JWT clock-skew retry.
 - Build the app. On web, `npx expo export --platform web`.
 - Open a chat with two accounts. Read receipts and typing are the two features that look fine in
   a single window and are broken in two.
@@ -102,6 +116,8 @@ shipping a dead button.
 Point `theme/tokens` at the host's palette and most of it follows. What does not:
 
 - `MessageRow.tsx` — bubble shape, alignment, grouping. The file to edit for a different look.
+- `OpenChatsList.tsx` — the switcher's chrome: the indent rule, the fold header, the unread pill.
+  Its styles are local to the file, so re-skinning it touches nothing else.
 - `components/messages/constants.ts` — which emoji, and which four are the quick picks.
 - `lib/reactions.ts` — the catalogue. Adding an emoji is a one-file change; the column validates
   shape, not membership.
@@ -118,5 +134,8 @@ Say these out loud rather than letting the user find them.
   plays as a black rectangle on web.
 - **Native clipboard image paste is missing.** Paste-to-attach is web only; native would need
   `expo-clipboard` and a dev-client rebuild.
+- **The open-chats switcher assumes a persistent side nav.** It renders inline wherever it is
+  put, but there is no drawer or overflow behaviour; on a phone layout the host has to decide
+  where — if anywhere — it belongs.
 - **The discussion screen in the source project shares components with chat.** Only chat is in
   this kit; ignore discussion references if you meet them.

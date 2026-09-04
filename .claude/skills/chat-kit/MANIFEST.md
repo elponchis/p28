@@ -33,6 +33,7 @@ Three roles:
 ### Components (`components/messages/`) — all of it
 
 `MessageRow.tsx` · `MessageHoverActions.tsx` · `useMessageRowState.ts` · `MessageAttachmentsBlock.tsx` ·
+`OpenChatsList.tsx` ·
 `AttachmentPreviewModals.tsx` · `TypingIndicator.tsx` · `VoiceMessageBubble.tsx` · `VoiceRecorderModal.tsx` ·
 `FriendPickerSheet.tsx` · `constants.ts` · `types.ts` · `index.ts`
 
@@ -45,9 +46,16 @@ Three roles:
 
 ### Contexts
 
-`contexts/OpenChatsContext.tsx` — the sidebar's list of open conversations, persisted per user.
-Mount the provider under whatever holds the session; the list itself is rendered by the host's
-own navigation, since that part is layout, not chat.
+`contexts/OpenChatsContext.tsx` — which conversations are open, whether the list is folded, and
+both of those persisted per user. Mount the provider under whatever holds the session. It reads
+the session itself (`useAuth`) to key its storage, so a host with a different auth hook needs
+that one import repointed.
+
+The list it feeds is `components/messages/OpenChatsList.tsx`, which the host renders wherever its
+navigation lives — in the source app, under the Messages item of the desktop sidebar. It needs a
+chats query exposing `unreadCount` and `lastMessageAt` per chat (`useChatsForUserQuery`) and
+`router.push('/messages/chat/<id>')`; both are listed under **expect** below in spirit — retarget
+them, do not copy a second query layer.
 
 ### Hooks
 
@@ -62,6 +70,11 @@ own navigation, since that part is layout, not chat.
 `lib/documentPickerLock.ts` · `lib/downloadFile.ts` · `lib/extractUrlsFromText.ts` ·
 `lib/api/messageAttachments.ts`
 
+`lib/api/adapters/supabase/jwtSkewRetryFetch.ts` is not chat-specific and is worth taking anyway:
+PostgREST rejects a freshly refreshed token whose `iat` is ahead of its own clock (401, PGRST303),
+which reads as a random failed request roughly once an hour per client. Pass it to `createClient`
+as `global.fetch`. Skip it only if the host already wraps its fetch.
+
 ### Server
 
 | File                                                         | Notes                                                                                                                            |
@@ -73,7 +86,7 @@ own navigation, since that part is layout, not chat.
 ### Tests
 
 `lib/__tests__/readReceipts.test.ts` · `lib/__tests__/uploadErrors.test.ts` ·
-`lib/__tests__/openChats.test.ts` ·
+`lib/__tests__/openChats.test.ts` · `lib/api/adapters/supabase/__tests__/jwtSkewRetryFetch.test.ts` ·
 `lib/api/adapters/supabase/__tests__/chatMessagePush.test.ts` ·
 `lib/i18n/__tests__/translationKeys.test.ts` (not chat-specific, but it catches the raw-key bug
 this kit's i18n move is prone to)

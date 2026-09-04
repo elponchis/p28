@@ -34,6 +34,7 @@ const FILES = [
   // message components
   'components/messages/index.ts',
   'components/messages/MessageRow.tsx',
+  'components/messages/OpenChatsList.tsx',
   'components/messages/MessageHoverActions.tsx',
   'components/messages/useMessageRowState.ts',
   'components/messages/MessageAttachmentsBlock.tsx',
@@ -78,6 +79,7 @@ const FILES = [
   'lib/extractUrlsFromText.ts',
   'lib/api/messageAttachments.ts',
   'lib/webPush.ts',
+  'lib/api/adapters/supabase/jwtSkewRetryFetch.ts',
   'public/sw.js',
 
   // edge function
@@ -89,6 +91,7 @@ const FILES = [
   // tests worth carrying
   'lib/__tests__/readReceipts.test.ts',
   'lib/__tests__/openChats.test.ts',
+  'lib/api/adapters/supabase/__tests__/jwtSkewRetryFetch.test.ts',
   'lib/__tests__/uploadErrors.test.ts',
   'lib/i18n/__tests__/translationKeys.test.ts',
   'lib/api/adapters/supabase/__tests__/chatMessagePush.test.ts',

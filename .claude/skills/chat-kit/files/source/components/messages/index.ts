@@ -2,6 +2,7 @@ export { FileAttachmentModal, VideoAttachmentModal } from './AttachmentPreviewMo
 export { MessageAttachmentsBlock } from './MessageAttachmentsBlock';
 export { FriendPickerSheet } from './FriendPickerSheet';
 export { MessageRow } from './MessageRow';
+export { OpenChatsList } from './OpenChatsList';
 export { HOVER_ACTIONS_SUPPORTED, MessageHoverActions } from './MessageHoverActions';
 export { useMessageRowState } from './useMessageRowState';
 export type { MessageRowState } from './useMessageRowState';
