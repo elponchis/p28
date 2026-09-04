@@ -36,6 +36,7 @@ import {
   ReactionSheet,
   type ReactionSheetPrimaryAction,
 } from '@/components/patterns/ReactionSheet';
+import { useOpenChats } from '@/contexts/OpenChatsContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useComposeAttachments } from '@/hooks/useComposeAttachments';
 import { useIosKeyboardAvoidingParentOffset } from '@/hooks/useIosKeyboardAvoidingParentOffset';
@@ -423,6 +424,16 @@ export default function ChatDetailScreen() {
       t('messages.lastMessage'),
     [chat?.name, chat?.participantDisplayNames, chat?.members, userId]
   );
+
+  /**
+   * Pin this chat in the sidebar. Runs once the title is known rather than on mount, so the pin
+   * never appears as "Loading" and then rename itself a beat later.
+   */
+  const { openChat } = useOpenChats();
+  useEffect(() => {
+    if (!id || !chat) return;
+    openChat({ id, title: headerTitle });
+  }, [id, chat, headerTitle, openChat]);
 
   const memberCount = chat?.members?.length ?? 0;
 

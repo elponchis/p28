@@ -22,6 +22,7 @@ import { BrandedSplash } from '@/components/patterns/BrandedSplash';
 import { StackHeaderBack } from '@/components/patterns/StackHeaderBack';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { LocaleProvider, useLocale } from '@/contexts/LocaleContext';
+import { OpenChatsProvider } from '@/contexts/OpenChatsContext';
 import { PendingSignUpProvider } from '@/contexts/PendingSignUpContext';
 import { useProfileQuery } from '@/hooks/useApiQueries';
 import { useAppIconBadgeSync } from '@/hooks/useAppIconBadgeSync';
@@ -91,7 +92,9 @@ export default function RootLayout() {
       <AuthProvider>
         <PendingSignUpProvider>
           <LocaleProvider>
-            <RootLayoutNav />
+            <OpenChatsProvider>
+              <RootLayoutNav />
+            </OpenChatsProvider>
           </LocaleProvider>
         </PendingSignUpProvider>
       </AuthProvider>

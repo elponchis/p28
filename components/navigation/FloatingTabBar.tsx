@@ -3,12 +3,14 @@ import { Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
+import { usePathname, useRouter } from 'expo-router';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Avatar } from '@/components/primitives';
+import { useOpenChats } from '@/contexts/OpenChatsContext';
 import { useAuth } from '@/hooks/useAuth';
 import { t } from '@/lib/i18n';
-import { breakpoints, colors, fontFamily, spacing } from '@/theme/tokens';
+import { breakpoints, colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
 /** Routes that never get a nav icon — surfaced elsewhere (notifications: header bell). */
 const HIDDEN_FROM_NAV = new Set(['notifications']);
@@ -82,6 +84,57 @@ function TabItem({
         </Text>
       </Pressable>
     </Animated.View>
+  );
+}
+
+/**
+ * The chats someone currently has open, pinned under the Messages tab.
+ *
+ * Switching conversations otherwise means going back to the list and finding the row, which is
+ * fine for one chat and tedious for the handful someone keeps up with. Closing a pin removes it
+ * from here and nothing else — the conversation is untouched, and opening it again brings the
+ * pin back.
+ */
+function OpenChatsList() {
+  const { openChats, closeChat } = useOpenChats();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  if (openChats.length === 0) return null;
+
+  return (
+    <View style={styles.openChats}>
+      {openChats.map((chat) => {
+        const isCurrent = pathname === `/messages/chat/${chat.id}`;
+        return (
+          <View key={chat.id} style={[styles.openChatRow, isCurrent && styles.openChatRowActive]}>
+            <Pressable
+              onPress={() => router.push(`/messages/chat/${chat.id}`)}
+              style={styles.openChatOpen}
+              accessibilityRole="button"
+              accessibilityState={{ selected: isCurrent }}
+              accessibilityLabel={chat.title}
+            >
+              <Text
+                style={[styles.openChatLabel, isCurrent && styles.openChatLabelActive]}
+                numberOfLines={1}
+              >
+                {chat.title}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => closeChat(chat.id)}
+              style={({ pressed }) => [styles.openChatClose, pressed && { opacity: 0.6 }]}
+              accessibilityRole="button"
+              accessibilityLabel={t('messages.closeOpenChat', { name: chat.title })}
+              hitSlop={6}
+            >
+              <Ionicons name="close" size={14} color={colors.onSurfaceVariant} />
+            </Pressable>
+          </View>
+        );
+      })}
+    </View>
   );
 }
 
@@ -259,7 +312,12 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
       >
         <View style={styles.sidebarMain}>
           {mainItems.map(({ routeKey, routeName, ...item }) => (
-            <SidebarTabItem key={routeKey} {...item} />
+            <View key={routeKey}>
+              <SidebarTabItem {...item} />
+              {/* Open conversations hang off the Messages entry, because that is what they are
+                  part of — a flat list beside the tabs would read as more tabs. */}
+              {routeName === 'messages' ? <OpenChatsList /> : null}
+            </View>
           ))}
         </View>
         {profileItem && (
@@ -360,6 +418,43 @@ const styles = StyleSheet.create({
   },
   sidebarMain: {
     gap: spacing.xxs,
+  },
+  openChats: {
+    marginTop: spacing.xxs,
+    marginBottom: spacing.xs,
+    // Indented and hairlined so the pins read as belonging to Messages rather than as peers of
+    // the tabs above them.
+    marginLeft: spacing.lg,
+    paddingLeft: spacing.xs,
+    borderLeftWidth: 1,
+    borderLeftColor: colors.ghostBorder,
+    gap: 1,
+  },
+  openChatRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: radius.md,
+    paddingLeft: spacing.xs,
+  },
+  openChatRowActive: {
+    backgroundColor: colors.surfaceContainerHigh,
+  },
+  openChatOpen: {
+    flex: 1,
+    paddingVertical: 6,
+    minWidth: 0,
+  },
+  openChatLabel: {
+    ...typography.caption,
+    fontSize: 12,
+    color: colors.onSurfaceVariant,
+  },
+  openChatLabelActive: {
+    color: colors.onSurface,
+    fontFamily: fontFamily.sansSemiBold,
+  },
+  openChatClose: {
+    padding: 6,
   },
   sidebarFooter: {
     borderTopWidth: 1,
