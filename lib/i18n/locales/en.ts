@@ -316,6 +316,7 @@ export const en = {
     createGroup: 'Create group',
     forum: 'Forum',
     ministry: 'Ministry',
+    trainingSchool: 'Training school',
     join: 'Join',
     leave: 'Leave',
     leaveGroup: 'Leave group',

@@ -19,11 +19,21 @@ import { ReflectionPlate } from '@/components/patterns/ReflectionPlate';
 import { useAuth } from '@/hooks/useAuth';
 import { useGroupsQuery, useGroupsForUserQuery, useIsAdminQuery } from '@/hooks/useApiQueries';
 import { getUserFacingError } from '@/lib/errors';
+import { GROUP_TYPES, groupTypeLabel } from '@/lib/groupTypes';
 import { t } from '@/lib/i18n';
 import type { GroupType } from '@/lib/api';
 import { colors, fontFamily, radius, spacing, typography, tabScreenContent } from '@/theme/tokens';
 
 type FilterType = 'all' | 'joined' | GroupType;
+
+/** The chips, in order. Every kind of group is offered, so a new kind is never unfilterable. */
+const FILTER_OPTIONS: readonly FilterType[] = ['all', 'joined', ...GROUP_TYPES] as const;
+
+function filterLabel(filter: FilterType): string {
+  if (filter === 'all') return t('groups.filterAll');
+  if (filter === 'joined') return t('groups.filterJoined');
+  return groupTypeLabel(filter);
+}
 
 export default function GroupsScreen() {
   const { session } = useAuth();
@@ -34,7 +44,7 @@ export default function GroupsScreen() {
 
   useEffect(() => {
     const p = params?.filter as FilterType | undefined;
-    if (p && ['all', 'joined', 'forum', 'ministry'].includes(p)) {
+    if (p && FILTER_OPTIONS.includes(p)) {
       setFilter(p);
     }
   }, [params?.filter]);
@@ -62,7 +72,7 @@ export default function GroupsScreen() {
   useFocusEffect(
     useCallback(() => {
       const p = params?.filter as FilterType | undefined;
-      if (p && ['all', 'joined', 'forum', 'ministry'].includes(p)) {
+      if (p && FILTER_OPTIONS.includes(p)) {
         setFilter(p);
       } else {
         setFilter('all');
@@ -74,7 +84,7 @@ export default function GroupsScreen() {
 
   const displayed = filter === 'joined' ? groups.filter((g) => memberGroupIds.has(g.id)) : groups;
 
-  const filterOptions = ['all', 'joined', 'forum', 'ministry'] as const;
+  const filterOptions = FILTER_OPTIONS;
 
   return (
     <ScrollView
@@ -147,24 +157,10 @@ export default function GroupsScreen() {
                 key={f}
                 onPress={() => setFilter(f)}
                 style={[styles.filterChip, active && styles.filterChipActive]}
-                accessibilityLabel={
-                  f === 'all'
-                    ? t('groups.filterAll')
-                    : f === 'joined'
-                      ? t('groups.filterJoined')
-                      : f === 'forum'
-                        ? t('groups.filterForums')
-                        : t('groups.filterMinistries')
-                }
+                accessibilityLabel={filterLabel(f)}
               >
                 <Text style={[styles.filterText, active && styles.filterTextActive]}>
-                  {f === 'all'
-                    ? t('groups.filterAll')
-                    : f === 'joined'
-                      ? t('groups.filterJoined')
-                      : f === 'forum'
-                        ? t('groups.filterForums')
-                        : t('groups.filterMinistries')}
+                  {filterLabel(f)}
                 </Text>
               </Pressable>
             );

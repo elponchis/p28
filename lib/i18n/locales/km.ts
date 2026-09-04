@@ -315,6 +315,7 @@ export const km: TranslationShape = {
     createGroup: 'បង្កើតក្រុម',
     forum: 'វេទិកា',
     ministry: 'សេវាកម្ម',
+    trainingSchool: 'សាលាបណ្តុះបណ្តាល',
     join: 'ចូលរួម',
     leave: 'ចាកចេញ',
     leaveGroup: 'ចាកចេញពីក្រុម',

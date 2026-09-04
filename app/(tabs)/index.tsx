@@ -31,6 +31,7 @@ import {
   useMyEventRsvpsMapForEventsQuery,
   useUpcomingJoinedGroupEventsQuery,
 } from '@/hooks/useApiQueries';
+import { groupTypeLabel } from '@/lib/groupTypes';
 import { t } from '@/lib/i18n';
 import { isApiError, type Group } from '@/lib/api';
 import { getUserFacingError } from '@/lib/errors';
@@ -78,9 +79,7 @@ function GroupCarouselCard({ group }: { group: Group }) {
             {group.name}
           </Text>
           <View style={carouselStyles.meta}>
-            <Text style={carouselStyles.type}>
-              {group.type === 'forum' ? t('groups.forum') : t('groups.ministry')}
-            </Text>
+            <Text style={carouselStyles.type}>{groupTypeLabel(group.type)}</Text>
             {group.memberCount != null ? (
               <View style={carouselStyles.memberRow}>
                 <Ionicons name="people" size={12} color={colors.onSurfaceVariant} />

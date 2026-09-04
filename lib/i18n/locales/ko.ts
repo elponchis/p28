@@ -312,6 +312,7 @@ export const ko: TranslationShape = {
     createGroup: '그룹 만들기',
     forum: '포럼',
     ministry: '부서',
+    trainingSchool: '훈련학교',
     join: '참여',
     leave: '탈퇴',
     leaveGroup: '그룹 탈퇴',

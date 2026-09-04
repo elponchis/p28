@@ -23,6 +23,7 @@ import { COUNTRIES } from '@/constants/countries';
 import { useAuth } from '@/hooks/useAuth';
 import { useCreateGroupMutation, useUploadGroupBannerImageMutation } from '@/hooks/useApiQueries';
 import { getUserFacingError } from '@/lib/api';
+import { GROUP_TYPES, groupTypeLabel } from '@/lib/groupTypes';
 import { t } from '@/lib/i18n';
 import type { GroupType } from '@/lib/api';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
@@ -205,17 +206,15 @@ export default function CreateGroupScreen() {
 
           <Text style={styles.label}>{t('groups.type')}</Text>
           <View style={styles.chipRow}>
-            {(['forum', 'ministry'] as const).map((typeOption) => (
+            {GROUP_TYPES.map((typeOption) => (
               <Pressable
                 key={typeOption}
                 onPress={() => setType(typeOption)}
                 style={[styles.chip, type === typeOption && styles.chipActive]}
-                accessibilityLabel={
-                  typeOption === 'forum' ? t('groups.forum') : t('groups.ministry')
-                }
+                accessibilityLabel={groupTypeLabel(typeOption)}
               >
                 <Text style={[styles.chipText, type === typeOption && styles.chipTextActive]}>
-                  {typeOption === 'forum' ? t('groups.forum') : t('groups.ministry')}
+                  {groupTypeLabel(typeOption)}
                 </Text>
               </Pressable>
             ))}
