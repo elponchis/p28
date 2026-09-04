@@ -536,11 +536,16 @@ export default function DiscussionDetailScreen() {
   const { data: reactionDetails = [], isLoading: reactionsLoading } =
     useDiscussionPostReactionsQuery(reactionPost?.id, { enabled: !!reactionPost });
 
+  /**
+   * refetch() ignores the query's `enabled` guard, so calling it before the session resolves
+   * fires the request with an undefined user id -- PostgREST answers 400 on user_id=eq.undefined.
+   */
   useFocusEffect(
     useCallback(() => {
+      if (!id) return;
       refetchDiscussion();
       refetchPosts();
-    }, [refetchDiscussion, refetchPosts])
+    }, [refetchDiscussion, refetchPosts, id])
   );
 
   useFocusEffect(

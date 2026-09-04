@@ -316,13 +316,16 @@ export default function ChatDetailScreen() {
   markReadRef.current = (chatId: string, uid: string) =>
     markReadMutation.mutate({ chatId, userId: uid });
 
+  /**
+   * refetch() ignores the query's `enabled` guard, so calling it before the session resolves
+   * fires the request with an undefined user id -- PostgREST answers 400 on user_id=eq.undefined.
+   */
   useFocusEffect(
     useCallback(() => {
+      if (!id || !userId) return;
       refetch();
       refetchMessages();
-      if (id && userId) {
-        markReadMutation.mutate({ chatId: id, userId });
-      }
+      markReadMutation.mutate({ chatId: id, userId });
     }, [refetch, refetchMessages, id, userId])
   );
 
