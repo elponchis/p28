@@ -49,3 +49,6 @@ mcp-deploy-inline.json
 
 # Playwright MCP session artefacts (snapshots, console logs)
 .playwright-mcp/
+
+# VAPID keypair for web push (private key — never commit)
+.vapid.env

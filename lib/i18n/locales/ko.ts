@@ -207,6 +207,8 @@ export const ko: TranslationShape = {
     events: '이벤트',
     announcements: '공지사항',
     recurringMeetings: '정기 모임',
+    browserNotifications: '브라우저 알림',
+    browserNotificationsHint: '탭을 닫아도 이 브라우저에서 알림을 표시합니다',
     messages: '메시지',
     saved: '설정이 저장되었습니다',
     retry: '다시 시도',

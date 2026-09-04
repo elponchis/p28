@@ -210,6 +210,8 @@ export const km: TranslationShape = {
     events: 'ព្រឹត្តិការណ៍',
     announcements: 'ប្រកាស',
     recurringMeetings: 'ការជួបជុំដែលកើតឡើងដដែលៗ',
+    browserNotifications: 'ការជូនដំណឹងកម្មវិធីរុករក',
+    browserNotificationsHint: 'បង្ហាញការជូនដំណឹងពីកម្មវិធីរុករកនេះ ទោះបីបិទផ្ទាំងក៏ដោយ',
     messages: 'សារ',
     saved: 'ចំណង់ចំណូលចិត្តត្រូវបានរក្សាទុក',
     retry: 'ព្យាយាមម្តងទៀត',

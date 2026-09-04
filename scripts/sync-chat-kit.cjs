@@ -73,6 +73,8 @@ const FILES = [
   'lib/downloadFile.ts',
   'lib/extractUrlsFromText.ts',
   'lib/api/messageAttachments.ts',
+  'lib/webPush.ts',
+  'public/sw.js',
 
   // edge function
   'supabase/functions/send-chat-message/index.ts',

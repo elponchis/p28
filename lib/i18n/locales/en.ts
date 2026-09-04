@@ -210,6 +210,8 @@ export const en = {
     events: 'Events',
     announcements: 'Announcements',
     recurringMeetings: 'Recurring meetings',
+    browserNotifications: 'Browser notifications',
+    browserNotificationsHint: 'Show notifications from this browser, even when the tab is closed',
     messages: 'Messages',
     saved: 'Preferences saved',
     retry: 'Try again',

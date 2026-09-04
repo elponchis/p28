@@ -3582,6 +3582,40 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
       }
     },
 
+    async saveWebPushSubscription(
+      userId: string,
+      subscription: { endpoint: string; p256dh: string; auth: string; userAgent?: string }
+    ): Promise<void | ApiError> {
+      try {
+        const { error } = await getClient().from('web_push_subscriptions').upsert(
+          {
+            endpoint: subscription.endpoint,
+            user_id: userId,
+            p256dh: subscription.p256dh,
+            auth: subscription.auth,
+            user_agent: subscription.userAgent ?? null,
+            last_seen_at: new Date().toISOString(),
+          },
+          { onConflict: 'endpoint' }
+        );
+        if (error) return toApiError(error);
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async deleteWebPushSubscription(endpoint: string): Promise<void | ApiError> {
+      try {
+        const { error } = await getClient()
+          .from('web_push_subscriptions')
+          .delete()
+          .eq('endpoint', endpoint);
+        if (error) return toApiError(error);
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
     async registerPushToken(
       userId: string,
       token: string,

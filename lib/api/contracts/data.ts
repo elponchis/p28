@@ -358,6 +358,17 @@ export interface DataContract {
     updates: GroupMemberSettingsUpdates
   ): Promise<GroupMemberSettings | ApiError>;
 
+  /**
+   * Stores a browser's Web Push subscription. Expo push does nothing on web, so this is the only
+   * way a notification reaches a closed tab. Keyed by endpoint: re-subscribing in the same
+   * browser returns the same URL, so this upserts rather than accumulating rows.
+   */
+  saveWebPushSubscription(
+    userId: string,
+    subscription: { endpoint: string; p256dh: string; auth: string; userAgent?: string }
+  ): Promise<void | ApiError>;
+  /** Removes a subscription the push service has rejected, or one the user turned off. */
+  deleteWebPushSubscription(endpoint: string): Promise<void | ApiError>;
   registerPushToken(
     userId: string,
     token: string,
