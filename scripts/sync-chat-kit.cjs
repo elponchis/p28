@@ -53,6 +53,9 @@ const FILES = [
   'components/patterns/MessageVideoEmbed.tsx',
   'components/patterns/StackHeaderBack.tsx',
 
+  // contexts
+  'contexts/OpenChatsContext.tsx',
+
   // hooks
   'hooks/useComposeAttachments.ts',
   'hooks/useFadeSheetAnimation.ts',
@@ -61,6 +64,7 @@ const FILES = [
   // lib
   'lib/reactions.ts',
   'lib/readReceipts.ts',
+  'lib/openChats.ts',
   'lib/uploadErrors.ts',
   'lib/clipboard.ts',
   'lib/animation.ts',
@@ -84,6 +88,7 @@ const FILES = [
 
   // tests worth carrying
   'lib/__tests__/readReceipts.test.ts',
+  'lib/__tests__/openChats.test.ts',
   'lib/__tests__/uploadErrors.test.ts',
   'lib/i18n/__tests__/translationKeys.test.ts',
   'lib/api/adapters/supabase/__tests__/chatMessagePush.test.ts',

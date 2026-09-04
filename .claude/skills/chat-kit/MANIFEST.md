@@ -43,6 +43,12 @@ Three roles:
 
 `EmptyState.tsx` is used but generic — **expect** it if the host has one.
 
+### Contexts
+
+`contexts/OpenChatsContext.tsx` — the sidebar's list of open conversations, persisted per user.
+Mount the provider under whatever holds the session; the list itself is rendered by the host's
+own navigation, since that part is layout, not chat.
+
 ### Hooks
 
 `hooks/useComposeAttachments.ts` · `hooks/useFadeSheetAnimation.ts` ·
@@ -50,7 +56,7 @@ Three roles:
 
 ### lib
 
-`lib/reactions.ts` · `lib/readReceipts.ts` · `lib/uploadErrors.ts` · `lib/clipboard.ts` ·
+`lib/reactions.ts` · `lib/readReceipts.ts` · `lib/openChats.ts` · `lib/uploadErrors.ts` · `lib/clipboard.ts` ·
 `lib/animation.ts` · `lib/composeAttachments.ts` · `lib/chatSharedContent.ts` ·
 `lib/mediaViewerBounds.ts` · `lib/cloudinaryVideo.ts` · `lib/videoPoster.ts` ·
 `lib/documentPickerLock.ts` · `lib/downloadFile.ts` · `lib/extractUrlsFromText.ts` ·
@@ -67,6 +73,7 @@ Three roles:
 ### Tests
 
 `lib/__tests__/readReceipts.test.ts` · `lib/__tests__/uploadErrors.test.ts` ·
+`lib/__tests__/openChats.test.ts` ·
 `lib/api/adapters/supabase/__tests__/chatMessagePush.test.ts` ·
 `lib/i18n/__tests__/translationKeys.test.ts` (not chat-specific, but it catches the raw-key bug
 this kit's i18n move is prone to)
