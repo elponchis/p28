@@ -65,6 +65,7 @@
     "@types/jest": "^29.5.14",
     "@types/luxon": "^3.7.1",
     "@types/react": "~19.1.0",
+    "@types/react-test-renderer": "^19.1.0",
     "eslint": "^9.39.2",
     "eslint-config-expo": "^10.0.0",
     "eslint-config-prettier": "^10.1.8",
@@ -83,6 +84,7 @@
     "testMatch": [
       "**/lib/**/__tests__/**/*.test.ts",
       "**/app/**/__tests__/**/*.test.{ts,tsx}",
+      "**/hooks/**/__tests__/**/*.test.{ts,tsx}",
       "**/components/**/__tests__/**/*.test.{ts,tsx}"
     ],
     "modulePathIgnorePatterns": [

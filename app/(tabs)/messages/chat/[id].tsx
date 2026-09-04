@@ -132,15 +132,15 @@ export default function ChatDetailScreen() {
   const [copiedToastVisible, setCopiedToastVisible] = useState(false);
 
   const { data: chat, isLoading, isError, error, refetch } = useChatQuery(id);
-  /**
-   * How far back the thread is loaded. A chat opens on the most recent page and grows upward
-   * when the reader asks for more, so an old group thread never arrives in one response.
-   */
-  const [messageLimit, setMessageLimit] = useState(CHAT_PAGE_SIZE);
-  const { data: messages = [], refetch: refetchMessages } = useChatMessagesQuery(id, {
-    userId,
+  // A chat opens on the most recent page and grows upward when the reader asks for more, so an
+  // old group thread never arrives in one response. The window belongs to the query — see
+  // useChatMessagesQuery for why it is not in the key.
+  const {
+    data: messages = [],
+    refetch: refetchMessages,
     limit: messageLimit,
-  });
+    loadOlder,
+  } = useChatMessagesQuery(id, { userId, pageSize: CHAT_PAGE_SIZE });
   // A full page back means there is probably more behind it; a short page means we reached the
   // beginning. Cheaper than a count query and wrong only in the case where the total is an
   // exact multiple, which costs one empty "load older" press.
@@ -208,13 +208,12 @@ export default function ChatDetailScreen() {
       offset: scrollOffsetRef.current,
     };
     shouldStickToEndRef.current = false;
-    setMessageLimit((prev) => prev + CHAT_PAGE_SIZE);
     try {
-      await refetchMessages();
+      await loadOlder();
     } finally {
       setIsLoadingOlder(false);
     }
-  }, [isLoadingOlder, refetchMessages]);
+  }, [isLoadingOlder, loadOlder]);
 
   const onChatMessagesContentSizeChange = useCallback(
     (_w: number, height: number) => {

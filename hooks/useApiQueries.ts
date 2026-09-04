@@ -2,7 +2,7 @@
  * React Query hooks wrapping api.data calls. All server state flows through these hooks.
  * Keeps the facade as the boundary; hooks add caching, deduplication, and invalidation.
  */
-import { useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   useMutation,
   useQueries,
@@ -33,6 +33,9 @@ import type {
 } from '@/lib/api';
 import { chatMessagesToSharedContentPlaceholder } from '@/lib/chatSharedContent';
 import { mergeUpcomingJoinedGroupEvents } from '@/lib/upcomingJoinedGroupEvents';
+
+/** How much of a chat thread loads at once when the caller does not say. */
+export const DEFAULT_CHAT_PAGE_SIZE = 50;
 
 /** Throws on ApiError so useQuery gets error state. Returns data otherwise. */
 async function queryFn<T>(promise: Promise<T | import('@/lib/api').ApiError>): Promise<T> {
@@ -1829,7 +1832,9 @@ export function useUpdateGroupMutation() {
 export function useDeleteGroupMutation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ groupId }: { groupId: string }) =>
+    // userId is optional only because a caller without one still deletes the group; it is what
+    // lets the deleter's own group list drop the row without waiting for a refetch.
+    mutationFn: async ({ groupId }: { groupId: string; userId?: string }) =>
       queryFn(api.data.deleteGroup(groupId)) as Promise<void>,
     onSuccess: (_, { groupId, userId }) => {
       qc.invalidateQueries({ queryKey: queryKeys.group(groupId) });
@@ -1926,18 +1931,51 @@ export function useFindExisting1on1ChatQuery(
  * stays the identity of the thread, the queryFn closes over whatever limit was last rendered,
  * and the screen calls refetch() when it wants a bigger window.
  */
+/**
+ * A chat thread, loaded newest-first one page at a time and grown by `loadOlder`.
+ *
+ * The window size is held in a ref rather than in the query key, and the hook owns it rather
+ * than the screen. Both of those are deliberate:
+ *
+ * The key stays free of it because the thread lives in one cache entry that optimistic sends and
+ * reactions write into by exact key; a key per window size would leave those writes updating a
+ * page nobody is looking at. The ref is what the query function reads, so every fetch — a
+ * refetch after a realtime event included — asks for the window the reader has actually opened,
+ * instead of the one whose closure the observer happens to be holding.
+ */
 export function useChatMessagesQuery(
   chatId: string | undefined,
-  options?: { userId?: string; enabled?: boolean; limit?: number }
+  options?: { userId?: string; enabled?: boolean; pageSize?: number }
 ) {
-  return useQuery({
+  const pageSize = options?.pageSize ?? DEFAULT_CHAT_PAGE_SIZE;
+  const limitRef = useRef(pageSize);
+  const [limit, setLimit] = useState(pageSize);
+
+  // A different thread starts at one page again; nothing about how far back the last one was
+  // read applies to this one.
+  useEffect(() => {
+    limitRef.current = pageSize;
+    setLimit(pageSize);
+  }, [chatId, pageSize]);
+
+  const query = useQuery({
     queryKey: queryKeys.chatMessages(chatId ?? '', options?.userId),
     queryFn: () =>
       queryFn(
-        api.data.getChatMessages(chatId!, { userId: options?.userId, limit: options?.limit })
+        api.data.getChatMessages(chatId!, { userId: options?.userId, limit: limitRef.current })
       ) as Promise<import('@/lib/api').ChatMessage[]>,
     enabled: !!chatId && (options?.enabled ?? true),
   });
+
+  const { refetch } = query;
+  const loadOlder = useCallback(async () => {
+    limitRef.current += pageSize;
+    setLimit(limitRef.current);
+    return refetch();
+  }, [pageSize, refetch]);
+
+  /** How far back the thread is currently loaded — what a "load older" affordance compares to. */
+  return { ...query, limit, loadOlder };
 }
 
 export function useChatSharedContentQuery(

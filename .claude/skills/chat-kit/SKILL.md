@@ -127,7 +127,10 @@ Point `theme/tokens` at the host's palette and most of it follows. What does not
 Say these out loud rather than letting the user find them.
 
 - **No pagination beyond a growing window.** A chat opens on the most recent 50 and grows on
-  request. There is no cursor; a very long thread walks back a page at a time.
+  request — `useChatMessagesQuery` holds that window in a ref and widens it through `loadOlder`,
+  because the whole thread is one cache entry that optimistic sends write into by exact key. If
+  you move the window into the query key, move those writers to `getQueriesData` in the same
+  breath. There is no cursor; a very long thread walks back a page at a time.
 - **A deep link to a message outside the loaded window does nothing.**
 - **HEVC video needs Cloudinary.** Phone cameras record it, browsers cannot decode it, and
   without `EXPO_PUBLIC_CLOUDINARY_*` set the upload falls back to storing the original — which

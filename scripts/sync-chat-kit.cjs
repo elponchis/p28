@@ -91,6 +91,7 @@ const FILES = [
   // tests worth carrying
   'lib/__tests__/readReceipts.test.ts',
   'lib/__tests__/openChats.test.ts',
+  'hooks/__tests__/useChatMessagesQuery.test.tsx',
   'lib/api/adapters/supabase/__tests__/jwtSkewRetryFetch.test.ts',
   'lib/__tests__/uploadErrors.test.ts',
   'lib/i18n/__tests__/translationKeys.test.ts',

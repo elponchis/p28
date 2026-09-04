@@ -87,6 +87,8 @@ as `global.fetch`. Skip it only if the host already wraps its fetch.
 
 `lib/__tests__/readReceipts.test.ts` · `lib/__tests__/uploadErrors.test.ts` ·
 `lib/__tests__/openChats.test.ts` · `lib/api/adapters/supabase/__tests__/jwtSkewRetryFetch.test.ts` ·
+`hooks/__tests__/useChatMessagesQuery.test.tsx` (needs `hooks/**/__tests__` in the host's jest
+`testMatch`, and `react-test-renderer` with its types) ·
 `lib/api/adapters/supabase/__tests__/chatMessagePush.test.ts` ·
 `lib/i18n/__tests__/translationKeys.test.ts` (not chat-specific, but it catches the raw-key bug
 this kit's i18n move is prone to)
@@ -97,17 +99,17 @@ this kit's i18n move is prone to)
 
 Never overwrite these. Open the host's copy and move the chat sections in.
 
-| File                                                           | What to move                                                                                                          |
-| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `lib/api/contracts/dto.ts`                                     | `Chat`, `ChatMember`, `ChatMessage`, `MessageAttachment`, `PostReactionType`, `PostReactionCounts`, and their inputs. |
-| `lib/api/contracts/data.ts`                                    | The chat method signatures on `DataContract`.                                                                         |
-| `lib/api/adapters/supabase/data.ts`                            | The chat methods, `readBinaryFile`/`uploadToStorage` if absent, `isKnownReaction`, `tallyReaction`.                   |
-| `lib/api/adapters/supabase/realtime.ts`                        | The `messages:chat:{id}` channel: message inserts, `chat_members` updates, the `typing` broadcast, and `sendTyping`.  |
-| `lib/api/contracts/realtime.ts`                                | `onReadReceipt`, `onTyping`, `sendTyping`.                                                                            |
-| `lib/api/queryKeys.ts`                                         | `chat*`, `groupMateIds`.                                                                                              |
-| `hooks/useApiQueries.ts`                                       | The chat queries and mutations, including the optimistic reaction updater.                                            |
-| `lib/i18n/locales/{en,ko,km}.ts`                               | The `message.*` namespace, plus the chat keys under `messages.*` and `attachments.*`.                                 |
-| `components/messages/index.ts`, `components/patterns/index.ts` | Barrel exports.                                                                                                       |
+| File                                                           | What to move                                                                                                                                                                      |
+| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lib/api/contracts/dto.ts`                                     | `Chat`, `ChatMember`, `ChatMessage`, `MessageAttachment`, `PostReactionType`, `PostReactionCounts`, and their inputs.                                                             |
+| `lib/api/contracts/data.ts`                                    | The chat method signatures on `DataContract`.                                                                                                                                     |
+| `lib/api/adapters/supabase/data.ts`                            | The chat methods, `readBinaryFile`/`uploadToStorage` if absent, `isKnownReaction`, `tallyReaction`.                                                                               |
+| `lib/api/adapters/supabase/realtime.ts`                        | The `messages:chat:{id}` channel: message inserts, `chat_members` updates, the `typing` broadcast, and `sendTyping`.                                                              |
+| `lib/api/contracts/realtime.ts`                                | `onReadReceipt`, `onTyping`, `sendTyping`.                                                                                                                                        |
+| `lib/api/queryKeys.ts`                                         | `chat*`, `groupMateIds`.                                                                                                                                                          |
+| `hooks/useApiQueries.ts`                                       | The chat queries and mutations, including the optimistic reaction updater. `useChatMessagesQuery` owns the thread's growing window — keep the window in the hook, not in the key. |
+| `lib/i18n/locales/{en,ko,km}.ts`                               | The `message.*` namespace, plus the chat keys under `messages.*` and `attachments.*`.                                                                                             |
+| `components/messages/index.ts`, `components/patterns/index.ts` | Barrel exports.                                                                                                                                                                   |
 
 ---
 

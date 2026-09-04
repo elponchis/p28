@@ -41,6 +41,8 @@ export type {
   EventRsvpResponse,
   Group,
   GroupType,
+  GroupDiscussion,
+  CreateGroupDiscussionInput,
   CreateGroupInput,
   UpdateGroupEventInput,
   UpdateGroupRecurringMeetingInput,
