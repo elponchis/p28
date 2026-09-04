@@ -3,9 +3,25 @@
  * Keys are namespaced: tabs.*, profile.*, auth.*, onboarding.*, common.*, language.*, notifications.*, conduct.*.
  */
 export const en = {
+  watch: {
+    tab: 'Watch',
+    openToEveryone: 'Open to everyone',
+    groupCourses: 'Group courses',
+    trainingSchool: 'Training school',
+    videoCount: '{{count}} videos',
+    openCourseHint: 'Opens the course and its videos',
+    emptyTitle: 'Nothing to watch yet',
+    emptyDescription:
+      'Videos shared with everyone, and the courses of groups you have joined, appear here.',
+    availableUntil: 'Available until {{date}}',
+    availableFrom: 'Available from {{date}}',
+    noVideosYet: 'This course has no videos yet',
+    backToWatch: 'Back to Watch',
+  },
   tabs: {
     home: 'Home',
     groups: 'Groups',
+    watch: 'Watch',
     messages: 'Messages',
     profile: 'Profile',
     notifications: 'Notifications',

@@ -56,6 +56,7 @@ export type {
   GroupRecurringMeeting,
   RecurringMeetingFrequency,
   Course,
+  WatchCourse,
   CreateCourseInput,
   UpdateCourseInput,
   Lesson,

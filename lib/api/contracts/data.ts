@@ -23,6 +23,7 @@ import type {
   CreateGroupRecurringMeetingInput,
   CreateGroupInput,
   Course,
+  WatchCourse,
   Discussion,
   DiscussionPost,
   Lesson,
@@ -30,6 +31,7 @@ import type {
   EventRsvpResponse,
   FriendRequest,
   Group,
+  GroupType,
   PostReactionDetail,
   GroupAdmin,
   GroupDiscussion,
@@ -157,7 +159,7 @@ export interface DataContract {
   ): Promise<NotificationPreferences | ApiError>;
 
   // Groups (Forums and Ministries - top level)
-  getGroups(params?: { type?: 'forum' | 'ministry'; search?: string }): Promise<Group[] | ApiError>;
+  getGroups(params?: { type?: GroupType; search?: string }): Promise<Group[] | ApiError>;
   getGroup(id: string): Promise<Group | ApiError>;
   createGroup(params: CreateGroupInput, createdByUserId: string): Promise<Group | ApiError>;
   updateGroup(id: string, params: UpdateGroupInput): Promise<Group | ApiError>;
@@ -301,6 +303,12 @@ export interface DataContract {
 
   // LMS: courses + lessons (2-level; video is an embedded URL, no file upload)
   getCoursesByGroup(groupId: string): Promise<Course[] | ApiError>;
+  /**
+   * Every course the caller may watch, across groups and including the public ones. Which those
+   * are is decided by RLS (public / group member / admin, inside the availability window), so
+   * this takes no user id and cannot be widened from the client.
+   */
+  getWatchCourses(): Promise<WatchCourse[] | ApiError>;
   getCourse(courseId: string): Promise<Course | ApiError>;
   createCourse(groupId: string, input: CreateCourseInput): Promise<Course | ApiError>;
   updateCourse(courseId: string, input: UpdateCourseInput): Promise<Course | ApiError>;

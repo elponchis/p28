@@ -188,6 +188,7 @@ function SidebarProfileFooter({
 const ICON_MAP: Record<string, { focused: IoniconsName; default: IoniconsName }> = {
   index: { focused: 'home', default: 'home-outline' },
   groups: { focused: 'people', default: 'people-outline' },
+  watch: { focused: 'play-circle', default: 'play-circle-outline' },
   messages: { focused: 'chatbubbles', default: 'chatbubbles-outline' },
   profile: { focused: 'person', default: 'person-outline' },
 };

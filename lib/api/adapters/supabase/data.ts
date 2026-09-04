@@ -46,6 +46,8 @@ import type {
   CreateGroupRecurringMeetingInput,
   CreateGroupInput,
   Course,
+  GroupType,
+  WatchCourse,
   Discussion,
   DiscussionPost,
   EventRsvpAttendee,
@@ -784,13 +786,19 @@ function mapGroupRecurringMeetingRow(row: GroupRecurringMeetingRow): GroupRecurr
   };
 }
 
+/** Every column mapCourseRow reads; the four course queries share it so none drifts. */
+const COURSE_COLUMNS =
+  'id, group_id, title, description, cover_image_url, sort_order, available_from, available_until, created_at, updated_at';
+
 type CourseRow = {
   id: string;
-  group_id: string;
+  group_id: string | null;
   title: string;
   description: string | null;
   cover_image_url: string | null;
   sort_order: number;
+  available_from?: string | null;
+  available_until?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -798,11 +806,13 @@ type CourseRow = {
 function mapCourseRow(row: CourseRow): Course {
   return {
     id: row.id,
-    groupId: row.group_id,
+    groupId: row.group_id ?? undefined,
     title: row.title,
     description: row.description ?? undefined,
     coverImageUrl: row.cover_image_url ?? undefined,
     sortOrder: row.sort_order,
+    availableFrom: row.available_from ?? undefined,
+    availableUntil: row.available_until ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -1878,10 +1888,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
     },
 
     // Groups
-    async getGroups(params?: {
-      type?: 'forum' | 'ministry';
-      search?: string;
-    }): Promise<Group[] | ApiError> {
+    async getGroups(params?: { type?: GroupType; search?: string }): Promise<Group[] | ApiError> {
       try {
         let query = getClient()
           .from('groups')
@@ -2765,9 +2772,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
       try {
         const { data: rows, error } = await getClient()
           .from('courses')
-          .select(
-            'id, group_id, title, description, cover_image_url, sort_order, created_at, updated_at'
-          )
+          .select(COURSE_COLUMNS)
           .eq('group_id', groupId)
           .order('sort_order', { ascending: true });
         if (error) return toApiError(error);
@@ -2777,13 +2782,42 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
       }
     },
 
+    async getWatchCourses(): Promise<WatchCourse[] | ApiError> {
+      try {
+        // No user id and no filter: the read policy already decides which rows exist for this
+        // caller -- public ones, their groups' ones inside the window, everything for an admin.
+        const { data: rows, error } = await getClient()
+          .from('courses')
+          .select(`${COURSE_COLUMNS}, groups(name, type), lessons(count)`)
+          .order('sort_order', { ascending: true })
+          .order('created_at', { ascending: true });
+        if (error) return toApiError(error);
+
+        return (
+          (rows ?? []) as (CourseRow & {
+            groups?: { name?: string; type?: GroupType } | { name?: string; type?: GroupType }[];
+            lessons?: { count: number }[] | { count: number };
+          })[]
+        ).map((row) => {
+          const group = Array.isArray(row.groups) ? row.groups[0] : row.groups;
+          const lessons = Array.isArray(row.lessons) ? row.lessons[0] : row.lessons;
+          return {
+            ...mapCourseRow(row),
+            groupName: group?.name ?? undefined,
+            groupType: group?.type ?? undefined,
+            lessonCount: lessons?.count ?? 0,
+          };
+        });
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
     async getCourse(courseId: string): Promise<Course | ApiError> {
       try {
         const { data, error } = await getClient()
           .from('courses')
-          .select(
-            'id, group_id, title, description, cover_image_url, sort_order, created_at, updated_at'
-          )
+          .select(COURSE_COLUMNS)
           .eq('id', courseId)
           .single();
         if (error) return toApiError(error);
@@ -2809,9 +2843,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
             cover_image_url: input.coverImageUrl || null,
             sort_order: input.sortOrder,
           })
-          .select(
-            'id, group_id, title, description, cover_image_url, sort_order, created_at, updated_at'
-          )
+          .select(COURSE_COLUMNS)
           .single();
         if (error) return toApiError(error);
         return mapCourseRow(row as CourseRow);
@@ -2835,9 +2867,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
             sort_order: input.sortOrder,
           })
           .eq('id', courseId)
-          .select(
-            'id, group_id, title, description, cover_image_url, sort_order, created_at, updated_at'
-          )
+          .select(COURSE_COLUMNS)
           .single();
         if (error) return toApiError(error);
         return mapCourseRow(row as CourseRow);

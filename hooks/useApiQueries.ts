@@ -884,7 +884,9 @@ export function useCreateCourseMutation() {
       input: import('@/lib/api').CreateCourseInput;
     }) => queryFn(api.data.createCourse(groupId, input)),
     onSuccess: (course) => {
-      qc.invalidateQueries({ queryKey: queryKeys.coursesByGroup(course.groupId) });
+      if (course.groupId)
+        qc.invalidateQueries({ queryKey: queryKeys.coursesByGroup(course.groupId) });
+      qc.invalidateQueries({ queryKey: queryKeys.watchCourses() });
     },
   });
 }
@@ -901,7 +903,10 @@ export function useUpdateCourseMutation() {
     }) => queryFn(api.data.updateCourse(courseId, input)),
     onSuccess: (course) => {
       qc.invalidateQueries({ queryKey: queryKeys.course(course.id) });
-      qc.invalidateQueries({ queryKey: queryKeys.coursesByGroup(course.groupId) });
+      // A public course has no group list to refresh; the watch shelf is where it shows.
+      if (course.groupId)
+        qc.invalidateQueries({ queryKey: queryKeys.coursesByGroup(course.groupId) });
+      qc.invalidateQueries({ queryKey: queryKeys.watchCourses() });
     },
   });
 }
@@ -914,6 +919,19 @@ export function useDeleteCourseMutation() {
     onSuccess: (_void, { groupId }) => {
       qc.invalidateQueries({ queryKey: queryKeys.coursesByGroup(groupId) });
     },
+  });
+}
+
+/**
+ * Every course this user may watch. Takes no arguments: the row-level policy decides what comes
+ * back, so there is nothing here for a caller to widen.
+ */
+export function useWatchCoursesQuery(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: queryKeys.watchCourses(),
+    queryFn: () =>
+      queryFn(api.data.getWatchCourses()) as Promise<import('@/lib/api').WatchCourse[]>,
+    enabled: options?.enabled ?? true,
   });
 }
 

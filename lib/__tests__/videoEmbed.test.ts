@@ -27,3 +27,30 @@ describe('firstEmbeddableVideoUrl', () => {
     );
   });
 });
+
+describe('parseVideoEmbedUrl — Vimeo privacy hashes', () => {
+  it('keeps the hash an unlisted video is shared with', () => {
+    // Without the hash the player answers "Private video", which is how this was found.
+    expect(parseVideoEmbedUrl('https://vimeo.com/1153516468/e830c8eb95')?.embedUrl).toBe(
+      'https://player.vimeo.com/video/1153516468?h=e830c8eb95'
+    );
+  });
+
+  it('keeps a hash that arrived as a query parameter', () => {
+    expect(
+      parseVideoEmbedUrl('https://player.vimeo.com/video/1153516468?h=e830c8eb95')?.embedUrl
+    ).toBe('https://player.vimeo.com/video/1153516468?h=e830c8eb95');
+  });
+
+  it('leaves a public video alone', () => {
+    expect(parseVideoEmbedUrl('https://vimeo.com/76979871')?.embedUrl).toBe(
+      'https://player.vimeo.com/video/76979871'
+    );
+  });
+
+  it('ignores a trailing path that is not a hash', () => {
+    expect(parseVideoEmbedUrl('https://vimeo.com/76979871/')?.embedUrl).toBe(
+      'https://player.vimeo.com/video/76979871'
+    );
+  });
+});

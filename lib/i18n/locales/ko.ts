@@ -4,9 +4,24 @@
 import { en, type TranslationShape } from './en';
 
 export const ko: TranslationShape = {
+  watch: {
+    tab: '영상',
+    openToEveryone: '모두 공개',
+    groupCourses: '그룹 코스',
+    trainingSchool: '훈련학교',
+    videoCount: '영상 {{count}}개',
+    openCourseHint: '코스와 영상 목록을 엽니다',
+    emptyTitle: '아직 볼 영상이 없어요',
+    emptyDescription: '모두에게 공개된 영상과, 가입한 그룹의 코스 영상이 여기에 표시됩니다.',
+    availableUntil: '{{date}}까지 시청 가능',
+    availableFrom: '{{date}}부터 시청 가능',
+    noVideosYet: '이 코스에는 아직 영상이 없어요',
+    backToWatch: '영상 목록으로',
+  },
   tabs: {
     home: '홈',
     groups: '그룹',
+    watch: '영상',
     messages: '메시지',
     profile: '프로필',
     notifications: '알림',

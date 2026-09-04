@@ -4,8 +4,23 @@
 import { en, type TranslationShape } from './en';
 
 export const km: TranslationShape = {
+  watch: {
+    tab: 'វីដេអូ',
+    openToEveryone: 'បើកសម្រាប់ទាំងអស់គ្នា',
+    groupCourses: 'វគ្គសិក្សាក្រុម',
+    trainingSchool: 'សាលាបណ្តុះបណ្តាល',
+    videoCount: 'វីដេអូ {{count}}',
+    openCourseHint: 'បើកវគ្គសិក្សា និងវីដេអូរបស់វា',
+    emptyTitle: 'មិនទាន់មានវីដេអូទេ',
+    emptyDescription: 'វីដេអូសាធារណៈ និងវគ្គសិក្សារបស់ក្រុមដែលអ្នកបានចូលរួម នឹងបង្ហាញនៅទីនេះ។',
+    availableUntil: 'មើលបានដល់ {{date}}',
+    availableFrom: 'មើលបានចាប់ពី {{date}}',
+    noVideosYet: 'វគ្គសិក្សានេះមិនទាន់មានវីដេអូទេ',
+    backToWatch: 'ត្រឡប់ទៅវីដេអូ',
+  },
   tabs: {
     home: 'ផ្ទះ',
+    watch: 'វីដេអូ',
     groups: 'ក្រុម',
     messages: 'សារ',
     profile: 'ប្រវត្តិរូប',

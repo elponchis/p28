@@ -80,6 +80,13 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
+          name="watch"
+          options={{
+            title: t('tabs.watch'),
+            tabBarAccessibilityLabel: t('tabs.watch'),
+          }}
+        />
+        <Tabs.Screen
           name="messages"
           options={{
             title: t('tabs.messages'),

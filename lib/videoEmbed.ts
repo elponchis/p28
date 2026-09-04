@@ -22,9 +22,19 @@ function extractYouTubeId(url: URL): string | null {
   return null;
 }
 
-function extractVimeoId(url: URL): string | null {
-  const match = url.pathname.match(/\/(\d+)(?:\/|$)/);
-  return match ? match[1] : null;
+/**
+ * A Vimeo id, and the privacy hash that comes with an unlisted video.
+ *
+ * An unlisted video is shared as vimeo.com/<id>/<hash>, and the player refuses to play it
+ * without that hash — dropping it, which this used to do, turns every unlisted video into
+ * "Private video". The hash may also arrive as ?h= on a player.vimeo.com link.
+ */
+function extractVimeo(url: URL): { id: string; hash?: string } | null {
+  const match = url.pathname.match(/\/(?:video\/)?(\d+)(?:\/([A-Za-z0-9]+))?/);
+  if (!match) return null;
+  const queryHash = url.searchParams.get('h');
+  const hash = match[2] || queryHash || undefined;
+  return { id: match[1], hash: hash ?? undefined };
 }
 
 /**
@@ -50,9 +60,12 @@ export function parseVideoEmbedUrl(rawUrl: string): VideoEmbed | null {
   }
 
   if (host === 'vimeo.com' || host === 'player.vimeo.com') {
-    const id = extractVimeoId(url);
-    if (!id) return null;
-    return { provider: 'vimeo', embedUrl: `https://player.vimeo.com/video/${id}` };
+    const vimeo = extractVimeo(url);
+    if (!vimeo) return null;
+    const embedUrl = vimeo.hash
+      ? `https://player.vimeo.com/video/${vimeo.id}?h=${vimeo.hash}`
+      : `https://player.vimeo.com/video/${vimeo.id}`;
+    return { provider: 'vimeo', embedUrl };
   }
 
   return null;

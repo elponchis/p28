@@ -4,7 +4,7 @@
 export const queryKeys = {
   profile: (userId: string) => ['profile', userId] as const,
   notificationPreferences: (userId: string) => ['notificationPreferences', userId] as const,
-  groups: (params?: { type?: 'forum' | 'ministry'; search?: string }) =>
+  groups: (params?: { type?: import('@/lib/api').GroupType; search?: string }) =>
     ['groups', params ?? {}] as const,
   group: (id: string) => ['group', id] as const,
   groupMembers: (groupId: string) => ['groupMembers', groupId] as const,
@@ -71,6 +71,7 @@ export const queryKeys = {
     ['groupMemberSettings', groupId, userId] as const,
   coursesByGroup: (groupId: string) => ['coursesByGroup', groupId] as const,
   course: (id: string) => ['course', id] as const,
+  watchCourses: () => ['watchCourses'] as const,
   lessonsByCourse: (courseId: string) => ['lessonsByCourse', courseId] as const,
   lesson: (id: string) => ['lesson', id] as const,
   chatRequests: (userId: string) => ['chatRequests', userId] as const,

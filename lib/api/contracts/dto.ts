@@ -234,13 +234,27 @@ export interface UpdateGroupRecurringMeetingInput {
 /** LMS course belonging to a group; access follows group membership/admin RLS. */
 export interface Course {
   id: string;
-  groupId: string;
+  /**
+   * The group whose members may watch this course. Absent means public — anyone signed in may
+   * watch it, which is how the Watch tab's open shelf is expressed.
+   */
+  groupId?: string;
   title: string;
   description?: string;
   coverImageUrl?: string;
   sortOrder: number;
+  /** Watchable from / until, when the course runs for a term. Absent means no bound. */
+  availableFrom?: string;
+  availableUntil?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+/** A course with the group it belongs to named, for a list that spans groups. */
+export interface WatchCourse extends Course {
+  groupName?: string;
+  groupType?: GroupType;
+  lessonCount: number;
 }
 
 export interface CreateCourseInput {
@@ -518,7 +532,7 @@ export interface MarkInAppNotificationsReadInput {
 }
 
 /** Group type: forum (discussions) or ministry (announcements, events, recurring services). */
-export type GroupType = 'forum' | 'ministry';
+export type GroupType = 'forum' | 'ministry' | 'training_school';
 
 /** Group (Forum or Ministry). Top-level concept. From groups table. */
 export interface Group {

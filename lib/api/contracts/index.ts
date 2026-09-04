@@ -29,6 +29,7 @@ export type {
   CreateGroupRecurringMeetingInput,
   CreateGroupInput,
   Course,
+  WatchCourse,
   Discussion,
   DiscussionPost,
   EventRsvpAttendee,
