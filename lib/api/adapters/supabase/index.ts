@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { createSupabaseAuthAdapter } from './auth';
 import { createSupabaseDataAdapter } from './data';
+import { createJwtSkewRetryFetch } from './jwtSkewRetryFetch';
 import { createSupabaseRealtimeAdapter } from './realtime';
 
 function getSupabaseClient(): SupabaseClient {
@@ -22,6 +23,9 @@ function getSupabaseClient(): SupabaseClient {
       persistSession: true,
       detectSessionInUrl: false,
     },
+    // A refreshed token is occasionally rejected as "issued at future" by a PostgREST instance
+    // whose clock trails the Auth service's. See jwtSkewRetryFetch — it retries only that.
+    global: { fetch: createJwtSkewRetryFetch() },
   });
 }
 
