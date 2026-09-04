@@ -17,6 +17,7 @@ import {
   MAX_SUBMISSION_FILES,
 } from '@/lib/api/assignmentSubmissions';
 import { parseMeetingLinkInput } from '@/lib/meetingLink';
+import { lastMessageKind } from '@/lib/chatPreview';
 import { isKnownReaction } from '@/lib/reactions';
 import type { DataContract, OnUploadProgress } from '../../contracts';
 import type { ApiError } from '../../contracts/errors';
@@ -3587,17 +3588,19 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
       subscription: { endpoint: string; p256dh: string; auth: string; userAgent?: string }
     ): Promise<void | ApiError> {
       try {
-        const { error } = await getClient().from('web_push_subscriptions').upsert(
-          {
-            endpoint: subscription.endpoint,
-            user_id: userId,
-            p256dh: subscription.p256dh,
-            auth: subscription.auth,
-            user_agent: subscription.userAgent ?? null,
-            last_seen_at: new Date().toISOString(),
-          },
-          { onConflict: 'endpoint' }
-        );
+        const { error } = await getClient()
+          .from('web_push_subscriptions')
+          .upsert(
+            {
+              endpoint: subscription.endpoint,
+              user_id: userId,
+              p256dh: subscription.p256dh,
+              auth: subscription.auth,
+              user_agent: subscription.userAgent ?? null,
+              last_seen_at: new Date().toISOString(),
+            },
+            { onConflict: 'endpoint' }
+          );
         if (error) return toApiError(error);
       } catch (e) {
         return toApiError(e);
@@ -4375,15 +4378,24 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
 
         const { data: lastMsg } = await getClient()
           .from('chat_messages')
-          .select('chat_id, user_id, body, created_at')
+          .select('chat_id, user_id, body, created_at, deleted_at, attachments, image_urls')
           .in('chat_id', cids)
           .order('created_at', { ascending: false });
-        const lastByChat = new Map<string, { body: string; created_at: string }>();
+        const lastByChat = new Map<
+          string,
+          { body: string; created_at: string; kind?: 'deleted' | 'attachment' }
+        >();
         if (lastMsg) {
           for (const m of lastMsg) {
-            if (!lastByChat.has(m.chat_id)) {
-              lastByChat.set(m.chat_id, { body: m.body, created_at: m.created_at });
-            }
+            if (lastByChat.has(m.chat_id)) continue;
+            const attachmentCount =
+              (Array.isArray(m.attachments) ? m.attachments.length : 0) +
+              (Array.isArray(m.image_urls) ? m.image_urls.length : 0);
+            lastByChat.set(m.chat_id, {
+              body: m.body,
+              created_at: m.created_at,
+              kind: lastMessageKind({ body: m.body, deleted: !!m.deleted_at, attachmentCount }),
+            });
           }
         }
 
@@ -4462,7 +4474,8 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
             imageUrl: r.image_url ?? undefined,
             createdAt: r.created_at,
             updatedAt: r.updated_at ?? undefined,
-            lastMessagePreview: last?.body ?? undefined,
+            lastMessagePreview: last?.body || undefined,
+            lastMessageKind: last?.kind,
             lastMessageAt: last?.created_at ?? undefined,
             memberCount: countMap.get(r.id) ?? 0,
             participantDisplayNames,

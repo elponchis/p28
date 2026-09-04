@@ -565,6 +565,7 @@ export const ko: TranslationShape = {
   },
   attachments: {
     addAttachment: '첨부 추가',
+    attachmentPreview: '첨부 파일',
     addAttachmentHint: '사진, 동영상 또는 파일 추가',
     photo: '사진',
     video: '동영상',

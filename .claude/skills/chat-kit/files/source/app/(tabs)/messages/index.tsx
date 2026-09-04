@@ -102,6 +102,16 @@ function ChatRow({
   const isGroupChat = otherMembers.length > 1;
   const unread = (chat.unreadCount ?? 0) > 0;
 
+  // A deleted last message, or one that was only a photo, has no text of its own; a row with a
+  // timestamp and nothing beside it reads as a chat that broke rather than one that was tidied.
+  const preview =
+    chat.lastMessagePreview ||
+    (chat.lastMessageKind === 'deleted'
+      ? t('message.messageDeleted')
+      : chat.lastMessageKind === 'attachment'
+        ? t('attachments.attachmentPreview')
+        : '');
+
   const displayName =
     chat.name?.trim() ||
     chat.participantDisplayNames ||
@@ -157,9 +167,9 @@ function ChatRow({
             )}
           </View>
         </View>
-        {chat.lastMessagePreview ? (
+        {preview ? (
           <Text style={[styles.chatPreview, unread && styles.chatPreviewUnread]} numberOfLines={1}>
-            {chat.lastMessagePreview}
+            {preview}
           </Text>
         ) : null}
       </View>

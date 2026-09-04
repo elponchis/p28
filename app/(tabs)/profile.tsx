@@ -41,10 +41,13 @@ export default function ProfileScreen() {
   const userId = session?.user?.id;
   const { data: profile, isLoading: loading, isError, error, refetch } = useProfileQuery(userId);
 
+  // refetch() ignores the query's `enabled` guard, so calling it before the session resolves
+  // fires the request with an undefined user id -- PostgREST answers 400 on user_id=eq.undefined.
   useFocusEffect(
     useCallback(() => {
+      if (!userId) return;
       void refetch();
-    }, [refetch])
+    }, [refetch, userId])
   );
 
   const errorMessage = isError && error && 'message' in error ? getUserFacingError(error) : null;

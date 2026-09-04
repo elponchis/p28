@@ -752,6 +752,12 @@ export interface Chat {
   updatedAt?: string;
   /** Last message preview when listing chats. */
   lastMessagePreview?: string;
+  /**
+   * What the last message was, when it has no text to preview. A deleted message and an
+   * attachment-only one both leave an empty body, and a row that shows a timestamp with nothing
+   * beside it reads as a bug; the caller turns this into words in its own language.
+   */
+  lastMessageKind?: 'deleted' | 'attachment';
   /** Last message timestamp. */
   lastMessageAt?: string;
   /** Member count. */

@@ -571,6 +571,7 @@ export const km: TranslationShape = {
   },
   attachments: {
     addAttachment: 'បន្ថែមឯកសារភ្ជាប់',
+    attachmentPreview: 'ឯកសារភ្ជាប់',
     addAttachmentHint: 'បន្ថែមរូបថត វីដេអូ ឬឯកសារ',
     photo: 'រូបថត',
     video: 'វីដេអូ',

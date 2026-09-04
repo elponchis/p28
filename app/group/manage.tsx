@@ -20,10 +20,13 @@ export default function ManageGroupsScreen() {
   const { data: memberGroups = [] } = useGroupsForUserQuery(userId);
   const memberGroupIds = new Set(memberGroups.map((g) => g.id));
 
+  // refetch() ignores the query's `enabled` guard, so calling it before the session resolves
+  // fires the request with an undefined user id -- PostgREST answers 400 on user_id=eq.undefined.
   useFocusEffect(
     useCallback(() => {
+      if (!userId) return;
       refetch();
-    }, [refetch])
+    }, [refetch, userId])
   );
 
   return (

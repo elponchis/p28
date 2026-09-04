@@ -55,6 +55,8 @@ interface ContextBanner {
 
 interface ReplyContextBanner extends ContextBanner {
   authorName: string;
+  /** True when replying to yourself, which is named rather than spelled out. */
+  isOwnAuthor?: boolean;
 }
 
 export interface ComposeBarProps {
@@ -221,10 +223,15 @@ export function ComposeBar({
         <View style={isChat ? chatStyles.contextBanner : styles.contextBanner}>
           <View style={isChat ? chatStyles.contextBannerContent : styles.contextBannerContent}>
             <Text style={isChat ? chatStyles.contextBannerLabel : styles.contextBannerLabel}>
-              {t('message.replyingTo')}{' '}
-              <Text style={isChat ? chatStyles.contextBannerAuthor : styles.contextBannerAuthor}>
-                {replyingToContext.authorName}
-              </Text>
+              {/* Same phrasing as the quote on a sent reply, so the composer and the message
+                  agree about who is being answered -- including when it is you. */}
+              {replyingToContext.isOwnAuthor ? (
+                t('message.replyingToYou')
+              ) : (
+                <Text style={isChat ? chatStyles.contextBannerAuthor : styles.contextBannerAuthor}>
+                  {t('message.replyingToPerson', { name: replyingToContext.authorName })}
+                </Text>
+              )}
             </Text>
             <Text
               style={isChat ? chatStyles.contextBannerPreview : styles.contextBannerPreview}

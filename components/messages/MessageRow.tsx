@@ -47,6 +47,14 @@ export interface MessageRowProps {
   /** Own messages: edit / delete from the hover toolbar instead of only the long-press sheet. */
   onEdit?: () => void;
   onDelete?: () => void;
+  /**
+   * Drop your own avatar and let your bubbles run closer to the right edge.
+   *
+   * On a phone the column of your own face costs width that the message needs, and says nothing
+   * — you know who you are. Off by default, so the roomier desktop layout keeps both sides
+   * symmetrical.
+   */
+  compactOwnMessages?: boolean;
 }
 
 export function MessageRow({
@@ -71,6 +79,7 @@ export function MessageRow({
   onParentPress,
   onEdit,
   onDelete,
+  compactOwnMessages = false,
 }: MessageRowProps) {
   const {
     isOwn: isOwnMessage,
@@ -150,7 +159,13 @@ export function MessageRow({
           )}
 
           {/* Content column */}
-          <View style={[styles.contentColumn, isOwnMessage && styles.contentColumnOwn]}>
+          <View
+            style={[
+              styles.contentColumn,
+              isOwnMessage && styles.contentColumnOwn,
+              isOwnMessage && compactOwnMessages && styles.contentColumnOwnCompact,
+            ]}
+          >
             {/* Name row — first in group; own side only while sending */}
             {isFirstInGroup && (!isOwnMessage || showSendingOutbound) ? (
               <View style={[styles.metaRow, isOwnMessage && styles.metaRowOwn]}>
@@ -292,9 +307,7 @@ export function MessageRow({
                           onFilePress={onFilePress}
                         />
                         {showFailedOutbound ? (
-                          <Text style={styles.failedOutboundLabel}>
-                            {t('message.sendFailed')}
-                          </Text>
+                          <Text style={styles.failedOutboundLabel}>{t('message.sendFailed')}</Text>
                         ) : null}
                       </>
                     )}
@@ -350,8 +363,8 @@ export function MessageRow({
             </View>
           </View>
 
-          {/* Own message avatar on the right — only on last in group */}
-          {isOwnMessage ? (
+          {/* Own message avatar on the right — only on last in group, and not when compact */}
+          {isOwnMessage && !compactOwnMessages ? (
             isLastInGroup ? (
               <View style={styles.avatarContainer}>
                 <Avatar
@@ -440,6 +453,10 @@ const styles = StyleSheet.create({
   },
   contentColumnOwn: {
     alignItems: 'flex-end',
+  },
+  contentColumnOwnCompact: {
+    // The width the avatar column gave back, spent on the message instead.
+    maxWidth: '88%',
   },
 
   metaRow: {

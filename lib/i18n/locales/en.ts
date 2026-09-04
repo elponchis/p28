@@ -572,6 +572,7 @@ export const en = {
   },
   attachments: {
     addAttachment: 'Add attachment',
+    attachmentPreview: 'Attachment',
     addAttachmentHint: 'Add a photo, video, or file',
     photo: 'Photo',
     video: 'Video',

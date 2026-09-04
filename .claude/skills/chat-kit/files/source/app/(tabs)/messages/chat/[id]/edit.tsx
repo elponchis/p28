@@ -20,7 +20,7 @@ import {
   useUpdateChatMutation,
   useUploadChatImageMutation,
 } from '@/hooks/useApiQueries';
-import { getUserFacingError } from '@/lib/api';
+import { describeError } from '@/lib/api';
 import { t } from '@/lib/i18n';
 import { notify } from '@/lib/dialogs';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
@@ -88,7 +88,7 @@ export default function ChatEditScreen() {
       }
       router.back();
     } catch (err) {
-      const msg = getUserFacingError(err);
+      const msg = describeError(err);
       void notify({
         title: t('common.error'),
         message: msg,

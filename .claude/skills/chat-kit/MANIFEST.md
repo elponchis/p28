@@ -64,7 +64,7 @@ them, do not copy a second query layer.
 
 ### lib
 
-`lib/reactions.ts` · `lib/readReceipts.ts` · `lib/openChats.ts` · `lib/chatScrollAnchor.ts` · `lib/uploadErrors.ts` · `lib/clipboard.ts` ·
+`lib/reactions.ts` · `lib/readReceipts.ts` · `lib/openChats.ts` · `lib/chatScrollAnchor.ts` · `lib/chatPreview.ts` · `lib/uploadErrors.ts` · `lib/clipboard.ts` ·
 `lib/animation.ts` · `lib/composeAttachments.ts` · `lib/chatSharedContent.ts` ·
 `lib/mediaViewerBounds.ts` · `lib/cloudinaryVideo.ts` · `lib/videoPoster.ts` ·
 `lib/documentPickerLock.ts` · `lib/downloadFile.ts` · `lib/extractUrlsFromText.ts` ·
@@ -86,7 +86,7 @@ as `global.fetch`. Skip it only if the host already wraps its fetch.
 ### Tests
 
 `lib/__tests__/readReceipts.test.ts` · `lib/__tests__/uploadErrors.test.ts` ·
-`lib/__tests__/openChats.test.ts` · `lib/__tests__/chatScrollAnchor.test.ts` · `lib/api/adapters/supabase/__tests__/jwtSkewRetryFetch.test.ts` ·
+`lib/__tests__/openChats.test.ts` · `lib/__tests__/chatScrollAnchor.test.ts` · `lib/__tests__/chatPreview.test.ts` · `lib/api/adapters/supabase/__tests__/jwtSkewRetryFetch.test.ts` ·
 `hooks/__tests__/useChatMessagesQuery.test.tsx` (needs `hooks/**/__tests__` in the host's jest
 `testMatch`, and `react-test-renderer` with its types) ·
 `lib/api/adapters/supabase/__tests__/chatMessagePush.test.ts` ·

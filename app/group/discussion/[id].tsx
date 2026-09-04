@@ -1070,6 +1070,7 @@ export default function DiscussionDetailScreen() {
                 replyingToPost
                   ? {
                       authorName: replyingToPost.authorDisplayName ?? t('common.loading'),
+                      isOwnAuthor: !!userId && replyingToPost.userId === userId,
                       preview: replyingToPost.body ?? '',
                       onCancel: () => setReplyingToPost(null),
                     }

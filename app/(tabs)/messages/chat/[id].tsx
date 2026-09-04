@@ -72,7 +72,15 @@ import { olderMessagesScrollTarget, type OlderMessagesAnchor } from '@/lib/chatS
 import { countUnreadMembers } from '@/lib/readReceipts';
 import { downloadFileInBrowser } from '@/lib/downloadFile';
 
-import { colors, fontFamily, radius, shadow, spacing, typography } from '@/theme/tokens';
+import {
+  breakpoints,
+  colors,
+  fontFamily,
+  radius,
+  shadow,
+  spacing,
+  typography,
+} from '@/theme/tokens';
 
 /** Attachments allowed on one message. */
 const MAX_ATTACHMENTS = 5;
@@ -440,6 +448,12 @@ export default function ChatDetailScreen() {
   }, [id, chat, headerTitle, openChat]);
 
   const memberCount = chat?.members?.length ?? 0;
+
+  /**
+   * Phone-width layout. Your own avatar comes off and your bubbles run closer to the right edge:
+   * a column of your own face is width the message needs and information you already have.
+   */
+  const isNarrowLayout = windowWidth < breakpoints.desktop;
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -1077,6 +1091,7 @@ export default function ChatDetailScreen() {
                 ) : null}
                 <MessageRow
                   post={msg}
+                  compactOwnMessages={isNarrowLayout}
                   parentPost={
                     msg.parentMessageId
                       ? (messages.find((m) => m.id === msg.parentMessageId) ?? null)
@@ -1166,6 +1181,7 @@ export default function ChatDetailScreen() {
               replyingTo
                 ? {
                     authorName: replyingTo.authorDisplayName ?? t('common.loading'),
+                    isOwnAuthor: !!userId && replyingTo.userId === userId,
                     preview: replyingTo.body ?? '',
                     onCancel: () => setReplyingTo(null),
                   }
