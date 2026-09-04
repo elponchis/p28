@@ -17,6 +17,7 @@ import {
   MAX_SUBMISSION_FILES,
 } from '@/lib/api/assignmentSubmissions';
 import { parseMeetingLinkInput } from '@/lib/meetingLink';
+import { isKnownReaction } from '@/lib/reactions';
 import type { DataContract, OnUploadProgress } from '../../contracts';
 import type { ApiError } from '../../contracts/errors';
 import { isApiError } from '../../contracts/guards';
@@ -1218,33 +1219,9 @@ type DiscussionPostRow = {
   attachments?: unknown;
 };
 
-/**
- * Reaction keys the database is allowed to hold. Kept here so a row written by an older client
- * -- or a future key this build does not know -- is dropped rather than rendered as a blank
- * badge; PostReactionType is the same list on the contract side.
- */
-const KNOWN_REACTION_TYPES: ReadonlySet<string> = new Set<PostReactionType>([
-  'heart',
-  'thumbs_up',
-  'laugh',
-  'sad',
-  'prayer',
-  'wow',
-  'clap',
-  'fire',
-  'celebrate',
-  'thinking',
-  'eyes',
-  'check',
-]);
-
-function isKnownReactionType(value: string): value is PostReactionType {
-  return KNOWN_REACTION_TYPES.has(value);
-}
-
 /** Counts one reaction row into a per-message tally. Absent keys mean zero. */
 function tallyReaction(counts: PostReactionCounts, reactionType: string): void {
-  if (!isKnownReactionType(reactionType)) return;
+  if (!isKnownReaction(reactionType)) return;
   counts[reactionType] = (counts[reactionType] ?? 0) + 1;
 }
 
@@ -1269,7 +1246,7 @@ function mapDiscussionPostRow(
     imageUrls,
     attachments: attachments && attachments.length > 0 ? attachments : undefined,
     reactionCounts: reactionCounts ?? {},
-    userReactionTypes: userReactionTypes?.filter(isKnownReactionType) ?? undefined,
+    userReactionTypes: userReactionTypes?.filter(isKnownReaction) ?? undefined,
   };
 }
 

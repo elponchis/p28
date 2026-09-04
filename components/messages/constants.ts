@@ -1,46 +1,39 @@
-import type { PostReactionType } from '@/lib/api';
+/**
+ * Reaction options for the message UI.
+ *
+ * The catalogue itself lives in lib/reactions, because the Supabase adapter needs the same key
+ * list and must not import from components. These are the view-shaped projections of it.
+ */
+import {
+  MORE_REACTIONS,
+  QUICK_REACTIONS,
+  REACTION_CATALOGUE,
+  REACTION_ORDER,
+  reactionEmoji,
+  type ReactionDefinition,
+} from '@/lib/reactions';
 
 export interface ReactionOption {
-  type: PostReactionType;
+  type: string;
   emoji: string;
   label: string;
 }
 
+function toOption(definition: ReactionDefinition): ReactionOption {
+  return { type: definition.key, emoji: definition.emoji, label: definition.label };
+}
+
 /** Shown inline, on the hover toolbar and in the picker's first row. */
-export const REACTION_OPTIONS: ReactionOption[] = [
-  { type: 'heart', emoji: '❤️', label: 'Heart' },
-  { type: 'thumbs_up', emoji: '👍', label: 'Thumbs up' },
-  { type: 'laugh', emoji: '😂', label: 'Laugh' },
-  { type: 'sad', emoji: '😢', label: 'Sad' },
-];
+export const REACTION_OPTIONS: ReactionOption[] = QUICK_REACTIONS.map(toOption);
 
-/**
- * Behind the + button. Prayer leads it: this is a church app and 🙏 was one of the original
- * three reactions, so every reaction already in the database still has somewhere to live.
- */
-export const REACTION_EXTRA_OPTIONS: ReactionOption[] = [
-  { type: 'prayer', emoji: '🙏', label: 'Prayer' },
-  { type: 'wow', emoji: '😮', label: 'Wow' },
-  { type: 'clap', emoji: '👏', label: 'Clap' },
-  { type: 'fire', emoji: '🔥', label: 'Fire' },
-  { type: 'celebrate', emoji: '🎉', label: 'Celebrate' },
-  { type: 'thinking', emoji: '🤔', label: 'Thinking' },
-  { type: 'eyes', emoji: '👀', label: 'Eyes' },
-  { type: 'check', emoji: '✅', label: 'Done' },
-];
+/** Behind the + button. */
+export const REACTION_EXTRA_OPTIONS: ReactionOption[] = MORE_REACTIONS.map(toOption);
 
-export const ALL_REACTION_OPTIONS: ReactionOption[] = [
-  ...REACTION_OPTIONS,
-  ...REACTION_EXTRA_OPTIONS,
-];
+export const ALL_REACTION_OPTIONS: ReactionOption[] = REACTION_CATALOGUE.map(toOption);
 
-export const REACTION_EMOJI: Record<PostReactionType, string> = ALL_REACTION_OPTIONS.reduce(
-  (acc, option) => {
-    acc[option.type] = option.emoji;
-    return acc;
-  },
-  {} as Record<PostReactionType, string>
+/** Emoji for a stored key. Unknown keys render as nothing rather than an empty badge. */
+export const REACTION_EMOJI: Record<string, string> = Object.fromEntries(
+  REACTION_CATALOGUE.map((r) => [r.key, r.emoji])
 );
 
-/** Order badges render in, so a message's reactions do not reshuffle between renders. */
-export const REACTION_ORDER: PostReactionType[] = ALL_REACTION_OPTIONS.map((o) => o.type);
+export { REACTION_ORDER, reactionEmoji };
