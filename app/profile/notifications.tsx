@@ -1,4 +1,3 @@
-import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -9,14 +8,7 @@ import {
   View,
 } from 'react-native';
 
-import { LabeledSwitchRow } from '@/components/patterns';
-import {
-  disableWebPush,
-  enableWebPush,
-  isWebPushConfigured,
-  isWebPushEnabled,
-  isWebPushSupported,
-} from '@/lib/webPush';
+import { BrowserNotificationsRow, LabeledSwitchRow } from '@/components/patterns';
 import { DesktopContentContainer } from '@/components/layout/DesktopContentContainer';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -26,9 +18,6 @@ import {
 import { getUserFacingError } from '@/lib/api';
 import { t } from '@/lib/i18n';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
-
-/** How long the switch waits on the browser's permission prompt before becoming usable again. */
-const WEB_PUSH_PROMPT_TIMEOUT_MS = 30000;
 
 export default function NotificationPreferencesScreen() {
   const { session } = useAuth();
@@ -41,43 +30,6 @@ export default function NotificationPreferencesScreen() {
     error,
     refetch: fetchPrefs,
   } = useNotificationPreferencesQuery(userId);
-
-  /**
-   * Web push lives outside the preferences row above: the server preference is a wish, browser
-   * permission is a grant, and only the browser can give the second one.
-   */
-  const webPushAvailable = isWebPushSupported() && isWebPushConfigured();
-  const [webPushOn, setWebPushOn] = useState(false);
-  const [webPushBusy, setWebPushBusy] = useState(false);
-
-  useEffect(() => {
-    if (!webPushAvailable) return;
-    void isWebPushEnabled().then(setWebPushOn);
-  }, [webPushAvailable]);
-
-  const handleToggleWebPush = useCallback(
-    async (next: boolean) => {
-      if (!userId) return;
-      setWebPushBusy(true);
-
-      // Declining the browser prompt is a real answer, not an error to shout about; the switch
-      // springing back says it.
-      const attempt = next ? enableWebPush(userId) : disableWebPush().then(() => false);
-
-      // The permission prompt has no deadline: a user who ignores it rather than answering
-      // leaves requestPermission() pending forever, and awaiting that alone would leave the
-      // switch disabled for the rest of the session. So the busy state stops waiting after
-      // WEB_PUSH_PROMPT_TIMEOUT_MS while the attempt itself keeps running -- if the answer
-      // arrives late, the switch still catches up.
-      void attempt.then(setWebPushOn).catch(() => setWebPushOn(false));
-      await Promise.race([
-        attempt.catch(() => undefined),
-        new Promise((resolve) => setTimeout(resolve, WEB_PUSH_PROMPT_TIMEOUT_MS)),
-      ]);
-      setWebPushBusy(false);
-    },
-    [userId]
-  );
 
   const updateMutation = useUpdateNotificationPreferencesMutation();
   const isSubmitting = updateMutation.isPending;
@@ -180,24 +132,7 @@ export default function NotificationPreferencesScreen() {
           </View>
         ) : null}
 
-        {/*
-        Browser notifications are a separate switch from the preference above, because they are a
-        separate thing: the preference says "I want to be told about messages", this says "this
-        browser may show me a notification". Permission is per-browser and cannot be granted on
-        someone's behalf, so the row only appears where the browser can actually do it.
-      */}
-        {webPushAvailable ? (
-          <View style={styles.card}>
-            <LabeledSwitchRow
-              label={t('notifications.browserNotifications')}
-              value={webPushOn}
-              onValueChange={handleToggleWebPush}
-              disabled={webPushBusy}
-              accessibilityLabel={t('notifications.browserNotifications')}
-              accessibilityHint={t('notifications.browserNotificationsHint')}
-            />
-          </View>
-        ) : null}
+        <BrowserNotificationsRow userId={userId} />
       </DesktopContentContainer>
     </ScrollView>
   );

@@ -36,6 +36,7 @@ export { GroupLeaderRows } from './GroupLeaderRows';
 export type { GroupLeaderRowsItem, GroupLeaderRowsProps } from './GroupLeaderRows';
 export { StackHeaderBack } from './StackHeaderBack';
 export type { StackHeaderBackProps } from './StackHeaderBack';
+export { BrowserNotificationsRow } from './BrowserNotificationsRow';
 export { LabeledSwitchRow } from './LabeledSwitchRow';
 export type { LabeledSwitchRowProps } from './LabeledSwitchRow';
 export { LatestAnnouncementRow } from './LatestAnnouncementRow';

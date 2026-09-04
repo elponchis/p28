@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
-import { LabeledSwitchRow } from '@/components/patterns';
+import { BrowserNotificationsRow, LabeledSwitchRow } from '@/components/patterns';
 import { DesktopContentContainer } from '@/components/layout/DesktopContentContainer';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -180,6 +180,7 @@ export default function SettingsScreen() {
               accessibilityLabel={t('notifications.messages')}
               accessibilityHint={t('notifications.messagesHint')}
             />
+            <BrowserNotificationsRow userId={userId} />
           </View>
         ) : null}
 
