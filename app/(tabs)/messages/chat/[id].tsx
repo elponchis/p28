@@ -68,6 +68,7 @@ import { formatDateHeader, isSameDay, messageLocalMinuteKey } from '@/lib/dates'
 import { t } from '@/lib/i18n';
 import { confirm, notify } from '@/lib/dialogs';
 import { copyTextToClipboard } from '@/lib/clipboard';
+import { olderMessagesScrollTarget, type OlderMessagesAnchor } from '@/lib/chatScrollAnchor';
 import { countUnreadMembers } from '@/lib/readReceipts';
 import { downloadFileInBrowser } from '@/lib/downloadFile';
 
@@ -194,11 +195,12 @@ export default function ChatDetailScreen() {
   /**
    * Prepending older messages moves everything down by however tall they are, which would throw
    * the reader to a different part of the conversation. The offset and content height are
-   * captured before the fetch and the difference is added back once the taller content lands.
+   * captured before the fetch and the difference is added back once the taller content lands —
+   * see lib/chatScrollAnchor for which resize counts as "lands".
    */
   const scrollOffsetRef = useRef(0);
   const contentHeightRef = useRef(0);
-  const olderAnchorRef = useRef<{ height: number; offset: number } | null>(null);
+  const olderAnchorRef = useRef<OlderMessagesAnchor | null>(null);
 
   const handleLoadOlder = useCallback(async () => {
     if (isLoadingOlder) return;
@@ -206,6 +208,7 @@ export default function ChatDetailScreen() {
     olderAnchorRef.current = {
       height: contentHeightRef.current,
       offset: scrollOffsetRef.current,
+      firstMessageId: messages[0]?.id,
     };
     shouldStickToEndRef.current = false;
     try {
@@ -213,20 +216,22 @@ export default function ChatDetailScreen() {
     } finally {
       setIsLoadingOlder(false);
     }
-  }, [isLoadingOlder, loadOlder]);
+  }, [isLoadingOlder, loadOlder, messages]);
 
   const onChatMessagesContentSizeChange = useCallback(
     (_w: number, height: number) => {
       const anchor = olderAnchorRef.current;
       contentHeightRef.current = height;
       if (anchor) {
+        const target = olderMessagesScrollTarget(anchor, {
+          height,
+          firstMessageId: messages[0]?.id,
+        });
+        // Still waiting for the page itself — the spinner that replaced the button resizes the
+        // content too, and spending the anchor on that is how the reader ends up at the top.
+        if (target === null) return;
         olderAnchorRef.current = null;
-        if (height > anchor.height) {
-          scrollViewRef.current?.scrollTo({
-            y: anchor.offset + (height - anchor.height),
-            animated: false,
-          });
-        }
+        scrollViewRef.current?.scrollTo({ y: target, animated: false });
         return;
       }
       if (!shouldStickToEndRef.current) return;
