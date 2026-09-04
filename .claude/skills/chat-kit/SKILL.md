@@ -5,7 +5,7 @@ description: Scaffold a complete one-to-one and group chat feature into an Expo/
   and push notifications — then adapt it to the host project's theme, i18n and API layer. Use
   when asked to add chat, direct messages, or a messaging feature to an app.
 metadata:
-  version: '1.1.0'
+  version: '1.2.0'
 ---
 
 # chat-kit
@@ -48,6 +48,55 @@ write down what you found — the numbered steps below refer back to them.
 
 Read `MANIFEST.md` next. Every file has a role — **copy**, **merge** or **expect** — and merging
 a file marked `expect` is how you end up with two theme systems.
+
+## Packages
+
+Everything the copied files import, and nothing else — the versions are what the source project
+runs, but install the Expo ones through `npx expo install` so they land on the versions this
+host's SDK expects rather than these.
+
+```bash
+# Screens, icons, images, storage
+npx expo install expo-router @expo/vector-icons react-native-safe-area-context expo-image @react-native-async-storage/async-storage
+
+# Attachments — drop one and you drop that attachment type, nothing else
+npx expo install expo-image-picker expo-document-picker expo-file-system expo-media-library expo-audio expo-video expo-video-thumbnails expo-sharing
+
+# Data layer
+npm install @tanstack/react-query @supabase/supabase-js
+
+# Only to run the bundled hook test
+npm install -D react-test-renderer @types/react-test-renderer
+```
+
+Most hosts already have the first and third groups; check before installing, and never install a
+second copy of React Query or the Supabase client.
+
+| Package                                     | Here       | Needed for                                                                         |
+| ------------------------------------------- | ---------- | ---------------------------------------------------------------------------------- |
+| `expo-router`                               | `~6.0.24`  | Every screen. Converting to React Navigation is real work — see the table above.   |
+| `@expo/vector-icons`                        | `^15.0.3`  | Every icon in the kit.                                                             |
+| `react-native-safe-area-context`            | `~5.6.0`   | The sheets, the chat header, the composer's bottom inset.                          |
+| `expo-image`                                | `55.0.5`   | Avatars and attachment thumbnails.                                                 |
+| `@react-native-async-storage/async-storage` | `^2.2.0`   | The open-chats list and its folded state.                                          |
+| `@tanstack/react-query`                     | `^5.90.21` | All server state; the optimistic send lives in its cache.                          |
+| `@supabase/supabase-js`                     | `^2.95.3`  | The adapter, realtime and storage.                                                 |
+| `expo-image-picker`                         | `~17.0.11` | Photos and videos from the library; the chat banner image.                         |
+| `expo-document-picker`                      | `~14.0.8`  | Files.                                                                             |
+| `expo-file-system`                          | `~19.0.23` | Reading a picked file and native downloads. Imported as `expo-file-system/legacy`. |
+| `expo-media-library`                        | `~18.2.1`  | Saving a received image to the camera roll (native only).                          |
+| `expo-audio`                                | `~1.1.1`   | Recording and playing voice messages.                                              |
+| `expo-video`                                | `~3.0.16`  | The video preview modal.                                                           |
+| `expo-video-thumbnails`                     | `~10.0.8`  | Poster frames for video attachments.                                               |
+| `expo-sharing`                              | `~14.0.8`  | The native share sheet for a received file.                                        |
+| `react-test-renderer` (+ types)             | `19.1.0`   | `hooks/__tests__/useChatMessagesQuery.test.tsx` only. Match the React major.       |
+
+Nothing to install for the Edge Function: Deno resolves `npm:web-push@3.6.7` and supabase-js from
+esm.sh at deploy time. Web Push needs VAPID keys in the environment, not a package.
+
+The kit adds no native module the host is unlikely to have already, with one deliberate omission:
+pasting an image from the clipboard is web-only because `expo-clipboard` carries native code and
+would force a dev-client rebuild on every host that takes this kit.
 
 ## Steps
 

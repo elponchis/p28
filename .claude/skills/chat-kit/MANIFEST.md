@@ -115,7 +115,8 @@ Never overwrite these. Open the host's copy and move the chat sections in.
 
 ## expect — the host must already have these
 
-Retarget imports; do not copy.
+Retarget imports; do not copy. For the npm packages the copied files import, see **Packages** in
+SKILL.md — that list is the install step, this one is about the host's own modules.
 
 | Dependency                                  | Used for                                                                                         |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------ |
