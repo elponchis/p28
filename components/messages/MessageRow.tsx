@@ -1,7 +1,8 @@
-import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { Avatar } from '@/components/primitives';
+import { isDesktopWebPointer } from '@/lib/pointer';
 import { MessageVideoEmbed } from '@/components/patterns/MessageVideoEmbed';
 import type { MessageAttachment } from '@/lib/api';
 import { t } from '@/lib/i18n';
@@ -106,6 +107,10 @@ export function MessageRow({
     canRetry: !!onRetrySend,
     onLongPress,
   });
+
+  // A mouse can drag across text; a finger long-pressing it opens the browser's selection
+  // callout instead of this row's actions sheet.
+  const selectableText = isDesktopWebPointer();
 
   const hoverActions = showHoverActions ? (
     <MessageHoverActions
@@ -271,12 +276,12 @@ export function MessageRow({
 
                         {post.body ? (
                           <Text
-                            // Web only: on a desktop browser this is what makes a message
-                            // selectable with the mouse and copyable with Ctrl+C. On native the
-                            // same prop would hand the long press to the OS selection magnifier
-                            // and swallow the reaction sheet, so copying there goes through the
-                            // sheet's own Copy action instead.
-                            selectable={Platform.OS === 'web'}
+                            // Desktop web only: with a mouse this is what makes a message
+                            // selectable and copyable with Ctrl+C. On touch -- native or a phone
+                            // browser -- the same prop hands the long press to the selection
+                            // callout and swallows the actions sheet, so copying there goes
+                            // through the sheet's own Copy action instead.
+                            selectable={selectableText}
                             style={[
                               styles.messageBody,
                               isOwnMessage && styles.messageBodyOwn,
@@ -284,7 +289,7 @@ export function MessageRow({
                               // the text and makes it read as a button rather than something
                               // you can drag across. An I-beam is the affordance every chat app
                               // uses to say "this is selectable".
-                              Platform.OS === 'web' && styles.messageBodySelectableWeb,
+                              selectableText && styles.messageBodySelectableWeb,
                             ]}
                           >
                             {post.body}

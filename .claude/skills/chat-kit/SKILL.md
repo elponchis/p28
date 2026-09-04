@@ -116,11 +116,21 @@ shipping a dead button.
 Point `theme/tokens` at the host's palette and most of it follows. What does not:
 
 - `MessageRow.tsx` — bubble shape, alignment, grouping. The file to edit for a different look.
+  `compactOwnMessages` is the phone layout: your own avatar comes off and the bubbles take the
+  width it was using.
 - `OpenChatsList.tsx` — the switcher's chrome: the indent rule, the fold header, the unread pill.
   Its styles are local to the file, so re-skinning it touches nothing else.
 - `components/messages/constants.ts` — which emoji, and which four are the quick picks.
 - `lib/reactions.ts` — the catalogue. Adding an emoji is a one-file change; the column validates
   shape, not membership.
+
+## Touch versus mouse
+
+One predicate, `lib/pointer.ts`, decides both the hover toolbar beside a message and whether
+message text is selectable, because `Platform.OS === 'web'` is true on a phone browser and both
+are wrong there — a toolbar no finger can hover, and a selection callout that eats the long press
+that should open the actions sheet. If the host adds another mouse-only affordance, hang it off
+the same predicate rather than on the platform.
 
 ## Known limits
 

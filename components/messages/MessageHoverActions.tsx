@@ -9,7 +9,7 @@
  * put them on the bubble and moving the pointer onto this toolbar counts as leaving the message,
  * dismissing the very thing being reached for.
  */
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { t } from '@/lib/i18n';
@@ -32,9 +32,6 @@ export interface MessageHoverActionsProps {
   onEdit?: () => void;
   onDelete?: () => void;
 }
-
-/** True where a hover toolbar makes sense at all. */
-export const HOVER_ACTIONS_SUPPORTED = Platform.OS === 'web';
 
 export function MessageHoverActions({
   isOwnMessage,

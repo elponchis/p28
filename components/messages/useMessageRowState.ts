@@ -15,10 +15,10 @@ import { useCallback, useMemo, useState } from 'react';
 
 import type { PostReactionType } from '@/lib/api';
 import { formatMessageSentClockTime } from '@/lib/dates';
+import { isDesktopWebPointer } from '@/lib/pointer';
 import { t } from '@/lib/i18n';
 
 import { REACTION_ORDER } from './constants';
-import { HOVER_ACTIONS_SUPPORTED } from './MessageHoverActions';
 import type { MessageLike } from './types';
 
 export interface UseMessageRowStateInput {
@@ -48,7 +48,7 @@ export interface MessageRowState {
   canReactNow: boolean;
   handleLongPress: () => void;
   longPressHint: string | undefined;
-  /** Spread onto the row container. Empty off web; react-native-web forwards these to the DOM. */
+  /** Spread onto the row container. Empty without a mouse; react-native-web forwards these. */
   hoverProps: object;
   /** True while the pointer is over the row and the row has actions worth offering. */
   showHoverActions: boolean;
@@ -80,15 +80,16 @@ export function useMessageRowState({
   );
 
   const [hovered, setHovered] = useState(false);
+  const hoverSupported = isDesktopWebPointer();
   const hoverProps = useMemo(
     () =>
-      HOVER_ACTIONS_SUPPORTED
+      hoverSupported
         ? ({
             onMouseEnter: () => setHovered(true),
             onMouseLeave: () => setHovered(false),
           } as object)
         : {},
-    []
+    [hoverSupported]
   );
 
   const handleLongPress = useCallback(() => {
@@ -119,6 +120,6 @@ export function useMessageRowState({
           : t('message.messageRowLongPressHintOther')
         : undefined,
     hoverProps,
-    showHoverActions: HOVER_ACTIONS_SUPPORTED && hovered && canReactNow && !outboundStatus,
+    showHoverActions: hoverSupported && hovered && canReactNow && !outboundStatus,
   };
 }
