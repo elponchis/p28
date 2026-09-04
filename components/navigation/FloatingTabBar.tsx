@@ -11,6 +11,7 @@ import { useOpenChats } from '@/contexts/OpenChatsContext';
 import { useChatsForUserQuery } from '@/hooks/useApiQueries';
 import { useAuth } from '@/hooks/useAuth';
 import { t } from '@/lib/i18n';
+import { orderByActivity } from '@/lib/openChats';
 import { breakpoints, colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
 /** Routes that never get a nav icon — surfaced elsewhere (notifications: header bell). */
@@ -96,13 +97,16 @@ function TabItem({
  * from here and nothing else — the conversation is untouched, and opening it again brings the
  * row back.
  *
- * Ordered by whichever came later, the last visit or the last message, so both "the one I was
- * just in" and "the one that just got a reply" end up at the top where they are looked for. The
- * unread count comes from the same query that feeds the Messages badge, which realtime already
- * keeps fresh.
+ * Ordered by conversation activity: a chat rises when someone writes in it, never because it was
+ * clicked. The reader's own clicks are the one thing that must not shuffle the list, since they
+ * are aimed at whatever is under the pointer.
+ *
+ * Unread counts come from the same query that feeds the Messages badge, which realtime already
+ * keeps fresh. Folded away, the header carries their total, so collapsing the list never hides
+ * the fact that something is waiting.
  */
 function OpenChatsList() {
-  const { openChats, closeChat } = useOpenChats();
+  const { openChats, closeChat, collapsed, toggleCollapsed } = useOpenChats();
   const router = useRouter();
   const pathname = usePathname();
   const { session } = useAuth();
@@ -110,69 +114,100 @@ function OpenChatsList() {
 
   const rows = useMemo(() => {
     const byId = new Map(chats.map((c) => [c.id, c]));
-    return openChats
-      .map((open) => {
-        const chat = byId.get(open.id);
-        const lastMessageAt = chat?.lastMessageAt ? Date.parse(chat.lastMessageAt) : NaN;
-        return {
-          ...open,
-          unreadCount: chat?.unreadCount ?? 0,
-          sortAt: Math.max(open.activatedAt, Number.isNaN(lastMessageAt) ? 0 : lastMessageAt),
-        };
-      })
-      .sort((a, b) => b.sortAt - a.sortAt);
+    const lastMessageAtById = new Map<string, number>();
+    for (const open of openChats) {
+      const at = Date.parse(byId.get(open.id)?.lastMessageAt ?? '');
+      if (!Number.isNaN(at)) lastMessageAtById.set(open.id, at);
+    }
+    return orderByActivity(openChats, lastMessageAtById).map((open) => ({
+      ...open,
+      unreadCount: byId.get(open.id)?.unreadCount ?? 0,
+    }));
   }, [openChats, chats]);
+
+  const hiddenUnread = useMemo(
+    () => (collapsed ? rows.reduce((total, row) => total + row.unreadCount, 0) : 0),
+    [collapsed, rows]
+  );
 
   if (rows.length === 0) return null;
 
   return (
     <View style={styles.openChats}>
-      {rows.map((chat) => {
-        const isCurrent = pathname === `/messages/chat/${chat.id}`;
-        // Reading a chat clears its count server-side, but the query behind it settles a moment
-        // later; the row you are standing in should never accuse you of not having read it.
-        const unread = isCurrent ? 0 : chat.unreadCount;
-        return (
-          <View key={chat.id} style={[styles.openChatRow, isCurrent && styles.openChatRowActive]}>
-            <Pressable
-              onPress={() => router.push(`/messages/chat/${chat.id}`)}
-              style={styles.openChatOpen}
-              accessibilityRole="button"
-              accessibilityState={{ selected: isCurrent }}
-              accessibilityLabel={
-                unread > 0
-                  ? `${chat.title}, ${t('messages.unreadMessages', { count: unread })}`
-                  : chat.title
-              }
-            >
-              <Text
-                style={[
-                  styles.openChatLabel,
-                  isCurrent && styles.openChatLabelActive,
-                  unread > 0 && styles.openChatLabelUnread,
-                ]}
-                numberOfLines={1}
-              >
-                {chat.title}
-              </Text>
-            </Pressable>
-            {unread > 0 ? (
-              <View style={styles.openChatBadge}>
-                <Text style={styles.openChatBadgeText}>{unread > 99 ? '99+' : unread}</Text>
-              </View>
-            ) : null}
-            <Pressable
-              onPress={() => closeChat(chat.id)}
-              style={({ pressed }) => [styles.openChatClose, pressed && { opacity: 0.6 }]}
-              accessibilityRole="button"
-              accessibilityLabel={t('messages.closeOpenChat', { name: chat.title })}
-              hitSlop={6}
-            >
-              <Ionicons name="close" size={14} color={colors.onSurfaceVariant} />
-            </Pressable>
+      <Pressable
+        onPress={toggleCollapsed}
+        style={({ pressed }) => [styles.openChatsHeader, pressed && { opacity: 0.6 }]}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: !collapsed }}
+        accessibilityLabel={
+          collapsed ? t('messages.expandOpenChats') : t('messages.collapseOpenChats')
+        }
+      >
+        <Ionicons
+          name={collapsed ? 'chevron-forward' : 'chevron-down'}
+          size={12}
+          color={colors.onSurfaceVariant}
+        />
+        <Text style={styles.openChatsHeaderLabel} numberOfLines={1}>
+          {t('messages.openChats', { count: rows.length })}
+        </Text>
+        {hiddenUnread > 0 ? (
+          <View style={styles.openChatBadge}>
+            <Text style={styles.openChatBadgeText}>{hiddenUnread > 99 ? '99+' : hiddenUnread}</Text>
           </View>
-        );
-      })}
+        ) : null}
+      </Pressable>
+      {collapsed
+        ? null
+        : rows.map((chat) => {
+            const isCurrent = pathname === `/messages/chat/${chat.id}`;
+            // Reading a chat clears its count server-side, but the query behind it settles a moment
+            // later; the row you are standing in should never accuse you of not having read it.
+            const unread = isCurrent ? 0 : chat.unreadCount;
+            return (
+              <View
+                key={chat.id}
+                style={[styles.openChatRow, isCurrent && styles.openChatRowActive]}
+              >
+                <Pressable
+                  onPress={() => router.push(`/messages/chat/${chat.id}`)}
+                  style={styles.openChatOpen}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isCurrent }}
+                  accessibilityLabel={
+                    unread > 0
+                      ? `${chat.title}, ${t('messages.unreadMessages', { count: unread })}`
+                      : chat.title
+                  }
+                >
+                  <Text
+                    style={[
+                      styles.openChatLabel,
+                      isCurrent && styles.openChatLabelActive,
+                      unread > 0 && styles.openChatLabelUnread,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {chat.title}
+                  </Text>
+                </Pressable>
+                {unread > 0 ? (
+                  <View style={styles.openChatBadge}>
+                    <Text style={styles.openChatBadgeText}>{unread > 99 ? '99+' : unread}</Text>
+                  </View>
+                ) : null}
+                <Pressable
+                  onPress={() => closeChat(chat.id)}
+                  style={({ pressed }) => [styles.openChatClose, pressed && { opacity: 0.6 }]}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('messages.closeOpenChat', { name: chat.title })}
+                  hitSlop={6}
+                >
+                  <Ionicons name="close" size={14} color={colors.onSurfaceVariant} />
+                </Pressable>
+              </View>
+            );
+          })}
     </View>
   );
 }
@@ -468,6 +503,21 @@ const styles = StyleSheet.create({
     borderLeftWidth: 1,
     borderLeftColor: colors.ghostBorder,
     gap: 1,
+  },
+  openChatsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xxs,
+    paddingLeft: spacing.xs,
+    paddingVertical: 4,
+  },
+  openChatsHeaderLabel: {
+    ...typography.caption,
+    flex: 1,
+    fontSize: 11,
+    color: colors.onSurfaceVariant,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
   openChatRow: {
     flexDirection: 'row',

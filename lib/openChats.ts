@@ -2,9 +2,9 @@
  * The rules behind the sidebar's list of open chats, kept apart from the React context that
  * holds it so they can be reasoned about — and tested — as plain data.
  *
- * Two things decide what the list looks like: how many entries it keeps, and which ones survive
- * when it is over that. Both answers are "the most recently active", everywhere the question
- * comes up: adding a chat, and restoring a list written by an earlier session.
+ * The list is ordered by conversation activity — when someone last wrote — and not by what the
+ * reader clicked. Opening a chat therefore adds it without moving anything, so the order stays
+ * the one thing the reader did not cause and can rely on.
  */
 
 export interface OpenChat {
@@ -12,31 +12,43 @@ export interface OpenChat {
   /** Snapshot of the chat's name at open time; refreshed whenever the chat is opened again. */
   title: string;
   /**
-   * When this chat was last opened, as epoch ms. The sidebar sorts on the later of this and the
-   * chat's last message, so "I just looked at it" and "someone just wrote in it" both float a
-   * conversation to the top without either rule having to know about the other.
+   * When this chat entered the list, as epoch ms. Deliberately not refreshed by opening the chat
+   * again: it decides where a conversation with no messages yet sits, and which entry the cap
+   * evicts, but never reorders a conversation because it was read.
    */
-  activatedAt: number;
+  addedAt: number;
 }
 
 /**
- * How many entries to keep. Past this the least recently active drops, so the sidebar cannot
- * grow without end.
+ * How many entries to keep. Past this the longest-listed drops, so the sidebar cannot grow
+ * without end.
  */
 export const MAX_OPEN_CHATS = 10;
 
-/** Keeps the most recently active entries and drops the rest. */
-export function capByActivation(chats: OpenChat[]): OpenChat[] {
+/** Keeps the most recently added entries and drops the rest. */
+export function capOpenChats(chats: OpenChat[]): OpenChat[] {
   if (chats.length <= MAX_OPEN_CHATS) return chats;
-  return [...chats].sort((a, b) => b.activatedAt - a.activatedAt).slice(0, MAX_OPEN_CHATS);
+  return [...chats].sort((a, b) => b.addedAt - a.addedAt).slice(0, MAX_OPEN_CHATS);
 }
 
 /**
- * Adds a chat, or marks one already listed as just activated.
+ * Orders the list for display: most recent conversation activity first, with the time the entry
+ * was added standing in for a conversation that has no messages yet.
+ */
+export function orderByActivity<T extends OpenChat>(
+  chats: T[],
+  lastMessageAtById: Map<string, number>
+): T[] {
+  const activityOf = (chat: T) => lastMessageAtById.get(chat.id) ?? chat.addedAt;
+  return [...chats].sort((a, b) => activityOf(b) - activityOf(a));
+}
+
+/**
+ * Adds a chat to the list, leaving the order alone.
  *
- * Returns the previous list unchanged when nothing meaningful moved, so React can skip the
- * render: the chat screen re-runs this whenever its query settles, which is far more often than
- * anything here actually changes.
+ * Returns the previous list unchanged when nothing moved, so React can skip the render: the chat
+ * screen re-runs this whenever its query settles, which is far more often than anything here
+ * actually changes.
  */
 export function withChatOpened(
   prev: OpenChat[],
@@ -46,28 +58,25 @@ export function withChatOpened(
   if (!chat.id) return prev;
   const existing = prev.find((c) => c.id === chat.id);
 
-  // Opening a chat that is already listed refreshes its activation and its title -- the title
-  // because the chat may have been renamed since.
+  // Already listed: take the newer title, since the chat may have been renamed, and nothing else.
   if (existing) {
-    if (existing.title === chat.title && now - existing.activatedAt < 1000) return prev;
-    return prev.map((c) => (c.id === chat.id ? { ...c, title: chat.title, activatedAt: now } : c));
+    if (existing.title === chat.title) return prev;
+    return prev.map((c) => (c.id === chat.id ? { ...c, title: chat.title } : c));
   }
 
-  // Drop the least recently active rather than the earliest added: the cap should evict what the
-  // user has stopped using, not what they happened to open first.
-  return capByActivation([...prev, { ...chat, activatedAt: now }]);
+  return capOpenChats([...prev, { ...chat, addedAt: now }]);
 }
 
 /**
  * Folds a restored list into whatever is already open.
  *
- * Anything opened while the read was in flight wins over the stored copy — it is the newer
- * activation, and it is the chat the user is looking at.
+ * Anything opened while the read was in flight wins over the stored copy — it is the entry the
+ * user is looking at, and its title is the one just seen on screen.
  */
 export function mergeRestoredOpenChats(current: OpenChat[], restored: OpenChat[]): OpenChat[] {
   const added = restored.filter((r) => !current.some((c) => c.id === r.id));
   if (added.length === 0) return current;
-  return capByActivation([...current, ...added]);
+  return capOpenChats([...current, ...added]);
 }
 
 /**
@@ -86,12 +95,15 @@ export function parseStoredOpenChats(raw: string): OpenChat[] {
   const chats: OpenChat[] = [];
   for (const entry of parsed) {
     if (!entry || typeof entry !== 'object') continue;
-    const { id, title, activatedAt } = entry as Partial<OpenChat>;
+    const { id, title, addedAt } = entry as Partial<OpenChat>;
     if (typeof id !== 'string' || !id || typeof title !== 'string') continue;
     if (chats.some((c) => c.id === id)) continue;
-    // A missing timestamp sorts last rather than disqualifying the entry: an older build's list
-    // is still worth restoring, just below anything this build has touched.
-    chats.push({ id, title, activatedAt: typeof activatedAt === 'number' ? activatedAt : 0 });
+    // `activatedAt` is what an earlier build wrote, back when opening a chat moved it. It is the
+    // same clock, so it stands in fine; a missing timestamp sorts last rather than disqualifying
+    // the entry, since an older list is still worth restoring.
+    const legacy = (entry as { activatedAt?: unknown }).activatedAt;
+    const stamp = typeof addedAt === 'number' ? addedAt : typeof legacy === 'number' ? legacy : 0;
+    chats.push({ id, title, addedAt: stamp });
   }
-  return capByActivation(chats);
+  return capOpenChats(chats);
 }
