@@ -26,25 +26,9 @@
  *     "track": "general", "publish": true, "sortOrder": 12 }
  */
 const fs = require('fs');
-const path = require('path');
+const { readEnv, vimeo, supabase, pickThumbnail } = require('./lib/vimeo.cjs');
 
 const TRACKS = ['general', 'training_school'];
-
-function readEnv() {
-  const file = path.join(__dirname, '..', '.env');
-  const env = {};
-  for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const at = trimmed.indexOf('=');
-    if (at === -1) continue;
-    env[trimmed.slice(0, at)] = trimmed
-      .slice(at + 1)
-      .trim()
-      .replace(/^["']|["']$/g, '');
-  }
-  return env;
-}
 
 function parseArgs(argv) {
   const args = { dryRun: false };
@@ -113,41 +97,13 @@ function jobsFrom(args) {
   ];
 }
 
-async function vimeo(token, url) {
-  const res = await fetch(`https://api.vimeo.com${url}`, {
-    headers: {
-      Authorization: `bearer ${token}`,
-      Accept: 'application/vnd.vimeo.*+json;version=3.4',
-    },
-  });
-  if (!res.ok) throw new Error(`Vimeo ${url} → ${res.status} ${await res.text()}`);
-  return res.json();
-}
-
-async function supabase(env, method, pathAndQuery, body) {
-  const key = env.SUPABASE_SERVICE_ROLE_KEY;
-  const base = env.EXPO_PUBLIC_SUPABASE_URL || env.SUPABASE_URL;
-  const res = await fetch(`${base}/rest/v1${pathAndQuery}`, {
-    method,
-    headers: {
-      apikey: key,
-      Authorization: `Bearer ${key}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=representation',
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const text = await res.text();
-  if (!res.ok) throw new Error(`Supabase ${method} ${pathAndQuery} → ${res.status} ${text}`);
-  return text ? JSON.parse(text) : null;
-}
-
 /** Vimeo hands back newest first; a course is watched oldest first. */
 function lessonsFromFolder(videos) {
   return [...videos].reverse().map((v) => ({
     title: (v.name || '').replace(/\.(mp4|mov|m4v)$/i, '').trim(),
     // The whole link, hash and all: an unlisted video without its hash answers "Private video".
     videoUrl: v.link,
+    thumbnail: pickThumbnail(v.pictures?.sizes),
   }));
 }
 
@@ -157,7 +113,7 @@ async function importOne(env, job, dryRun) {
   for (const folder of job.folders) {
     const data = await vimeo(
       env.VIMEO_ACCESS_TOKEN,
-      `/me/projects/${folder}/videos?per_page=100&fields=uri,name,link,privacy.embed`
+      `/me/projects/${folder}/videos?per_page=100&fields=uri,name,link,privacy.embed,pictures.sizes`
     );
     const restricted = data.data.filter((v) => v.privacy?.embed === 'whitelist').length;
     console.log(
@@ -201,6 +157,8 @@ async function importOne(env, job, dryRun) {
     track: job.track,
     sort_order: job.sortOrder,
     is_published: job.publish,
+    // The first video's frame, so a new course is not a grey placeholder on the shelf.
+    cover_image_url: lessons[0]?.thumbnail ?? null,
   });
   await supabase(
     env,
