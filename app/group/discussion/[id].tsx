@@ -77,6 +77,7 @@ import {
 } from '@/lib/dates';
 import { USE_NATIVE_DRIVER } from '@/lib/animation';
 import { t } from '@/lib/i18n';
+import { postDeletionRight, wasRemovedByModerator } from '@/lib/moderation';
 import { confirm, notify } from '@/lib/dialogs';
 import { downloadFileInBrowser } from '@/lib/downloadFile';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
@@ -294,7 +295,15 @@ function ReplyRow({
                   </Text>
                 </Pressable>
               ) : null}
-              {post.body ? (
+              {post.deletedAt ? (
+                // A removal that says nothing looks arbitrary to the person it happened to, so
+                // the tombstone names which kind it was.
+                <Text style={styles.replyRemovedLabel}>
+                  {wasRemovedByModerator(post)
+                    ? t('discussions.replyRemovedByModerator')
+                    : t('message.messageDeleted')}
+                </Text>
+              ) : post.body ? (
                 <Text
                   selectable={Platform.OS === 'web'}
                   style={[styles.replyBody, Platform.OS === 'web' && styles.replyBodySelectableWeb]}
@@ -302,15 +311,17 @@ function ReplyRow({
                   {post.body}
                 </Text>
               ) : null}
-              <MessageAttachmentsBlock
-                post={post}
-                isOwnMessage={isOwnPost}
-                // Discussion replies sit on a light card whoever wrote them.
-                onDarkSurface={false}
-                onImagePress={onImagePress}
-                onVideoPress={onVideoPress}
-                onFilePress={onFilePress}
-              />
+              {post.deletedAt ? null : (
+                <MessageAttachmentsBlock
+                  post={post}
+                  isOwnMessage={isOwnPost}
+                  // Discussion replies sit on a light card whoever wrote them.
+                  onDarkSurface={false}
+                  onImagePress={onImagePress}
+                  onVideoPress={onVideoPress}
+                  onFilePress={onFilePress}
+                />
+              )}
               {showFailedOutbound ? (
                 <Text style={styles.replyFailedLabel}>{t('message.sendFailed')}</Text>
               ) : null}
@@ -787,12 +798,16 @@ export default function DiscussionDetailScreen() {
   );
 
   const handleDeletePost = useCallback(
-    async (post: DiscussionPost) => {
+    async (post: DiscussionPost, asModerator = false) => {
       if (!userId) return;
       const confirmed = await confirm({
-        title: t('message.deleteMessageConfirmTitle'),
-        message: t('message.deleteMessageConfirmBody'),
-        confirmLabel: t('message.sheetDelete'),
+        title: asModerator
+          ? t('discussions.removeReplyConfirmTitle')
+          : t('message.deleteMessageConfirmTitle'),
+        message: asModerator
+          ? t('discussions.removeReplyConfirmBody')
+          : t('message.deleteMessageConfirmBody'),
+        confirmLabel: asModerator ? t('discussions.removeReply') : t('message.sheetDelete'),
         cancelLabel: t('common.cancel'),
         destructive: true,
       });
@@ -829,19 +844,33 @@ export default function DiscussionDetailScreen() {
         },
       },
     ];
-    if (post.userId === userId) {
+    // Removing your own words and removing someone else's are different acts, and the sheet
+    // names them differently so nobody removes a member's reply thinking it was their own.
+    const deletionRight = postDeletionRight({
+      viewerId: userId,
+      authorId: post.userId,
+      isGroupAdmin: isCurrentUserGroupAdmin,
+      isAppAdmin: isAppAdmin === true,
+      threadLocked: isEventDiscussionReadOnly,
+    });
+    if (deletionRight) {
+      const isModeration = deletionRight === 'moderator';
       actions.push({
         key: 'delete',
-        label: t('message.sheetDelete'),
+        label: isModeration ? t('discussions.removeReply') : t('message.sheetDelete'),
         icon: 'trash-outline',
         destructive: true,
-        accessibilityLabel: t('message.sheetDelete'),
-        accessibilityHint: t('message.sheetDeleteHint'),
+        accessibilityLabel: isModeration ? t('discussions.removeReply') : t('message.sheetDelete'),
+        accessibilityHint: isModeration
+          ? t('discussions.removeReplyHint')
+          : t('message.sheetDeleteHint'),
         onPress: () => {
           setReactionPost(null);
-          void handleDeletePost(post);
+          void handleDeletePost(post, isModeration);
         },
       });
+    }
+    if (post.userId === userId) {
       actions.push({
         key: 'edit',
         label: t('message.sheetEdit'),
@@ -855,7 +884,16 @@ export default function DiscussionDetailScreen() {
       });
     }
     return actions;
-  }, [reactionPost, userId, canEngageInThread, handleStartEditReply, handleDeletePost]);
+  }, [
+    reactionPost,
+    userId,
+    canEngageInThread,
+    handleStartEditReply,
+    handleDeletePost,
+    isCurrentUserGroupAdmin,
+    isAppAdmin,
+    isEventDiscussionReadOnly,
+  ]);
 
   const handleCancelEdit = useCallback(() => {
     setEditingPost(null);
@@ -1286,6 +1324,11 @@ const styles = StyleSheet.create({
   },
   replyToPreviewPressed: {
     opacity: 0.6,
+  },
+  replyRemovedLabel: {
+    ...typography.body,
+    color: colors.onSurfaceVariant,
+    fontStyle: 'italic',
   },
   replyBodySelectableWeb: {
     // Not in React Native's style types; react-native-web passes it through to CSS. The card is

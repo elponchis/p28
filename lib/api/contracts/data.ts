@@ -422,7 +422,11 @@ export interface DataContract {
     userId: string,
     input: UpdateDiscussionPostInput
   ): Promise<DiscussionPost | ApiError>;
-  /** Delete a discussion post. Authors only; RLS rejects anyone else. */
+  /**
+   * Remove a discussion reply, leaving a tombstone that records who removed it. Authors remove
+   * their own; group and platform admins remove anyone's. RLS decides which applies — this takes
+   * the remover's id to write down, not to authorise with.
+   */
   deleteDiscussionPost(
     postId: string,
     userId: string

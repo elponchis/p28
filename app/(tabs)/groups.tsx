@@ -63,9 +63,11 @@ export default function GroupsScreen() {
     enabled: !!userId,
   });
   const { data: memberGroups = [], refetch: refetchMemberGroups } = useGroupsForUserQuery(userId);
+  // Admin comes from app_roles and nowhere else. An address was hardcoded here beside it, which
+  // the database never honoured -- it only showed that account a Create group button whose insert
+  // RLS then refused. A role the server disagrees with is a button that fails.
   const { data: isAdminFromApi } = useIsAdminQuery(userId);
-  const email = session?.user?.email?.toLowerCase();
-  const isAdmin = isAdminFromApi === true || email === 'billyhdev@gmail.com';
+  const isAdmin = isAdminFromApi === true;
 
   const memberGroupIds = new Set(memberGroups.map((g) => g.id));
 

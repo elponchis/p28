@@ -1228,6 +1228,8 @@ type DiscussionPostRow = {
   parent_post_id?: string | null;
   image_urls?: string[] | null;
   attachments?: unknown;
+  deleted_at?: string | null;
+  deleted_by_user_id?: string | null;
 };
 
 /** Counts one reaction row into a per-message tally. Absent keys mean zero. */
@@ -1258,6 +1260,8 @@ function mapDiscussionPostRow(
     attachments: attachments && attachments.length > 0 ? attachments : undefined,
     reactionCounts: reactionCounts ?? {},
     userReactionTypes: userReactionTypes?.filter(isKnownReaction) ?? undefined,
+    deletedAt: row.deleted_at ?? undefined,
+    deletedByUserId: row.deleted_by_user_id ?? undefined,
   };
 }
 
@@ -4037,7 +4041,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
         const { data: rows, error } = await getClient()
           .from('discussion_posts')
           .select(
-            'id, discussion_id, user_id, body, created_at, updated_at, parent_post_id, image_urls, attachments'
+            'id, discussion_id, user_id, body, created_at, updated_at, parent_post_id, image_urls, attachments, deleted_at, deleted_by_user_id'
           )
           .eq('discussion_id', discussionId)
           .order('created_at', { ascending: true });
@@ -4175,24 +4179,37 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
       userId: string
     ): Promise<{ discussionId: string } | ApiError> {
       try {
-        // Read the parent first: the caller needs it to invalidate the thread,
-        // and it doubles as the ownership check before the delete round-trip.
+        // Read the parent first: the caller needs it to invalidate the thread. No user_id filter
+        // here -- a moderator removing someone else's reply is a legitimate caller, and which
+        // callers those are is the read and update policies' answer, not this function's.
         const { data: postMeta, error: metaErr } = await getClient()
           .from('discussion_posts')
           .select('discussion_id')
           .eq('id', postId)
-          .eq('user_id', userId)
           .maybeSingle();
         if (metaErr) return toApiError(metaErr);
         if (!postMeta) {
           return { message: 'Post not found or not authorized to delete', code: 'NOT_FOUND' };
         }
-        const { error } = await getClient()
+        // A tombstone rather than a delete: the replies hanging off this one keep their parent,
+        // and the row can say who removed it. The contents go, since removal means removal.
+        const { data: updated, error } = await getClient()
           .from('discussion_posts')
-          .delete()
+          .update({
+            body: '',
+            attachments: [],
+            image_urls: null,
+            deleted_at: new Date().toISOString(),
+            deleted_by_user_id: userId,
+          })
           .eq('id', postId)
-          .eq('user_id', userId);
+          .select('id')
+          .maybeSingle();
         if (error) return toApiError(error);
+        // RLS filters rather than raises: no row back means this caller may not remove it.
+        if (!updated) {
+          return { message: 'Post not found or not authorized to delete', code: 'NOT_FOUND' };
+        }
         return { discussionId: postMeta.discussion_id as string };
       } catch (e) {
         return toApiError(e);

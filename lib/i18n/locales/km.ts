@@ -675,6 +675,11 @@ export const km: TranslationShape = {
     retrySendHint: 'ព្យាយាមផ្ញើសារនេះម្តងទៀត',
   },
   discussions: {
+    removeReply: 'លុបការឆ្លើយតប',
+    removeReplyHint: 'លុបការឆ្លើយតបនេះចេញពីការពិភាក្សា',
+    removeReplyConfirmTitle: 'លុបការឆ្លើយតបនេះ?',
+    removeReplyConfirmBody: 'វានឹងក្លាយជាកំណត់ចំណាំថាអ្នកគ្រប់គ្រងបានលុប។',
+    replyRemovedByModerator: 'អ្នកគ្រប់គ្រងបានលុបការឆ្លើយតបនេះ',
     title: 'ការពិភាក្សា',
     addDiscussion: 'បន្ថែមការពិភាក្សា',
     addDiscussionHint: 'បង្កើតប្រធានបទពិភាក្សាថ្មី',

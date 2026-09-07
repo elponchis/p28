@@ -669,6 +669,11 @@ export const ko: TranslationShape = {
     retrySendHint: '이 메시지를 다시 보냅니다',
   },
   discussions: {
+    removeReply: '댓글 삭제(관리)',
+    removeReplyHint: '이 댓글을 토론에서 삭제합니다',
+    removeReplyConfirmTitle: '이 댓글을 삭제할까요?',
+    removeReplyConfirmBody: '관리자가 삭제했다는 표시로 바뀝니다.',
+    replyRemovedByModerator: '관리자가 삭제한 댓글입니다',
     title: '토론',
     addDiscussion: '토론 추가',
     addDiscussionHint: '새 토론 주제 만들기',

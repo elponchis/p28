@@ -711,6 +711,13 @@ export interface DiscussionPost {
   reactionCounts?: PostReactionCounts;
   /** Reaction types the current user has on this post (when userId provided to fetch). */
   userReactionTypes?: PostReactionType[];
+  /** Set when the reply was removed; the row stays as a tombstone so replies to it still hang. */
+  deletedAt?: string;
+  /**
+   * Who removed it. Different from userId means a moderator did, which the thread says out loud
+   * — an unexplained gap is what makes a removal look arbitrary.
+   */
+  deletedByUserId?: string;
 }
 
 /** Input for creating a discussion post (reply). */

@@ -677,6 +677,11 @@ export const en = {
     retrySendHint: 'Attempts to send this message again',
   },
   discussions: {
+    removeReply: 'Remove reply',
+    removeReplyHint: 'Removes this reply from the discussion',
+    removeReplyConfirmTitle: 'Remove this reply?',
+    removeReplyConfirmBody: 'It will be replaced with a note saying a moderator removed it.',
+    replyRemovedByModerator: 'Removed by a moderator',
     title: 'Discussions',
     addDiscussion: 'Add discussion',
     addDiscussionHint: 'Create a new discussion topic',
