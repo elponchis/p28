@@ -1,0 +1,139 @@
+[
+  {
+    "folders": ["14734370", "13642075"],
+    "title": "사도신경",
+    "description": "기본 양육 과정",
+    "publish": true,
+    "sortOrder": 10
+  },
+  {
+    "folders": ["17613489"],
+    "title": "A. 경건의 기초",
+    "description": "기본 양육 과정 · 양육1단계 : 기초",
+    "publish": true,
+    "sortOrder": 20
+  },
+  {
+    "folders": ["17613504"],
+    "title": "B. 일상 속의 경건",
+    "description": "기본 양육 과정 · 양육1단계 : 기초",
+    "publish": true,
+    "sortOrder": 30
+  },
+  {
+    "folders": ["22583037"],
+    "title": "C. 영혼을 구하는 경건",
+    "description": "기본 양육 과정 · 양육1단계 : 기초",
+    "publish": true,
+    "sortOrder": 40
+  },
+  {
+    "folders": ["15305775"],
+    "title": "그리스도인의 재정관리",
+    "description": "기본 양육 과정 · 양육2단계 : 성장",
+    "publish": true,
+    "sortOrder": 50
+  },
+  {
+    "folders": ["15305772"],
+    "title": "다림줄",
+    "description": "기본 양육 과정 · 양육2단계 : 성장",
+    "publish": true,
+    "sortOrder": 60
+  },
+  {
+    "folders": ["19136301", "19136299"],
+    "title": "성경개관",
+    "description": "기본 양육 과정 · 양육2단계 : 성장 — 구약편에 이어 신약편",
+    "publish": true,
+    "sortOrder": 70
+  },
+  {
+    "folders": ["25929379"],
+    "title": "예수님과 멀어지게 된 45가지 이유",
+    "description": "기본 양육 과정 · 양육2단계 : 성장",
+    "publish": true,
+    "sortOrder": 80
+  },
+  {
+    "folders": ["16839026"],
+    "title": "진로코칭",
+    "description": "청소년 양육",
+    "publish": true,
+    "sortOrder": 90
+  },
+  {
+    "folders": ["16838999"],
+    "title": "하나님 자녀의 삶",
+    "description": "청소년 양육",
+    "publish": true,
+    "sortOrder": 100
+  },
+  {
+    "folders": ["16838992"],
+    "title": "하나님은 누구신가",
+    "description": "청소년 양육",
+    "publish": true,
+    "sortOrder": 110
+  },
+  {
+    "folders": ["16811113"],
+    "title": "복음",
+    "publish": true,
+    "sortOrder": 120
+  },
+  {
+    "folders": ["17669218"],
+    "title": "영성훈련",
+    "publish": true,
+    "sortOrder": 130
+  },
+  {
+    "folders": ["23727442"],
+    "title": "제자 심화과정",
+    "publish": true,
+    "sortOrder": 140
+  },
+  {
+    "folders": ["12770078"],
+    "title": "세계관 아카데미",
+    "publish": true,
+    "sortOrder": 150
+  },
+  {
+    "folders": ["12099712"],
+    "title": "아카데미(건전한 이성교제와 결혼)",
+    "publish": true,
+    "sortOrder": 160
+  },
+  {
+    "folders": ["18079346"],
+    "title": "아카데미(중보기도 스쿨)",
+    "publish": true,
+    "sortOrder": 170
+  },
+  {
+    "folders": ["26676249"],
+    "title": "루츠알레",
+    "publish": true,
+    "sortOrder": 180
+  },
+  {
+    "folders": ["29691912"],
+    "title": "2026 루츠알레",
+    "publish": true,
+    "sortOrder": 190
+  },
+  {
+    "folders": ["16002765"],
+    "title": "사이버 수련회",
+    "publish": true,
+    "sortOrder": 200
+  },
+  {
+    "folders": ["19274017"],
+    "title": "세미나",
+    "publish": true,
+    "sortOrder": 210
+  }
+]
