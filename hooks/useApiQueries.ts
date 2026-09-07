@@ -948,7 +948,7 @@ export function useManagedCoursesQuery(options?: { enabled?: boolean }) {
   });
 }
 
-export function useUpdateCourseAccessMutation() {
+export function useUpdateCourseSettingsMutation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({
@@ -956,8 +956,8 @@ export function useUpdateCourseAccessMutation() {
       input,
     }: {
       courseId: string;
-      input: import('@/lib/api').UpdateCourseAccessInput;
-    }) => queryFn(api.data.updateCourseAccess(courseId, input)),
+      input: import('@/lib/api').UpdateCourseSettingsInput;
+    }) => queryFn(api.data.updateCourseSettings(courseId, input)),
     onSuccess: (course) => {
       qc.invalidateQueries({ queryKey: queryKeys.managedCourses() });
       qc.invalidateQueries({ queryKey: queryKeys.watchCourses() });

@@ -2845,14 +2845,16 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
       }
     },
 
-    async updateCourseAccess(
+    async updateCourseSettings(
       courseId: string,
-      input: import('../../contracts/dto').UpdateCourseAccessInput
+      input: import('../../contracts/dto').UpdateCourseSettingsInput
     ): Promise<Course | ApiError> {
       try {
         const { data, error } = await getClient()
           .from('courses')
           .update({
+            title: input.title,
+            description: input.description,
             group_id: input.groupId,
             available_from: input.availableFrom,
             available_until: input.availableUntil,

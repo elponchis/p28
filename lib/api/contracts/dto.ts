@@ -277,12 +277,15 @@ export interface UpdateCourseInput {
 }
 
 /**
- * What an admin changes about who may watch a course, separate from what the course is.
+ * Everything the admin screen decides about a course: what it is called, and who may watch it
+ * when.
  *
- * Kept apart from UpdateCourseInput because these four are the whole of the access decision, and
- * a screen that edits them should not be able to rename a course by accident.
+ * One input rather than two calls, because these are saved together from one form and a rename
+ * that lands while the term does not is a course nobody can find under either name.
  */
-export interface UpdateCourseAccessInput {
+export interface UpdateCourseSettingsInput {
+  title: string;
+  description: string | null;
   /** The group whose members may watch it, or null for everyone. */
   groupId: string | null;
   availableFrom: string | null;

@@ -74,7 +74,7 @@ export type {
   UpdateAssignmentInput,
   UpdateChatInput,
   UpdateChatMessageInput,
-  UpdateCourseAccessInput,
+  UpdateCourseSettingsInput,
   UpdateCourseInput,
   UpdateDiscussionInput,
   UpdateDiscussionPostInput,

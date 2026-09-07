@@ -1,11 +1,12 @@
 /**
- * Opening a course to a group, for a term.
+ * What a course is called, and who may watch it when.
  *
  * This is the recurring administrative act behind the Watch tab: content arrives in bulk from
  * Vimeo and sits unpublished, and someone then decides who each course is for and when they may
  * see it. Doing that in SQL is a date typed into a console with no confirmation, where a wrong
  * one either shuts a term's students out or leaves a finished term open, and fails silently
- * either way.
+ * either way. Its title is here for the same reason: courses arrive named by whoever made the
+ * Vimeo folder, and renaming one used to mean a REST call typed by hand.
  *
  * Nothing here grants anything the database would not. The list is what the read policy returns —
  * unpublished courses reach admins and nobody else — and a save that RLS refuses comes back as a
@@ -22,7 +23,7 @@ import { useAuth } from '@/hooks/useAuth';
 import {
   useGroupsQuery,
   useManagedCoursesQuery,
-  useUpdateCourseAccessMutation,
+  useUpdateCourseSettingsMutation,
 } from '@/hooks/useApiQueries';
 import type { WatchCourse } from '@/lib/api';
 import { describeError } from '@/lib/api';
@@ -32,16 +33,20 @@ import { groupTypeLabel } from '@/lib/groupTypes';
 import { t } from '@/lib/i18n';
 import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
-/** A course's access, as the form holds it while being edited. */
-interface AccessDraft {
+/** A course's settings, as the form holds them while being edited. */
+interface CourseDraft {
+  title: string;
+  description: string;
   groupId: string | null;
   availableFrom: string;
   availableUntil: string;
   isPublished: boolean;
 }
 
-function draftFrom(course: WatchCourse): AccessDraft {
+function draftFrom(course: WatchCourse): CourseDraft {
   return {
+    title: course.title,
+    description: course.description ?? '',
     groupId: course.groupId ?? null,
     availableFrom: course.availableFrom ? course.availableFrom.slice(0, 10) : '',
     availableUntil: course.availableUntil ? course.availableUntil.slice(0, 10) : '',
@@ -92,10 +97,10 @@ export default function WatchManageScreen() {
 
   const { data: courses = [], isLoading } = useManagedCoursesQuery({ enabled: !!userId });
   const { data: groups = [] } = useGroupsQuery({ enabled: !!userId });
-  const updateAccess = useUpdateCourseAccessMutation();
+  const updateCourse = useUpdateCourseSettingsMutation();
 
   const [editing, setEditing] = useState<WatchCourse | null>(null);
-  const [draft, setDraft] = useState<AccessDraft | null>(null);
+  const [draft, setDraft] = useState<CourseDraft | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const startEdit = useCallback((course: WatchCourse) => {
@@ -112,6 +117,11 @@ export default function WatchManageScreen() {
 
   const handleSave = useCallback(() => {
     if (!editing || !draft) return;
+    const title = draft.title.trim();
+    if (!title) {
+      setError(t('watchAdmin.titleRequiredError'));
+      return;
+    }
     // Dates are typed, so they are checked before they can shut a term's students out.
     for (const value of [draft.availableFrom, draft.availableUntil]) {
       if (value && !isIsoDate(value)) {
@@ -128,10 +138,13 @@ export default function WatchManageScreen() {
       return;
     }
     setError(null);
-    updateAccess.mutate(
+    const description = draft.description.trim();
+    updateCourse.mutate(
       {
         courseId: editing.id,
         input: {
+          title,
+          description: description || null,
           groupId: draft.groupId,
           availableFrom: draft.availableFrom ? `${draft.availableFrom}T00:00:00Z` : null,
           availableUntil: draft.availableUntil ? `${draft.availableUntil}T23:59:59Z` : null,
@@ -143,7 +156,7 @@ export default function WatchManageScreen() {
         onError: (e) => void notify({ title: t('common.error'), message: describeError(e) }),
       }
     );
-  }, [editing, draft, updateAccess, closeEdit]);
+  }, [editing, draft, updateCourse, closeEdit]);
 
   const shelves = useMemo(
     () => ({
@@ -166,6 +179,25 @@ export default function WatchManageScreen() {
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <Text style={styles.editTitle}>{editing.title}</Text>
         <Text style={styles.editSub}>{t('watch.videoCount', { count: editing.lessonCount })}</Text>
+
+        <Input
+          label={t('watchAdmin.courseTitle')}
+          value={draft.title}
+          onChangeText={(v) => setDraft({ ...draft, title: v })}
+          accessibilityLabel={t('watchAdmin.courseTitle')}
+          containerStyle={styles.field}
+        />
+        <Input
+          label={t('watchAdmin.courseDescription')}
+          value={draft.description}
+          onChangeText={(v) => setDraft({ ...draft, description: v })}
+          multiline
+          numberOfLines={3}
+          accessibilityLabel={t('watchAdmin.courseDescription')}
+          accessibilityHint={t('watchAdmin.courseDescriptionHint')}
+          containerStyle={styles.field}
+        />
+        <Text style={[styles.hint, styles.fieldHint]}>{t('watchAdmin.courseDescriptionHint')}</Text>
 
         <Text style={styles.label}>{t('watchAdmin.audience')}</Text>
         <View style={styles.chipRow}>
@@ -239,9 +271,9 @@ export default function WatchManageScreen() {
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
         <Button
-          title={updateAccess.isPending ? t('common.saving') : t('common.save')}
+          title={updateCourse.isPending ? t('common.saving') : t('common.save')}
           onPress={handleSave}
-          disabled={updateAccess.isPending}
+          disabled={updateCourse.isPending}
           accessibilityLabel={t('common.save')}
           style={styles.saveButton}
         />
@@ -249,7 +281,7 @@ export default function WatchManageScreen() {
           title={t('common.cancel')}
           onPress={closeEdit}
           variant="text"
-          disabled={updateAccess.isPending}
+          disabled={updateCourse.isPending}
           accessibilityLabel={t('common.cancel')}
         />
       </ScrollView>
@@ -355,6 +387,7 @@ const styles = StyleSheet.create({
   chipTextActive: { color: colors.onPrimary },
   chipType: { color: colors.onSurfaceVariant },
   field: { marginBottom: spacing.sm },
+  fieldHint: { marginBottom: spacing.lg },
   hint: { ...typography.caption, color: colors.onSurfaceVariant },
   toggleRow: {
     flexDirection: 'row',

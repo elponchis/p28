@@ -51,7 +51,7 @@ import type {
   UpdateAssignmentInput,
   UpdateChatInput,
   UpdateChatMessageInput,
-  UpdateCourseAccessInput,
+  UpdateCourseSettingsInput,
   UpdateCourseInput,
   UpdateDiscussionInput,
   UpdateDiscussionPostInput,
@@ -314,10 +314,13 @@ export interface DataContract {
   createCourse(groupId: string, input: CreateCourseInput): Promise<Course | ApiError>;
   updateCourse(courseId: string, input: UpdateCourseInput): Promise<Course | ApiError>;
   /**
-   * Who may watch a course, and when. Separate from updateCourse: this is the admin decision
-   * that opens a course to a group for a term, and RLS decides whether the caller may make it.
+   * What a course is called and who may watch it when — the admin screen's whole form, saved as
+   * one change. RLS decides whether the caller may make it.
    */
-  updateCourseAccess(courseId: string, input: UpdateCourseAccessInput): Promise<Course | ApiError>;
+  updateCourseSettings(
+    courseId: string,
+    input: UpdateCourseSettingsInput
+  ): Promise<Course | ApiError>;
   /** Every course this admin may administer, published or not, with its group named. */
   getManagedCourses(): Promise<WatchCourse[] | ApiError>;
   deleteCourse(courseId: string): Promise<void | ApiError>;
