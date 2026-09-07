@@ -38,6 +38,9 @@ mcp-deploy-inline.json
 # local env files and secrets (Supabase URL/keys in Story 1.3)
 .env
 .env*.local
+# Any hand-made copy of .env is still a copy of the secrets in it.
+.env.*
+!.env.example
 
 # typescript
 *.tsbuildinfo

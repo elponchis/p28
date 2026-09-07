@@ -460,9 +460,13 @@ export default function OnboardingScreen() {
       if ('error' in signUpResult) {
         const err = signUpResult.error as ApiError;
         if (err.code === 'EMAIL_CONFIRMATION_REQUIRED') {
-          clearPendingSignUp();
-          setError(t('onboarding.emailConfirmThenSignIn'));
+          // The account exists and the next thing to do is sign in, once the email is confirmed,
+          // so go there and take the explanation along. Setting it here instead left the message
+          // on a screen that clearPendingSignUp() had already sent away: the guard effect below
+          // redirects the moment there is no pending sign-up, and the sentence went with it.
           setIsSubmittingSignUp(false);
+          clearPendingSignUp();
+          router.replace('/auth/sign-in?notice=confirm-email');
           return;
         }
         setError(getUserFacingError(err));

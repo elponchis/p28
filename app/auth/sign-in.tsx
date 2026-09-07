@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { AuthFormLayout } from '@/components/auth/AuthFormLayout';
 import { authScreenStyles } from '@/components/auth/authScreenStyles';
 import { Button, Input } from '@/components/primitives';
@@ -26,8 +26,20 @@ const LOCALES: {
 const currentLocaleLabelKey = (loc: LocaleOption) =>
   LOCALES.find((l) => l.value === loc)?.labelKey ?? 'language.english';
 
+/**
+ * Notices another screen can hand to this one. Sign-up ends here when the account still has to
+ * be confirmed, and the sentence explaining that has to survive the navigation — set on the
+ * screen being left, it is destroyed before anyone reads it.
+ */
+const NOTICE_MESSAGES = {
+  'confirm-email': 'onboarding.emailConfirmThenSignIn',
+} as const;
+
 export default function SignInScreen() {
   const { locale, setLocale } = useLocale();
+  const { notice } = useLocalSearchParams<{ notice?: string }>();
+  const noticeKey =
+    typeof notice === 'string' ? NOTICE_MESSAGES[notice as 'confirm-email'] : undefined;
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -136,6 +148,12 @@ export default function SignInScreen() {
           </View>
         </View>
       </Modal>
+      {noticeKey ? (
+        <View style={styles.notice} accessibilityRole="alert">
+          <Ionicons name="mail-outline" size={18} color={colors.onSecondaryContainer} />
+          <Text style={styles.noticeText}>{t(noticeKey)}</Text>
+        </View>
+      ) : null}
       <Input
         label={t('auth.email')}
         value={email}
@@ -181,6 +199,20 @@ export default function SignInScreen() {
 }
 
 const styles = StyleSheet.create({
+  notice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    borderRadius: 12,
+    backgroundColor: colors.secondaryContainer,
+  },
+  noticeText: {
+    ...typography.body,
+    flex: 1,
+    color: colors.onSecondaryContainer,
+  },
   footerBlock: {
     alignItems: 'center',
     justifyContent: 'center',
