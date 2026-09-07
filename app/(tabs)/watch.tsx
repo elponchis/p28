@@ -7,8 +7,16 @@
  * training school, or whose term has ended, is simply not in the list. How they divide up lives
  * in lib/watchShelves.
  */
-import { useMemo } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  type LayoutChangeEvent,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -19,14 +27,28 @@ import { useIsAdminQuery, useWatchCoursesQuery } from '@/hooks/useApiQueries';
 import type { WatchCourse } from '@/lib/api';
 import { getUserFacingError } from '@/lib/api';
 import { t } from '@/lib/i18n';
+import { watchCardWidth } from '@/lib/watchGrid';
 import { buildShelves } from '@/lib/watchShelves';
-import { colors, fontFamily, radius, spacing, tabScreenContent, typography } from '@/theme/tokens';
+import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
-function CourseCard({ course, onPress }: { course: WatchCourse; onPress: () => void }) {
+function CourseCard({
+  course,
+  width,
+  onPress,
+}: {
+  course: WatchCourse;
+  /** Undefined until the shelf has measured itself; the card keeps its own width until then. */
+  width?: number;
+  onPress: () => void;
+}) {
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      style={({ pressed }) => [
+        styles.card,
+        width !== undefined && { width },
+        pressed && styles.cardPressed,
+      ]}
       accessibilityRole="button"
       accessibilityLabel={course.title}
       accessibilityHint={t('watch.openCourseHint')}
@@ -61,6 +83,14 @@ export default function WatchScreen() {
 
   const shelves = useMemo(() => buildShelves(courses), [courses]);
 
+  // Measured rather than derived from the window: on the web the sidebar takes a slice of it, and
+  // how big a slice is the sidebar's business, not this screen's.
+  const [shelfWidth, setShelfWidth] = useState(0);
+  const measureShelf = useCallback((e: LayoutChangeEvent) => {
+    setShelfWidth(e.nativeEvent.layout.width);
+  }, []);
+  const cardWidth = watchCardWidth(shelfWidth, spacing.md);
+
   if (isLoading && courses.length === 0) {
     return (
       <View style={styles.centered}>
@@ -90,7 +120,7 @@ export default function WatchScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={[styles.content, tabScreenContent]}
+      contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
       {isAdmin ? (
@@ -105,35 +135,38 @@ export default function WatchScreen() {
           <Text style={styles.manageText}>{t('watchAdmin.title')}</Text>
         </Pressable>
       ) : null}
-      {shelves.length === 0 ? (
-        <EmptyState
-          iconName="play-circle-outline"
-          title={t('watch.emptyTitle')}
-          subtitle={t('watch.emptyDescription')}
-        />
-      ) : (
-        shelves.map((shelf) => (
-          <View key={shelf.key} style={styles.shelf}>
-            <View style={styles.shelfHeader}>
-              <Text style={styles.shelfTitle}>{shelf.title}</Text>
-              {shelf.isTrainingSchool ? (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{t('watch.trainingSchool')}</Text>
-                </View>
-              ) : null}
+      <View style={styles.grid} onLayout={measureShelf}>
+        {shelves.length === 0 ? (
+          <EmptyState
+            iconName="play-circle-outline"
+            title={t('watch.emptyTitle')}
+            subtitle={t('watch.emptyDescription')}
+          />
+        ) : (
+          shelves.map((shelf) => (
+            <View key={shelf.key} style={styles.shelf}>
+              <View style={styles.shelfHeader}>
+                <Text style={styles.shelfTitle}>{shelf.title}</Text>
+                {shelf.isTrainingSchool ? (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{t('watch.trainingSchool')}</Text>
+                  </View>
+                ) : null}
+              </View>
+              <View style={styles.cards}>
+                {shelf.courses.map((course) => (
+                  <CourseCard
+                    key={course.id}
+                    course={course}
+                    width={cardWidth}
+                    onPress={() => router.push(`/watch/${course.id}`)}
+                  />
+                ))}
+              </View>
             </View>
-            <View style={styles.cards}>
-              {shelf.courses.map((course) => (
-                <CourseCard
-                  key={course.id}
-                  course={course}
-                  onPress={() => router.push(`/watch/${course.id}`)}
-                />
-              ))}
-            </View>
-          </View>
-        ))
-      )}
+          ))
+        )}
+      </View>
     </ScrollView>
   );
 }
@@ -145,6 +178,14 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.lg,
+    gap: spacing.xl,
+    width: '100%',
+    // Wider than the 720 a tab of text gets: thumbnails are what this screen is, and a desktop
+    // has the room for five. Still bounded, so an ultrawide monitor does not get one long row.
+    maxWidth: 1440,
+    alignSelf: 'center',
+  },
+  grid: {
     gap: spacing.xl,
   },
   centered: {
@@ -221,7 +262,8 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   cover: {
-    height: 124,
+    // 16:9, so a card that grows with the row keeps its shape.
+    aspectRatio: 16 / 9,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.surfaceContainer,
