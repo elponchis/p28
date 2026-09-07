@@ -592,7 +592,10 @@ const styles = StyleSheet.create({
 
   inputRow: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    // Centred, not bottom-aligned: this composer's box is 72 tall against 44-tall buttons, so
+    // sharing a bottom edge left the + sitting 14px below the middle of the field it belongs to.
+    // Chat bottom-aligns because there the two are the same height.
+    alignItems: 'center',
     gap: spacing.sm,
   },
   attachButton: {

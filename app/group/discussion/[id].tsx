@@ -135,6 +135,23 @@ function OriginalPostRow({
  */
 const REACTION_BADGE_EMOJI_SIZE = isDesktopWebPointer() ? 21 : 14;
 
+/** Roughly what a badge measures once its padding and border are counted. */
+const REACTION_BADGE_HEIGHT = REACTION_BADGE_EMOJI_SIZE + 12;
+
+/**
+ * How far the badges hang below the reply they belong to. They are placed rather than laid out
+ * so that adding a reaction does not push the sent time down — the time belongs to the reply and
+ * should not move because someone reacted to it.
+ */
+const REACTION_ROW_OVERHANG = Math.round(REACTION_BADGE_HEIGHT * 0.55);
+
+/**
+ * How many kinds of reaction fit beside a reply before the rest go behind a button. Twelve of
+ * them at desktop size is a row wide enough to reach the time; on a phone the line runs out far
+ * sooner, so it holds fewer.
+ */
+const MAX_VISIBLE_REACTIONS = isDesktopWebPointer() ? 10 : 4;
+
 const MAX_ATTACHMENTS = 5;
 
 type DiscussionReplyPost = DiscussionPost & {
@@ -207,9 +224,17 @@ function ReplyRow({
     onLongPress,
   });
 
+  const hiddenReactionCount = Math.max(0, presentReactions.length - MAX_VISIBLE_REACTIONS);
+
   return (
     <View
-      style={[styles.replyRowOuter, extraGapAfterPeerChange && styles.replyRowOuterPeerChange]}
+      style={[
+        styles.replyRowOuter,
+        extraGapAfterPeerChange && styles.replyRowOuterPeerChange,
+        // Room for the badges that hang below, so they do not land on the next reply. Taken here
+        // rather than by laying the badges out, which would move the sent time.
+        hasReactions && styles.replyRowOuterWithReactions,
+      ]}
       {...hoverProps}
     >
       <View style={styles.replyRowMain}>
@@ -337,7 +362,7 @@ function ReplyRow({
             </Pressable>
             {hasReactions ? (
               <View style={styles.reactionBadges} pointerEvents="box-none">
-                {presentReactions.map((type) => {
+                {presentReactions.slice(0, MAX_VISIBLE_REACTIONS).map((type) => {
                   const count = reactionCount(type);
                   const isMine = isUserReaction(type);
                   const onPress =
@@ -367,6 +392,29 @@ function ReplyRow({
                     </Pressable>
                   );
                 })}
+                {/* Who left these, and the kinds that did not fit. Both answers live in the same
+                    sheet, so one button opens it rather than two sitting side by side. */}
+                {onLongPress ? (
+                  <Pressable
+                    onPress={onLongPress}
+                    style={({ pressed }) => [
+                      styles.reactionBadge,
+                      styles.reactionMoreBadge,
+                      pressed && styles.reactionBadgePressed,
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      hiddenReactionCount > 0
+                        ? t('message.reactionsMoreCount', { count: hiddenReactionCount })
+                        : t('message.whoReacted')
+                    }
+                    accessibilityHint={t('message.whoReactedHint')}
+                  >
+                    <Text style={styles.reactionMoreText}>
+                      {hiddenReactionCount > 0 ? `+${hiddenReactionCount}` : '···'}
+                    </Text>
+                  </Pressable>
+                ) : null}
               </View>
             ) : null}
             {showSentClockTime ? (
@@ -1362,6 +1410,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: spacing.xs,
   },
+  replyRowOuterWithReactions: {
+    marginBottom: REACTION_ROW_OVERHANG + spacing.xs,
+  },
   replyRowOuterPeerChange: {
     marginTop: spacing.xxs,
   },
@@ -1417,15 +1468,23 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   reactionBadges: {
-    // In the flow rather than absolutely placed at bottom-right, where it sat on top of the sent
-    // time and hid it. Left-aligned, like chat: the badges belong to the reply above them, and
-    // the time keeps the right edge to itself.
+    // Placed, not laid out. In the flow the badges added their own height above the sent time and
+    // pushed it down the moment anyone reacted; hanging them off the bottom-left leaves the time
+    // where it was and keeps them clear of it.
+    position: 'absolute',
+    bottom: -REACTION_ROW_OVERHANG,
+    left: spacing.xs,
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: spacing.xxs,
-    marginTop: -8,
-    alignSelf: 'flex-start',
-    paddingLeft: spacing.xs,
+    zIndex: 1,
+  },
+  reactionMoreBadge: {
+    paddingHorizontal: spacing.xs,
+  },
+  reactionMoreText: {
+    ...typography.caption,
+    fontSize: Math.round(REACTION_BADGE_EMOJI_SIZE * 0.7),
+    color: colors.textSecondary,
   },
   reactionBadge: {
     flexDirection: 'row',
