@@ -185,28 +185,27 @@ export function ReactionSheet({
                       reacted with that one", and a row per person made the same heart appear
                       five times down the page while nobody could see who was under it. */}
                   {groupedReactions.map((group) => (
+                    // The emoji and the people who left it travel together: the chunk takes what
+                    // width it needs and moves to the next line whole, rather than each emoji
+                    // claiming a line of its own or a name being orphaned from its emoji.
                     <View key={group.type} style={styles.group}>
-                      <View style={styles.groupEmojiColumn}>
-                        <Text style={styles.groupEmoji}>{REACTION_EMOJI[group.type]}</Text>
-                        <Text style={styles.groupCount}>{group.people.length}</Text>
-                      </View>
-                      <View style={styles.groupPeople}>
-                        {group.people.map((person, idx) => (
-                          <View key={`${person.userId}-${idx}`} style={styles.person}>
-                            <Avatar
-                              source={person.avatarUrl ? { uri: person.avatarUrl } : null}
-                              fallbackText={person.displayName}
-                              size="sm"
-                              accessibilityLabel={
-                                person.displayName ? `${person.displayName} profile` : ''
-                              }
-                            />
-                            <Text style={styles.personName} numberOfLines={1}>
-                              {person.displayName ?? t('common.loading')}
-                            </Text>
-                          </View>
-                        ))}
-                      </View>
+                      <Text style={styles.groupEmoji}>{REACTION_EMOJI[group.type]}</Text>
+                      <Text style={styles.groupCount}>{group.people.length}</Text>
+                      {group.people.map((person, idx) => (
+                        <View key={`${person.userId}-${idx}`} style={styles.person}>
+                          <Avatar
+                            source={person.avatarUrl ? { uri: person.avatarUrl } : null}
+                            fallbackText={person.displayName}
+                            size="sm"
+                            accessibilityLabel={
+                              person.displayName ? `${person.displayName} profile` : ''
+                            }
+                          />
+                          <Text style={styles.personName} numberOfLines={1}>
+                            {person.displayName ?? t('common.loading')}
+                          </Text>
+                        </View>
+                      ))}
                     </View>
                   ))}
                 </ScrollView>
@@ -325,7 +324,14 @@ const styles = StyleSheet.create({
   },
   listWrapper: { flex: 1, minHeight: 120 },
   list: { flex: 1, maxHeight: 280 },
-  listContent: { paddingVertical: spacing.sm },
+  listContent: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+  },
   empty: {
     flex: 1,
     justifyContent: 'center',
@@ -339,31 +345,27 @@ const styles = StyleSheet.create({
   },
   group: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    gap: spacing.md,
-  },
-  groupEmojiColumn: {
     alignItems: 'center',
-    minWidth: 36,
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.chip,
+    backgroundColor: colors.borderSubtle,
+    // Sized to its contents, so several chunks share a line and a long one wraps internally
+    // rather than stretching to the full width and pushing the next chunk down.
+    maxWidth: '100%',
   },
-  groupEmoji: { fontSize: 24 },
+  groupEmoji: { fontSize: 20 },
   groupCount: {
     ...typography.caption,
     color: colors.textSecondary,
-  },
-  groupPeople: {
-    flex: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.md,
-    paddingTop: 2,
+    marginRight: spacing.xxs,
   },
   person: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: spacing.xxs,
   },
   personName: {
     ...typography.body,
