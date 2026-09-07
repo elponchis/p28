@@ -72,6 +72,7 @@ export const queryKeys = {
   coursesByGroup: (groupId: string) => ['coursesByGroup', groupId] as const,
   course: (id: string) => ['course', id] as const,
   watchCourses: () => ['watchCourses'] as const,
+  managedCourses: () => ['managedCourses'] as const,
   lessonsByCourse: (courseId: string) => ['lessonsByCourse', courseId] as const,
   lesson: (id: string) => ['lesson', id] as const,
   chatRequests: (userId: string) => ['chatRequests', userId] as const,

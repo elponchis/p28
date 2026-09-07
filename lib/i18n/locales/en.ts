@@ -3,6 +3,29 @@
  * Keys are namespaced: tabs.*, profile.*, auth.*, onboarding.*, common.*, language.*, notifications.*, conduct.*.
  */
 export const en = {
+  watchAdmin: {
+    title: 'Manage videos',
+    manage: 'Manage',
+    manageHint: 'Opens the screen for assigning courses to groups and terms',
+    audience: 'Who may watch',
+    availableFrom: 'Available from (YYYY-MM-DD)',
+    availableUntil: 'Available until (YYYY-MM-DD)',
+    windowHint: 'Leave a date empty for no bound. Admins always see the course, in or out of term.',
+    openToViewers: 'Open to viewers',
+    openToViewersHint: 'Until this is on, only admins can see the course.',
+    open: 'Open',
+    notOpen: 'Not open',
+    noWindow: 'No date limit',
+    openSection: 'Open',
+    notOpenSection: 'Not open yet',
+    notOpenSectionHint: 'Imported and waiting for a group and a term.',
+    editAccessHint: 'Edit who may watch this course and when',
+    dateFormatError: 'Use the form 2026-03-02.',
+    dateOrderError: 'The end date must come after the start date.',
+    emptyTitle: 'No courses to manage',
+    emptyDescription: 'Courses you administer appear here once they exist.',
+    backToWatch: 'Back to Watch',
+  },
   watch: {
     tab: 'Watch',
     openToEveryone: 'Open to everyone',
@@ -208,6 +231,7 @@ export const en = {
     navigateBackHint: 'Returns to the previous screen',
     options: 'Options',
     save: 'Save',
+    saving: 'Saving…',
     loading: 'Loading',
     cancel: 'Cancel',
     successTitle: 'Success',

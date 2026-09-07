@@ -13,7 +13,8 @@ import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { EmptyState } from '@/components/patterns/EmptyState';
-import { useWatchCoursesQuery } from '@/hooks/useApiQueries';
+import { useAuth } from '@/hooks/useAuth';
+import { useIsAdminQuery, useWatchCoursesQuery } from '@/hooks/useApiQueries';
 import type { WatchCourse } from '@/lib/api';
 import { getUserFacingError } from '@/lib/api';
 import { t } from '@/lib/i18n';
@@ -99,7 +100,10 @@ function CourseCard({ course, onPress }: { course: WatchCourse; onPress: () => v
 
 export default function WatchScreen() {
   const router = useRouter();
+  const { session } = useAuth();
   const { data: courses = [], isLoading, isError, error, refetch } = useWatchCoursesQuery();
+  // The shelf already shows admins their unpublished courses; this is the way to act on them.
+  const { data: isAdmin } = useIsAdminQuery(session?.user?.id);
 
   const shelves = useMemo(() => buildShelves(courses), [courses]);
 
@@ -135,6 +139,18 @@ export default function WatchScreen() {
       contentContainerStyle={[styles.content, tabScreenContent]}
       showsVerticalScrollIndicator={false}
     >
+      {isAdmin ? (
+        <Pressable
+          onPress={() => router.push('/watch/manage')}
+          style={({ pressed }) => [styles.manageRow, pressed && { opacity: 0.6 }]}
+          accessibilityRole="button"
+          accessibilityLabel={t('watchAdmin.title')}
+          accessibilityHint={t('watchAdmin.manageHint')}
+        >
+          <Ionicons name="settings-outline" size={16} color={colors.onSurfaceVariant} />
+          <Text style={styles.manageText}>{t('watchAdmin.title')}</Text>
+        </Pressable>
+      ) : null}
       {shelves.length === 0 ? (
         <EmptyState
           iconName="play-circle-outline"
@@ -199,6 +215,16 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.onSurface,
     fontFamily: fontFamily.sansSemiBold,
+  },
+  manageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    alignSelf: 'flex-end',
+  },
+  manageText: {
+    ...typography.caption,
+    color: colors.onSurfaceVariant,
   },
   shelf: {
     gap: spacing.md,

@@ -4,6 +4,29 @@
 import { en, type TranslationShape } from './en';
 
 export const ko: TranslationShape = {
+  watchAdmin: {
+    title: '영상 관리',
+    manage: '관리',
+    manageHint: '코스를 그룹과 기간에 배정하는 화면을 엽니다',
+    audience: '볼 수 있는 사람',
+    availableFrom: '시작일 (YYYY-MM-DD)',
+    availableUntil: '종료일 (YYYY-MM-DD)',
+    windowHint: '비워두면 제한 없음. 관리자는 기간과 무관하게 항상 볼 수 있습니다.',
+    openToViewers: '공개하기',
+    openToViewersHint: '켜기 전까지는 관리자에게만 보입니다.',
+    open: '공개',
+    notOpen: '미공개',
+    noWindow: '기간 제한 없음',
+    openSection: '공개 중',
+    notOpenSection: '아직 공개 안 함',
+    notOpenSectionHint: '가져왔지만 그룹과 기간을 기다리는 중입니다.',
+    editAccessHint: '이 코스를 누가 언제 볼 수 있는지 설정합니다',
+    dateFormatError: '2026-03-02 형식으로 입력해 주세요.',
+    dateOrderError: '종료일은 시작일보다 뒤여야 합니다.',
+    emptyTitle: '관리할 코스가 없어요',
+    emptyDescription: '관리 권한이 있는 코스가 생기면 여기에 표시됩니다.',
+    backToWatch: '영상 목록으로',
+  },
   watch: {
     tab: '영상',
     openToEveryone: '모두 공개',
@@ -205,6 +228,7 @@ export const ko: TranslationShape = {
     options: '옵션',
     loading: '로딩 중',
     save: '저장',
+    saving: '저장 중…',
     cancel: '취소',
     successTitle: '완료',
     delete: '삭제',

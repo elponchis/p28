@@ -20,6 +20,12 @@ module.exports = defineConfig([
     },
   },
   {
+    // Repo scripts are Node, not app code: they may require() and use __dirname.
+    files: ['scripts/**/*.{js,cjs}'],
+    languageOptions: { globals: { ...globals.node } },
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
+  },
+  {
     rules: {
       'react/no-unescaped-entities': 'off',
     },

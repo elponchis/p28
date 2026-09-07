@@ -57,11 +57,22 @@ check(layoutContent.includes("title: 'Profile'"), 'Tab layout has Profile');
 
 // Optional: verify app can build (evidence that "app runs")
 const { spawnSync } = require('child_process');
-const exportResult = spawnSync('npx', ['expo', 'export', '--platform', 'web', '--output-dir', require('path').join(root, '.expo-export-web')], {
-  cwd: root,
-  encoding: 'utf8',
-  timeout: 120000,
-});
+const exportResult = spawnSync(
+  'npx',
+  [
+    'expo',
+    'export',
+    '--platform',
+    'web',
+    '--output-dir',
+    require('path').join(root, '.expo-export-web'),
+  ],
+  {
+    cwd: root,
+    encoding: 'utf8',
+    timeout: 120000,
+  }
+);
 if (exportResult.status === 0) {
   console.log('OK: App build (web) succeeds');
 } else {

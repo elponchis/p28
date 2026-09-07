@@ -32,7 +32,10 @@ if (!url || !key) {
 const supabase = createClient(url, key, { auth: { persistSession: false } });
 
 async function main() {
-  const { error } = await supabase.from('chats').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  const { error } = await supabase
+    .from('chats')
+    .delete()
+    .neq('id', '00000000-0000-0000-0000-000000000000');
   if (error) {
     console.error('Failed to delete chats:', error.message);
     process.exit(1);

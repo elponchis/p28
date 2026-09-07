@@ -29,6 +29,7 @@ export default function WatchLayout() {
         }}
       >
         <Stack.Screen name="[courseId]" options={{ title: '' }} />
+        <Stack.Screen name="manage" options={{ title: t('watchAdmin.title') }} />
       </Stack>
     </View>
   );

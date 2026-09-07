@@ -22,12 +22,31 @@ const tokensPath = path.join(themeDir, 'tokens.ts');
 check(fs.existsSync(tokensPath), 'theme/tokens.ts exists');
 const tokensContent = fs.readFileSync(tokensPath, 'utf8');
 // Spacious & Calm: background #fafafa, textPrimary #1a1a1a, primary #2C7CB5
-check(tokensContent.includes('colors') && (tokensContent.includes('#fafafa') || tokensContent.includes('#1a1a1a') || tokensContent.includes('#2C7CB5')), 'tokens export colors (Spacious & Calm or equivalent)');
-check(tokensContent.includes('spacing') && tokensContent.includes('radius'), 'tokens export spacing and radius');
+check(
+  tokensContent.includes('colors') &&
+    (tokensContent.includes('#fafafa') ||
+      tokensContent.includes('#1a1a1a') ||
+      tokensContent.includes('#2C7CB5')),
+  'tokens export colors (Spacious & Calm or equivalent)'
+);
+check(
+  tokensContent.includes('spacing') && tokensContent.includes('radius'),
+  'tokens export spacing and radius'
+);
 check(tokensContent.includes('typography'), 'tokens export typography');
-check(tokensContent.includes('44') && (tokensContent.includes('minTouchTarget') || tokensContent.includes('touch')), 'tokens define 44pt min touch target');
-check(tokensContent.includes('WCAG') || tokensContent.includes('contrast'), 'tokens document WCAG/contrast (code review)');
-check(tokensContent.includes('success') && tokensContent.includes('error'), 'tokens export semantic colors (success, error)');
+check(
+  tokensContent.includes('44') &&
+    (tokensContent.includes('minTouchTarget') || tokensContent.includes('touch')),
+  'tokens define 44pt min touch target'
+);
+check(
+  tokensContent.includes('WCAG') || tokensContent.includes('contrast'),
+  'tokens document WCAG/contrast (code review)'
+);
+check(
+  tokensContent.includes('success') && tokensContent.includes('error'),
+  'tokens export semantic colors (success, error)'
+);
 check(tokensContent.includes('avatarSizes'), 'tokens export avatarSizes');
 
 // Primitives exist

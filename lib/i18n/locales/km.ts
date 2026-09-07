@@ -4,6 +4,29 @@
 import { en, type TranslationShape } from './en';
 
 export const km: TranslationShape = {
+  watchAdmin: {
+    title: 'គ្រប់គ្រងវីដេអូ',
+    manage: 'គ្រប់គ្រង',
+    manageHint: 'បើកអេក្រង់សម្រាប់កំណត់វគ្គសិក្សាទៅក្រុម និងរយៈពេល',
+    audience: 'អ្នកដែលអាចមើលបាន',
+    availableFrom: 'ចាប់ពី (YYYY-MM-DD)',
+    availableUntil: 'ដល់ (YYYY-MM-DD)',
+    windowHint: 'ទុកទទេ បើគ្មានកំណត់។ អ្នកគ្រប់គ្រងមើលបានជានិច្ច។',
+    openToViewers: 'បើកឱ្យមើល',
+    openToViewersHint: 'មុនពេលបើក មានតែអ្នកគ្រប់គ្រងទេដែលឃើញ។',
+    open: 'បើក',
+    notOpen: 'មិនទាន់បើក',
+    noWindow: 'គ្មានកំណត់ពេល',
+    openSection: 'កំពុងបើក',
+    notOpenSection: 'មិនទាន់បើក',
+    notOpenSectionHint: 'បាននាំចូល ហើយរង់ចាំក្រុម និងរយៈពេល។',
+    editAccessHint: 'កំណត់អ្នកមើល និងពេលវេលា',
+    dateFormatError: 'សូមប្រើទម្រង់ 2026-03-02។',
+    dateOrderError: 'ថ្ងៃបញ្ចប់ត្រូវក្រោយថ្ងៃចាប់ផ្តើម។',
+    emptyTitle: 'គ្មានវគ្គសិក្សាដើម្បីគ្រប់គ្រង',
+    emptyDescription: 'វគ្គសិក្សាដែលអ្នកគ្រប់គ្រងនឹងបង្ហាញនៅទីនេះ។',
+    backToWatch: 'ត្រឡប់ទៅវីដេអូ',
+  },
   watch: {
     tab: 'វីដេអូ',
     openToEveryone: 'បើកសម្រាប់ទាំងអស់គ្នា',
@@ -208,6 +231,7 @@ export const km: TranslationShape = {
     options: 'ជម្រើស',
     loading: 'កំពុងផ្ទុក',
     save: 'រក្សាទុក',
+    saving: 'កំពុងរក្សាទុក…',
     cancel: 'បោះបង់',
     successTitle: 'ជោគជ័យ',
     delete: 'លុប',

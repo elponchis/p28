@@ -788,7 +788,7 @@ function mapGroupRecurringMeetingRow(row: GroupRecurringMeetingRow): GroupRecurr
 
 /** Every column mapCourseRow reads; the four course queries share it so none drifts. */
 const COURSE_COLUMNS =
-  'id, group_id, title, description, cover_image_url, sort_order, available_from, available_until, created_at, updated_at';
+  'id, group_id, title, description, cover_image_url, sort_order, available_from, available_until, is_published, created_at, updated_at';
 
 type CourseRow = {
   id: string;
@@ -799,6 +799,7 @@ type CourseRow = {
   sort_order: number;
   available_from?: string | null;
   available_until?: string | null;
+  is_published?: boolean | null;
   created_at: string;
   updated_at: string;
 };
@@ -813,6 +814,7 @@ function mapCourseRow(row: CourseRow): Course {
     sortOrder: row.sort_order,
     availableFrom: row.available_from ?? undefined,
     availableUntil: row.available_until ?? undefined,
+    isPublished: row.is_published ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -2812,6 +2814,61 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
             lessonCount: lessons?.count ?? 0,
           };
         });
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async getManagedCourses(): Promise<WatchCourse[] | ApiError> {
+      try {
+        // Same read policy as the watch shelf, which already returns unpublished courses to the
+        // admins who may act on them and to nobody else. No separate admin query to keep in step.
+        const { data: rows, error } = await getClient()
+          .from('courses')
+          .select(`${COURSE_COLUMNS}, groups(name, type), lessons(count)`)
+          .order('is_published', { ascending: true })
+          .order('title', { ascending: true });
+        if (error) return toApiError(error);
+        return (
+          (rows ?? []) as (CourseRow & {
+            groups?: { name?: string; type?: GroupType } | { name?: string; type?: GroupType }[];
+            lessons?: { count: number }[] | { count: number };
+          })[]
+        ).map((row) => {
+          const group = Array.isArray(row.groups) ? row.groups[0] : row.groups;
+          const lessons = Array.isArray(row.lessons) ? row.lessons[0] : row.lessons;
+          return {
+            ...mapCourseRow(row),
+            groupName: group?.name ?? undefined,
+            groupType: group?.type ?? undefined,
+            lessonCount: lessons?.count ?? 0,
+          };
+        });
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async updateCourseAccess(
+      courseId: string,
+      input: import('../../contracts/dto').UpdateCourseAccessInput
+    ): Promise<Course | ApiError> {
+      try {
+        const { data, error } = await getClient()
+          .from('courses')
+          .update({
+            group_id: input.groupId,
+            available_from: input.availableFrom,
+            available_until: input.availableUntil,
+            is_published: input.isPublished,
+          })
+          .eq('id', courseId)
+          .select(COURSE_COLUMNS)
+          .maybeSingle();
+        if (error) return toApiError(error);
+        // RLS filters rather than raises: no row back means this admin may not change this course.
+        if (!data) return { message: 'Not authorized to change this course', code: 'FORBIDDEN' };
+        return mapCourseRow(data as CourseRow);
       } catch (e) {
         return toApiError(e);
       }

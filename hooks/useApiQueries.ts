@@ -935,6 +935,40 @@ export function useWatchCoursesQuery(options?: { enabled?: boolean }) {
   });
 }
 
+/**
+ * Every course this admin may administer, published or not. The same read policy backs the watch
+ * shelf, so there is no second definition of "may see" to keep in step with the first.
+ */
+export function useManagedCoursesQuery(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: queryKeys.managedCourses(),
+    queryFn: () =>
+      queryFn(api.data.getManagedCourses()) as Promise<import('@/lib/api').WatchCourse[]>,
+    enabled: options?.enabled ?? true,
+  });
+}
+
+export function useUpdateCourseAccessMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      courseId,
+      input,
+    }: {
+      courseId: string;
+      input: import('@/lib/api').UpdateCourseAccessInput;
+    }) => queryFn(api.data.updateCourseAccess(courseId, input)),
+    onSuccess: (course) => {
+      qc.invalidateQueries({ queryKey: queryKeys.managedCourses() });
+      qc.invalidateQueries({ queryKey: queryKeys.watchCourses() });
+      qc.invalidateQueries({ queryKey: queryKeys.course(course.id) });
+      if (course.groupId) {
+        qc.invalidateQueries({ queryKey: queryKeys.coursesByGroup(course.groupId) });
+      }
+    },
+  });
+}
+
 export function useLessonsByCourseQuery(
   courseId: string | undefined,
   options?: { enabled?: boolean }

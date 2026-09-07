@@ -140,3 +140,16 @@ export function isGroupEventDiscussionReadOnly(event: {
 }): boolean {
   return event.status === 'cancelled';
 }
+
+/**
+ * A date typed as YYYY-MM-DD, and a real one — 2026-02-31 parses but is not a day.
+ *
+ * Typed dates decide who may watch what and until when, so the check is shared rather than
+ * rewritten beside each field that takes one.
+ */
+export function isIsoDate(value: string): boolean {
+  if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(value)) return false;
+  const parsed = new Date(value + 'T00:00:00Z');
+  if (Number.isNaN(parsed.getTime())) return false;
+  return parsed.toISOString().slice(0, 10) === value;
+}

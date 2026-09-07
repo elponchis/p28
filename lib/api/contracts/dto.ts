@@ -246,6 +246,11 @@ export interface Course {
   /** Watchable from / until, when the course runs for a term. Absent means no bound. */
   availableFrom?: string;
   availableUntil?: string;
+  /**
+   * False while a course is being assembled: admins see it, nobody else does, whatever the group
+   * and dates say. Opening it is a decision about who and when, made once the content is in.
+   */
+  isPublished?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -269,6 +274,20 @@ export interface UpdateCourseInput {
   description?: string;
   coverImageUrl?: string;
   sortOrder: number;
+}
+
+/**
+ * What an admin changes about who may watch a course, separate from what the course is.
+ *
+ * Kept apart from UpdateCourseInput because these four are the whole of the access decision, and
+ * a screen that edits them should not be able to rename a course by accident.
+ */
+export interface UpdateCourseAccessInput {
+  /** The group whose members may watch it, or null for everyone. */
+  groupId: string | null;
+  availableFrom: string | null;
+  availableUntil: string | null;
+  isPublished: boolean;
 }
 
 /** Lesson within a course. Video is an embedded YouTube/Vimeo URL, not a file upload. */

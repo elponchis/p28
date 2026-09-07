@@ -58,6 +58,7 @@ export type {
   Course,
   WatchCourse,
   CreateCourseInput,
+  UpdateCourseAccessInput,
   UpdateCourseInput,
   Lesson,
   CreateLessonInput,
