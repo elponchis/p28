@@ -195,6 +195,7 @@ function ReplyRow({
     currentUserId,
     canReact,
     canRetry: !!onRetryOutbound,
+    hasNonReactionActions: !!onDelete,
     onLongPress,
   });
 
@@ -827,23 +828,27 @@ export default function DiscussionDetailScreen() {
 
   const reactionSheetPrimaryActions = useMemo((): ReactionSheetPrimaryAction[] => {
     const post = reactionPost;
-    if (!post || !userId || !canEngageInThread) return [];
+    if (!post || !userId) return [];
     const outbound = (post as DiscussionReplyPost).outboundStatus;
     if (outbound) return [];
-    const actions: ReactionSheetPrimaryAction[] = [
-      {
-        key: 'reply',
-        label: t('message.sheetReply'),
-        icon: 'arrow-undo-outline',
-        accessibilityLabel: t('message.sheetReply'),
-        accessibilityHint: t('message.sheetReplyHint'),
-        onPress: () => {
-          setReactionPost(null);
-          setEditingPost(null);
-          setReplyingToPost(post);
-        },
-      },
-    ];
+    // Replying needs an open thread; removing does not. A moderator keeps their action after the
+    // conversation closes, which is the point of the closed-thread carve-out in the policy.
+    const actions: ReactionSheetPrimaryAction[] = canEngageInThread
+      ? [
+          {
+            key: 'reply',
+            label: t('message.sheetReply'),
+            icon: 'arrow-undo-outline',
+            accessibilityLabel: t('message.sheetReply'),
+            accessibilityHint: t('message.sheetReplyHint'),
+            onPress: () => {
+              setReactionPost(null);
+              setEditingPost(null);
+              setReplyingToPost(post);
+            },
+          },
+        ]
+      : [];
     // Removing your own words and removing someone else's are different acts, and the sheet
     // names them differently so nobody removes a member's reply thinking it was their own.
     const deletionRight = postDeletionRight({
@@ -870,7 +875,7 @@ export default function DiscussionDetailScreen() {
         },
       });
     }
-    if (post.userId === userId) {
+    if (post.userId === userId && canEngageInThread && !post.deletedAt) {
       actions.push({
         key: 'edit',
         label: t('message.sheetEdit'),
@@ -1009,6 +1014,32 @@ export default function DiscussionDetailScreen() {
                       })
                     }
                     onLongPress={() => setReactionPost(p)}
+                    onEdit={
+                      p.userId === userId && canEngageInThread
+                        ? () => handleStartEditReply(p)
+                        : undefined
+                    }
+                    onDelete={
+                      postDeletionRight({
+                        viewerId: userId,
+                        authorId: p.userId,
+                        isGroupAdmin: isCurrentUserGroupAdmin,
+                        isAppAdmin: isAppAdmin === true,
+                        threadLocked: isEventDiscussionReadOnly,
+                      }) && !p.deletedAt
+                        ? () =>
+                            void handleDeletePost(
+                              p,
+                              postDeletionRight({
+                                viewerId: userId,
+                                authorId: p.userId,
+                                isGroupAdmin: isCurrentUserGroupAdmin,
+                                isAppAdmin: isAppAdmin === true,
+                                threadLocked: isEventDiscussionReadOnly,
+                              }) === 'moderator'
+                            )
+                        : undefined
+                    }
                     onReply={() => {
                       setEditingPost(null);
                       setReplyingToPost(p);

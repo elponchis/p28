@@ -27,6 +27,12 @@ export interface UseMessageRowStateInput {
   canReact?: boolean;
   /** Whether the caller can actually retry a failed send; drives the retry affordance. */
   canRetry?: boolean;
+  /**
+   * The row has an action that does not depend on being able to react — a moderator's removal in
+   * a thread that has closed, say. Without this the toolbar and the sheet both hang off
+   * canReact, and a right the server grants has nowhere to be exercised.
+   */
+  hasNonReactionActions?: boolean;
   onLongPress?: () => void;
 }
 
@@ -59,6 +65,7 @@ export function useMessageRowState({
   currentUserId,
   canReact = false,
   canRetry = false,
+  hasNonReactionActions = false,
   onLongPress,
 }: UseMessageRowStateInput): MessageRowState {
   const counts = post.reactionCounts ?? {};
@@ -93,9 +100,9 @@ export function useMessageRowState({
   );
 
   const handleLongPress = useCallback(() => {
-    if (!canReact || !onLongPress || outboundStatus) return;
+    if ((!canReact && !hasNonReactionActions) || !onLongPress || outboundStatus) return;
     onLongPress();
-  }, [canReact, onLongPress, outboundStatus]);
+  }, [canReact, hasNonReactionActions, onLongPress, outboundStatus]);
 
   return {
     isOwn,
@@ -120,6 +127,7 @@ export function useMessageRowState({
           : t('message.messageRowLongPressHintOther')
         : undefined,
     hoverProps,
-    showHoverActions: hoverSupported && hovered && canReactNow && !outboundStatus,
+    showHoverActions:
+      hoverSupported && hovered && (canReactNow || hasNonReactionActions) && !outboundStatus,
   };
 }
