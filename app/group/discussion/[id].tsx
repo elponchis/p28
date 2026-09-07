@@ -77,10 +77,11 @@ import {
 } from '@/lib/dates';
 import { USE_NATIVE_DRIVER } from '@/lib/animation';
 import { t } from '@/lib/i18n';
+import { reactionRowMetrics, splitVisibleReactions } from '@/lib/reactionLayout';
 import { postDeletionRight, wasRemovedByModerator } from '@/lib/moderation';
 import { confirm, notify } from '@/lib/dialogs';
 import { downloadFileInBrowser } from '@/lib/downloadFile';
-import { breakpoints, colors, radius, spacing, typography } from '@/theme/tokens';
+import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 function OriginalPostRow({
   discussion,
@@ -128,30 +129,6 @@ function OriginalPostRow({
 }
 
 /** Attachments allowed on one reply. */
-/**
- * How reactions are drawn beside a reply, which is a question about how much room there is.
- *
- * Measured on the window rather than on the pointer: a mouse in a narrow window has the same
- * shortage of space a phone does, and it was the space that decided both of these. Emoji are
- * larger where there is room to read and click them; the row shows more kinds before sending the
- * rest behind a button.
- */
-function reactionMetrics(isWide: boolean) {
-  const emojiSize = isWide ? 21 : 14;
-  const badgeHeight = emojiSize + 12;
-  return {
-    emojiSize,
-    badgeHeight,
-    /**
-     * How far the badges hang below the reply. They are placed rather than laid out so that
-     * reacting does not push the sent time down — the time belongs to the reply and should not
-     * move because somebody reacted to it.
-     */
-    overhang: Math.round(badgeHeight * 0.55),
-    maxVisible: isWide ? 10 : 4,
-  };
-}
-
 const MAX_ATTACHMENTS = 5;
 
 type DiscussionReplyPost = DiscussionPost & {
@@ -225,9 +202,11 @@ function ReplyRow({
   });
 
   const { width: windowWidth } = useWindowDimensions();
-  const metrics = reactionMetrics(windowWidth >= breakpoints.desktop);
-  const visibleReactions = presentReactions.slice(0, metrics.maxVisible);
-  const hiddenReactionCount = presentReactions.length - visibleReactions.length;
+  const metrics = reactionRowMetrics(windowWidth);
+  const { visible: visibleReactions, hidden: hiddenReactionCount } = splitVisibleReactions(
+    presentReactions,
+    metrics
+  );
 
   return (
     <View

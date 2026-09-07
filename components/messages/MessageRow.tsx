@@ -1,8 +1,16 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { Avatar } from '@/components/primitives';
 import { isDesktopWebPointer } from '@/lib/pointer';
+import { reactionRowMetrics, splitVisibleReactions } from '@/lib/reactionLayout';
 import { MessageVideoEmbed } from '@/components/patterns/MessageVideoEmbed';
 import type { MessageAttachment } from '@/lib/api';
 import { t } from '@/lib/i18n';
@@ -114,6 +122,13 @@ export function MessageRow({
   // A mouse can drag across text; a finger long-pressing it opens the browser's selection
   // callout instead of this row's actions sheet.
   const selectableText = isDesktopWebPointer();
+
+  const { width: windowWidth } = useWindowDimensions();
+  const reactionMetrics = reactionRowMetrics(windowWidth);
+  const { visible: visibleReactions, hidden: hiddenReactionCount } = splitVisibleReactions(
+    presentReactions,
+    reactionMetrics
+  );
 
   const hoverActions = showHoverActions ? (
     <MessageHoverActions
@@ -333,7 +348,7 @@ export function MessageRow({
               </View>
               {hasReactions ? (
                 <View style={styles.reactionBadges}>
-                  {presentReactions.map((type) => {
+                  {visibleReactions.map((type) => {
                     const count = reactionCount(type);
                     const isMine = isUserReaction(type);
                     const onPress =
@@ -361,11 +376,45 @@ export function MessageRow({
                         }
                         accessibilityRole={onPress ? 'button' : 'text'}
                       >
-                        <Text style={styles.reactionEmoji}>{REACTION_EMOJI[type]}</Text>
+                        <Text
+                          style={[styles.reactionEmoji, { fontSize: reactionMetrics.emojiSize }]}
+                        >
+                          {REACTION_EMOJI[type]}
+                        </Text>
                         {count > 1 ? <Text style={styles.reactionCount}>{count}</Text> : null}
                       </Pressable>
                     );
                   })}
+                  {/* Who left these, and the kinds that did not fit. Both answers are in the
+                      sheet, so one button opens it rather than two sitting side by side. */}
+                  {onLongPress ? (
+                    <Pressable
+                      onPress={onLongPress}
+                      style={({ pressed }) => [
+                        styles.reactionBadge,
+                        isOwnMessage
+                          ? styles.reactionBadgeOwnBubble
+                          : styles.reactionBadgeOtherBubble,
+                        pressed && styles.reactionBadgePressed,
+                      ]}
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        hiddenReactionCount > 0
+                          ? t('message.reactionsMoreCount', { count: hiddenReactionCount })
+                          : t('message.whoReacted')
+                      }
+                      accessibilityHint={t('message.whoReactedHint')}
+                    >
+                      <Text
+                        style={[
+                          styles.reactionCount,
+                          { fontSize: Math.round(reactionMetrics.emojiSize * 0.7) },
+                        ]}
+                      >
+                        {hiddenReactionCount > 0 ? `+${hiddenReactionCount}` : '···'}
+                      </Text>
+                    </Pressable>
+                  ) : null}
                 </View>
               ) : null}
             </View>

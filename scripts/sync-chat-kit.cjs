@@ -64,6 +64,7 @@ const FILES = [
 
   // lib
   'lib/reactions.ts',
+  'lib/reactionLayout.ts',
   'lib/readReceipts.ts',
   'lib/openChats.ts',
   'lib/chatScrollAnchor.ts',
@@ -96,6 +97,7 @@ const FILES = [
   'lib/__tests__/openChats.test.ts',
   'lib/__tests__/chatScrollAnchor.test.ts',
   'lib/__tests__/chatPreview.test.ts',
+  'lib/__tests__/reactionLayout.test.ts',
   'lib/__tests__/pointer.test.ts',
   'hooks/__tests__/useChatMessagesQuery.test.tsx',
   'lib/api/adapters/supabase/__tests__/jwtSkewRetryFetch.test.ts',
