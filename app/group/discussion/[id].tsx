@@ -77,6 +77,7 @@ import {
 } from '@/lib/dates';
 import { USE_NATIVE_DRIVER } from '@/lib/animation';
 import { t } from '@/lib/i18n';
+import { isDesktopWebPointer } from '@/lib/pointer';
 import { postDeletionRight, wasRemovedByModerator } from '@/lib/moderation';
 import { confirm, notify } from '@/lib/dialogs';
 import { downloadFileInBrowser } from '@/lib/downloadFile';
@@ -128,6 +129,12 @@ function OriginalPostRow({
 }
 
 /** Attachments allowed on one reply. */
+/**
+ * Reaction emoji are read at a glance and clicked with a mouse on desktop, where there is room
+ * for them; on a phone the same size would crowd the reply it belongs to.
+ */
+const REACTION_BADGE_EMOJI_SIZE = isDesktopWebPointer() ? 21 : 14;
+
 const MAX_ATTACHMENTS = 5;
 
 type DiscussionReplyPost = DiscussionPost & {
@@ -178,13 +185,14 @@ function ReplyRow({
     isOwn: isOwnPost,
     isEdited,
     clockTime: sentClock,
-    outboundStatus,
     showFailedOutbound,
     showSendingOutbound,
     presentReactions,
     reactionCount,
     isUserReaction,
     hasReactions,
+    canReactNow,
+    canOpenSheet,
     userReactionTypes: userReactions,
     handleLongPress,
     longPressHint,
@@ -220,12 +228,12 @@ function ReplyRow({
         <View style={styles.replyCardWrapper}>
           <View style={styles.replyCardSliding}>
             <Pressable
-              onLongPress={canReact && !outboundStatus ? handleLongPress : undefined}
+              onLongPress={canOpenSheet ? handleLongPress : undefined}
               delayLongPress={400}
               style={({ pressed }) => [
                 styles.replyCard,
                 showFailedOutbound && styles.replyCardFailed,
-                pressed && canReact && !outboundStatus && styles.replyCardPressed,
+                pressed && canOpenSheet && styles.replyCardPressed,
               ]}
               accessibilityLabel={
                 showFailedOutbound ? t('message.sendFailed') : t('message.reactToReply')
@@ -333,7 +341,7 @@ function ReplyRow({
                   const count = reactionCount(type);
                   const isMine = isUserReaction(type);
                   const onPress =
-                    canReact && (isMine ? onRemoveReaction : onAddReaction)
+                    canReactNow && (isMine ? onRemoveReaction : onAddReaction)
                       ? () => (isMine ? onRemoveReaction?.(type) : onAddReaction?.(type))
                       : undefined;
                   return (
@@ -342,7 +350,7 @@ function ReplyRow({
                       onPress={onPress}
                       style={({ pressed }) => [
                         styles.reactionBadge,
-                        pressed && canReact && styles.reactionBadgePressed,
+                        pressed && canReactNow && styles.reactionBadgePressed,
                       ]}
                       disabled={!onPress}
                       accessibilityLabel={
@@ -1409,14 +1417,15 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   reactionBadges: {
-    position: 'absolute',
-    bottom: -6,
-    right: spacing.sm,
+    // In the flow rather than absolutely placed at bottom-right, where it sat on top of the sent
+    // time and hid it. Left-aligned, like chat: the badges belong to the reply above them, and
+    // the time keeps the right edge to itself.
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.xs,
-    justifyContent: 'flex-end',
-    zIndex: 1,
+    gap: spacing.xxs,
+    marginTop: -8,
+    alignSelf: 'flex-start',
+    paddingLeft: spacing.xs,
   },
   reactionBadge: {
     flexDirection: 'row',
@@ -1433,7 +1442,7 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   reactionBadgeEmoji: {
-    fontSize: 14,
+    fontSize: REACTION_BADGE_EMOJI_SIZE,
   },
   reactionBadgeCount: {
     ...typography.caption,

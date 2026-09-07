@@ -13,6 +13,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { t } from '@/lib/i18n';
+import { isDesktopWebPointer } from '@/lib/pointer';
 import type { PostReactionType } from '@/lib/api';
 import { colors, radius, spacing } from '@/theme/tokens';
 
@@ -32,6 +33,17 @@ export interface MessageHoverActionsProps {
   onEdit?: () => void;
   onDelete?: () => void;
 }
+
+/**
+ * One size for the row, so the emoji and the icons beside them share a centre line.
+ *
+ * The + sat at 15 next to emoji drawn at 14: an emoji glyph is taller than its font size and an
+ * Ionicon is not, so the two rendered at visibly different sizes and the + read as misaligned.
+ * Sizing both from here keeps them in step, and a mouse gets the larger of the two.
+ */
+const EMOJI_SIZE = isDesktopWebPointer() ? 21 : 14;
+const ICON_SIZE = isDesktopWebPointer() ? 21 : 15;
+const BUTTON_SIZE = isDesktopWebPointer() ? 32 : 24;
 
 export function MessageHoverActions({
   isOwnMessage,
@@ -71,7 +83,7 @@ export function MessageHoverActions({
           accessibilityRole="button"
           accessibilityLabel={t('message.moreReactions')}
         >
-          <Ionicons name="add" size={15} color={colors.onSurfaceVariant} />
+          <Ionicons name="add" size={ICON_SIZE} color={colors.onSurfaceVariant} />
         </Pressable>
       ) : null}
       {onReply ? (
@@ -82,7 +94,7 @@ export function MessageHoverActions({
           accessibilityLabel={t('message.sheetReply')}
           accessibilityHint={t('message.sheetReplyHint')}
         >
-          <Ionicons name="arrow-undo-outline" size={15} color={colors.onSurfaceVariant} />
+          <Ionicons name="arrow-undo-outline" size={ICON_SIZE} color={colors.onSurfaceVariant} />
         </Pressable>
       ) : null}
       {isOwnMessage && onEdit ? (
@@ -93,7 +105,7 @@ export function MessageHoverActions({
           accessibilityLabel={t('message.sheetEdit')}
           accessibilityHint={t('message.sheetEditHint')}
         >
-          <Ionicons name="pencil-outline" size={15} color={colors.onSurfaceVariant} />
+          <Ionicons name="pencil-outline" size={ICON_SIZE} color={colors.onSurfaceVariant} />
         </Pressable>
       ) : null}
       {onDelete ? (
@@ -114,7 +126,7 @@ export function MessageHoverActions({
             isOwnMessage ? t('message.sheetDeleteHint') : t('discussions.removeReplyHint')
           }
         >
-          <Ionicons name="trash-outline" size={15} color={colors.error} />
+          <Ionicons name="trash-outline" size={ICON_SIZE} color={colors.error} />
         </Pressable>
       ) : null}
     </View>
@@ -134,9 +146,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceContainerHigh,
   },
   button: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: BUTTON_SIZE,
+    height: BUTTON_SIZE,
+    borderRadius: BUTTON_SIZE / 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -147,6 +159,10 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   emoji: {
-    fontSize: 14,
+    fontSize: EMOJI_SIZE,
+    // An emoji's glyph box is taller than its font size; without a line height to match the
+    // button, centring the box still leaves the character sitting low.
+    lineHeight: BUTTON_SIZE,
+    textAlign: 'center',
   },
 });

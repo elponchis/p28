@@ -87,7 +87,6 @@ export function MessageRow({
     isDeleted,
     isEdited,
     clockTime,
-    outboundStatus,
     showFailedOutbound,
     showSendingOutbound,
     presentReactions,
@@ -96,6 +95,7 @@ export function MessageRow({
     hasReactions,
     userReactionTypes: userReactions,
     canReactNow,
+    canOpenSheet,
     handleLongPress,
     longPressHint,
     hoverProps,
@@ -105,6 +105,9 @@ export function MessageRow({
     currentUserId,
     canReact,
     canRetry: !!onRetrySend,
+    // Your own message no longer counts as reactable, so the sheet needs another reason to open
+    // on it -- edit and delete live in there.
+    hasNonReactionActions: !!onEdit || !!onDelete,
     onLongPress,
   });
 
@@ -212,13 +215,13 @@ export function MessageRow({
                 ) : null}
                 <View style={styles.bubbleStack}>
                   <Pressable
-                    onLongPress={canReactNow ? handleLongPress : undefined}
+                    onLongPress={canOpenSheet ? handleLongPress : undefined}
                     delayLongPress={400}
                     style={({ pressed }) => [
                       styles.bubble,
                       isOwnMessage ? styles.bubbleOwn : styles.bubbleOther,
                       showFailedOutbound && styles.bubbleFailed,
-                      pressed && canReactNow && !outboundStatus && styles.bubblePressed,
+                      pressed && canOpenSheet && styles.bubblePressed,
                     ]}
                     accessibilityLabel={
                       isDeleted
@@ -334,7 +337,7 @@ export function MessageRow({
                     const count = reactionCount(type);
                     const isMine = isUserReaction(type);
                     const onPress =
-                      canReact && (isMine ? onRemoveReaction : onAddReaction)
+                      canReactNow && (isMine ? onRemoveReaction : onAddReaction)
                         ? () => (isMine ? onRemoveReaction?.(type) : onAddReaction?.(type))
                         : undefined;
                     return (
@@ -346,7 +349,7 @@ export function MessageRow({
                           isOwnMessage
                             ? styles.reactionBadgeOwnBubble
                             : styles.reactionBadgeOtherBubble,
-                          pressed && canReact && styles.reactionBadgePressed,
+                          pressed && canReactNow && styles.reactionBadgePressed,
                         ]}
                         disabled={!onPress}
                         accessibilityLabel={

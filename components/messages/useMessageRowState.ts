@@ -50,8 +50,17 @@ export interface MessageRowState {
   isUserReaction: (type: PostReactionType) => boolean;
   hasReactions: boolean;
   userReactionTypes: PostReactionType[];
-  /** Reacting is off for a deleted message even when the screen allows it generally. */
+  /**
+   * Reacting is off for a deleted message, and off for your own — the second one used to be
+   * enforced only where reactions were *offered*, so tapping a badge somebody else had left on
+   * your own message still added yours.
+   */
   canReactNow: boolean;
+  /**
+   * Whether a long press has a sheet to open. Not the same as being able to react: your own
+   * message cannot be reacted to but still has edit and delete in there.
+   */
+  canOpenSheet: boolean;
   handleLongPress: () => void;
   longPressHint: string | undefined;
   /** Spread onto the row container. Empty without a mouse; react-native-web forwards these. */
@@ -77,7 +86,7 @@ export function useMessageRowState({
   const isEdited = !isDeleted && !!post.updatedAt && post.updatedAt !== post.createdAt;
   const showFailedOutbound = isOwn && outboundStatus === 'failed' && canRetry;
   const showSendingOutbound = isOwn && outboundStatus === 'sending';
-  const canReactNow = canReact && !isDeleted;
+  const canReactNow = canReact && !isDeleted && !isOwn;
 
   const presentReactions = useMemo(
     () => REACTION_ORDER.filter((type) => (counts[type] ?? 0) > 0),
@@ -118,6 +127,7 @@ export function useMessageRowState({
     hasReactions: !isDeleted && presentReactions.length > 0,
     userReactionTypes,
     canReactNow,
+    canOpenSheet: (canReactNow || hasNonReactionActions) && !outboundStatus,
     handleLongPress,
     longPressHint: showFailedOutbound
       ? undefined
