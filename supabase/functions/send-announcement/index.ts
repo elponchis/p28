@@ -10,6 +10,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.95.3';
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.95.3';
 
 import { getAppBadgeCountForUser } from '../_shared/app-badge.ts';
+import { sendWebPushToUsers } from '../_shared/web-push.ts';
 import {
   json,
   optionsResponse,
@@ -199,16 +200,36 @@ async function sendAnnouncementPushes(supabase: SupabaseClient, announcementId: 
     });
   }
 
-  if (messages.length === 0) {
-    return null;
-  }
-
   const now = new Date().toISOString();
-  const { successfulUserIds: sentUserIds } = await sendExpoPushInChunks(messages);
 
-  const sentIdsList = [...sentUserIds];
+  // Both transports, and neither gates the other: a browser-only reader has no Expo token, and
+  // stopping at an empty message list is how announcements reached nobody on the web.
+  const { successfulUserIds: sentUserIds } =
+    messages.length > 0
+      ? await sendExpoPushInChunks(messages)
+      : { successfulUserIds: new Set<string>() };
+
+  const link = row.meeting_link?.trim();
+  const web = await sendWebPushToUsers(
+    supabase,
+    eligible.filter((uid) => !alreadyDelivered.has(uid)),
+    {
+      title: row.title,
+      body: row.body.length > 200 ? `${row.body.slice(0, 197)}...` : row.body,
+      data: {
+        type: 'announcement',
+        announcementId: row.id,
+        groupId: row.group_id,
+        ...(link ? { meetingLink: link } : {}),
+      },
+    }
+  );
+
+  // Delivered is delivered, whichever transport did it — otherwise a web-only reader would be
+  // notified again every time this runs.
+  const sentIdsList = [...new Set([...sentUserIds, ...web.sentUserIds])];
   if (sentIdsList.length === 0) {
-    console.error('send-announcement: no successful Expo tickets for', announcementId);
+    console.error('send-announcement: nothing delivered for', announcementId);
     return null;
   }
 

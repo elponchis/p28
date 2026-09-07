@@ -11,6 +11,7 @@ import {
 } from '@/hooks/useApiQueries';
 import type { InAppNotification } from '@/lib/api';
 import { formatRelativeTime } from '@/lib/dates';
+import { inAppNotificationPresentation } from '@/lib/inAppNotifications';
 import { t } from '@/lib/i18n';
 import { colors, radius, shadow, spacing, typography, tabScreenContent } from '@/theme/tokens';
 
@@ -31,19 +32,8 @@ export default function NotificationsScreen() {
     (item: InAppNotification) => {
       if (!userId) return;
       markRead.mutate({ userId, notificationIds: [item.id] });
-      if (item.kind === 'announcement' && item.announcementId) {
-        router.push({
-          pathname: '/group/announcement/[id]',
-          params: { id: item.announcementId, groupId: item.groupId },
-        });
-        return;
-      }
-      if (item.kind === 'group_event' && item.groupEventId) {
-        router.push({
-          pathname: '/group/event/[id]',
-          params: { id: item.groupEventId },
-        });
-      }
+      const { route } = inAppNotificationPresentation(item);
+      if (route) router.push(route);
     },
     [markRead, router, userId]
   );
@@ -91,58 +81,51 @@ export default function NotificationsScreen() {
 
       {hasGroupActivity ? (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('notifications.groupActivitySection')}</Text>
-          {inAppItems.map((item) => (
-            <Pressable
-              key={item.id}
-              style={({ pressed }) => [
-                styles.card,
-                styles.activityCard,
-                !item.readAt && styles.activityCardUnread,
-                pressed && styles.cardPressed,
-              ]}
-              onPress={() => handleOpenInApp(item)}
-              accessibilityLabel={`${item.kind === 'announcement' ? t('notifications.kindAnnouncement') : t('notifications.kindEvent')}: ${item.title}`}
-              accessibilityHint={
-                item.kind === 'announcement'
-                  ? t('notifications.openAnnouncementHint')
-                  : t('notifications.openEventHint')
-              }
-              accessibilityRole="button"
-            >
-              <View style={styles.cardIconWrap}>
-                <Ionicons
-                  name={item.kind === 'announcement' ? 'megaphone-outline' : 'calendar-outline'}
-                  size={22}
-                  color={colors.primary}
-                />
-              </View>
-              <View style={styles.cardContent}>
-                <View style={styles.activityTitleRow}>
-                  {!item.readAt ? <View style={styles.unreadDot} /> : null}
-                  <Text
-                    style={[styles.cardTitle, !item.readAt && styles.cardTitleUnread]}
-                    numberOfLines={2}
-                  >
-                    {item.title}
-                  </Text>
+          <Text style={styles.sectionTitle}>{t('notifications.activitySection')}</Text>
+          {inAppItems.map((item) => {
+            const { iconName, kindLabel, openHint } = inAppNotificationPresentation(item);
+            return (
+              <Pressable
+                key={item.id}
+                style={({ pressed }) => [
+                  styles.card,
+                  styles.activityCard,
+                  !item.readAt && styles.activityCardUnread,
+                  pressed && styles.cardPressed,
+                ]}
+                onPress={() => handleOpenInApp(item)}
+                accessibilityLabel={`${kindLabel}: ${item.title}`}
+                accessibilityHint={openHint}
+                accessibilityRole="button"
+              >
+                <View style={styles.cardIconWrap}>
+                  <Ionicons name={iconName} size={22} color={colors.primary} />
                 </View>
-                <Text style={styles.kindRow}>
-                  {item.kind === 'announcement'
-                    ? t('notifications.kindAnnouncement')
-                    : t('notifications.kindEvent')}
-                  {item.groupName.trim().length > 0
-                    ? ` · ${t('notifications.inGroupNamed', { name: item.groupName.trim() })}`
-                    : ''}
-                </Text>
-                <Text style={styles.summaryText} numberOfLines={3}>
-                  {item.summary}
-                </Text>
-                <Text style={styles.timeText}>{formatRelativeTime(item.createdAt)}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.ink300} />
-            </Pressable>
-          ))}
+                <View style={styles.cardContent}>
+                  <View style={styles.activityTitleRow}>
+                    {!item.readAt ? <View style={styles.unreadDot} /> : null}
+                    <Text
+                      style={[styles.cardTitle, !item.readAt && styles.cardTitleUnread]}
+                      numberOfLines={2}
+                    >
+                      {item.title}
+                    </Text>
+                  </View>
+                  <Text style={styles.kindRow}>
+                    {kindLabel}
+                    {item.kind !== 'chat_message' && item.groupName.trim().length > 0
+                      ? ` · ${t('notifications.inGroupNamed', { name: item.groupName.trim() })}`
+                      : ''}
+                  </Text>
+                  <Text style={styles.summaryText} numberOfLines={3}>
+                    {item.summary}
+                  </Text>
+                  <Text style={styles.timeText}>{formatRelativeTime(item.createdAt)}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.ink300} />
+              </Pressable>
+            );
+          })}
         </View>
       ) : null}
 

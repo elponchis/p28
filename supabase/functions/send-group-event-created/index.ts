@@ -9,6 +9,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.95.3';
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.95.3';
 
 import { getAppBadgeCountForUser } from '../_shared/app-badge.ts';
+import { sendWebPushToUsers } from '../_shared/web-push.ts';
 import {
   json,
   optionsResponse,
@@ -232,18 +233,18 @@ async function sendGroupEventCreatedPushes(supabase: SupabaseClient, eventId: st
     });
   }
 
-  if (messages.length === 0) {
-    return {
-      stats: {
-        eligibleMembers: eligible.length,
-        messagesQueued: 0,
-        ticketsOk: 0,
-        ticketErrors: [],
-      },
-    };
-  }
+  // A congregation that reads this in a browser has no Expo token at all, so an empty message
+  // list is not a reason to stop: web push is a second transport to the same people.
+  const { ticketsOk, ticketErrors } =
+    messages.length > 0
+      ? await sendExpoPushInChunks(messages)
+      : { ticketsOk: 0, ticketErrors: [] as string[] };
 
-  const { ticketsOk, ticketErrors } = await sendExpoPushInChunks(messages);
+  const web = await sendWebPushToUsers(supabase, eligible, {
+    title: pushTitle,
+    body: pushBody.length > 200 ? `${pushBody.slice(0, 197)}...` : pushBody,
+    data: dataPayload,
+  });
 
   return {
     stats: {
@@ -251,6 +252,8 @@ async function sendGroupEventCreatedPushes(supabase: SupabaseClient, eventId: st
       messagesQueued: messages.length,
       ticketsOk,
       ticketErrors,
+      webPushSent: web.sent,
+      webPushExpired: web.expired,
     },
   };
 }

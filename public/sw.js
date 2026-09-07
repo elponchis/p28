@@ -5,9 +5,21 @@
  * can be registered from the app. It is deliberately the whole service worker: no caching, no
  * offline shell, nothing that could serve a stale bundle. Push is the only job.
  *
- * The payload is produced by the send-chat-message Edge Function and mirrors the Expo push:
- *   { title, body, data: { type, chatId, messageId } }
+ * The payload is produced by the Edge Functions and mirrors the Expo push:
+ *   { title, body, data: { type, ... } }
+ * where type is chat_message, announcement or group_event.
  */
+
+/** Where a notification of this kind should open. One rule, used to tag and to route. */
+function targetFor(data) {
+  if (!data) return '/';
+  if (data.chatId) return `/messages/chat/${data.chatId}`;
+  if (data.type === 'announcement' && data.announcementId) {
+    return `/group/announcement/${data.announcementId}${data.groupId ? `?groupId=${data.groupId}` : ''}`;
+  }
+  if (data.type === 'group_event' && data.eventId) return `/group/event/${data.eventId}`;
+  return '/';
+}
 
 self.addEventListener('push', (event) => {
   if (!event.data) return;
@@ -19,14 +31,24 @@ self.addEventListener('push', (event) => {
     payload = { title: 'New message', body: event.data.text() };
   }
 
+  const data = payload.data || {};
   const title = payload.title || 'New message';
+  // A tag collapses a burst into one notification rather than a stack: per chat for messages, per
+  // item for anything else. The sender already coalesces, but a reader with several conversations
+  // still gets one entry each.
+  const tag = data.chatId
+    ? `chat:${data.chatId}`
+    : data.announcementId
+      ? `announcement:${data.announcementId}`
+      : data.eventId
+        ? `event:${data.eventId}`
+        : undefined;
+
   const options = {
     body: payload.body || '',
-    // A per-chat tag collapses a burst into one notification rather than a stack of them. The
-    // sender already coalesces, but a reader with several chats still gets one entry per chat.
-    tag: payload.data?.chatId ? `chat:${payload.data.chatId}` : undefined,
-    renotify: Boolean(payload.data?.chatId),
-    data: payload.data || {},
+    tag,
+    renotify: Boolean(tag),
+    data,
     icon: '/favicon.ico',
   };
 
@@ -36,8 +58,7 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
-  const chatId = event.notification.data && event.notification.data.chatId;
-  const target = chatId ? `/messages/chat/${chatId}` : '/messages';
+  const target = targetFor(event.notification.data);
 
   event.waitUntil(
     // Focus an open tab rather than piling up new ones; only fall back to opening a window.

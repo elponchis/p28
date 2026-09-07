@@ -26,6 +26,7 @@ import { OpenChatsProvider } from '@/contexts/OpenChatsContext';
 import { PendingSignUpProvider } from '@/contexts/PendingSignUpContext';
 import { useProfileQuery } from '@/hooks/useApiQueries';
 import { useAppIconBadgeSync } from '@/hooks/useAppIconBadgeSync';
+import { useWebPushRouting } from '@/hooks/useWebPushRouting';
 import { useAuth } from '@/hooks/useAuth';
 import { useExpoPushRouting } from '@/hooks/useExpoPushRouting';
 import { t } from '@/lib/i18n';
@@ -169,6 +170,7 @@ function RootLayoutNav() {
 
   const userId = session?.user?.id;
   useExpoPushRouting({ userId, router });
+  useWebPushRouting(router);
   useAppIconBadgeSync(userId);
 
   const navTheme = {

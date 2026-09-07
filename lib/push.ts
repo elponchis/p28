@@ -2,6 +2,7 @@
  * Expo push registration and notification response handling (announcements, group events).
  */
 import Constants from 'expo-constants';
+import type { Href } from 'expo-router';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import * as WebBrowser from 'expo-web-browser';
@@ -120,8 +121,16 @@ export async function registerForPushNotificationsAsync(userId: string): Promise
   }
 }
 
+/**
+ * The slice of expo-router this module needs.
+ *
+ * Typed as Href rather than string so the real Router satisfies it: a function that accepts only
+ * known routes is not a function that accepts any string, and declaring the looser shape made
+ * every call site pass a router TypeScript then rejected. The paths below are built from ids at
+ * runtime, which is what the casts are for — a notification's payload is not a literal type.
+ */
 export interface NotificationRouterLike {
-  push: (href: string) => void;
+  push: (href: Href) => void;
 }
 
 function navigateFromNotificationData(
@@ -134,7 +143,7 @@ function navigateFromNotificationData(
   const eventId =
     typeof eventIdVal === 'string' ? eventIdVal : eventIdVal != null ? String(eventIdVal) : '';
   if (typeStr === 'group_event' && eventId.length > 0) {
-    router.push(`/group/event/${eventId}`);
+    router.push(`/group/event/${eventId}` as Href);
     return;
   }
 
@@ -142,7 +151,7 @@ function navigateFromNotificationData(
   const chatId =
     typeof chatIdVal === 'string' ? chatIdVal : chatIdVal != null ? String(chatIdVal) : '';
   if (typeStr === 'chat_message' && chatId.length > 0) {
-    router.push(`/messages/chat/${chatId}`);
+    router.push(`/messages/chat/${chatId}` as Href);
     return;
   }
 
@@ -152,7 +161,7 @@ function navigateFromNotificationData(
   }
   const groupId = data?.groupId;
   if (typeof groupId === 'string' && groupId.length > 0) {
-    router.push(`/group/${groupId}`);
+    router.push(`/group/${groupId}` as Href);
   }
 }
 

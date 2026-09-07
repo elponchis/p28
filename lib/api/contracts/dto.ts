@@ -534,16 +534,19 @@ export interface PushToken {
 }
 
 /** In-app notification row (group announcement or event); list + unread badge. */
-export type InAppNotificationKind = 'announcement' | 'group_event';
+export type InAppNotificationKind = 'announcement' | 'group_event' | 'chat_message';
 
 export interface InAppNotification {
   id: string;
   kind: InAppNotificationKind;
-  groupId: string;
-  /** Snapshot of group name when the notification was created. */
+  /** Absent for a chat message: a conversation does not belong to a group. */
+  groupId?: string;
+  /** Snapshot of the group's — or the conversation's — name when the notification was created. */
   groupName: string;
   announcementId?: string;
   groupEventId?: string;
+  chatId?: string;
+  chatMessageId?: string;
   title: string;
   summary: string;
   createdAt: string;
