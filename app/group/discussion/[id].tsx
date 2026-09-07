@@ -1157,7 +1157,15 @@ export default function DiscussionDetailScreen() {
         reactionDetails={reactionDetails}
         selectedReactionTypes={reactionPost?.userReactionTypes ?? []}
         currentUserId={userId}
-        canReact={canReact}
+        canReact={
+          canReact &&
+          !!reactionPost &&
+          !!userId &&
+          // Reacting to your own reply is not a thing people do, and the hover toolbar already
+          // leaves the emoji off there. The sheet still opens on your own reply — that is how
+          // edit and delete are reached — it just does not offer the emoji row. Same as chat.
+          reactionPost.userId !== userId
+        }
         isMutating={reactMutation.isPending || removeReactionMutation.isPending}
         onAddReaction={handleReact}
         onRemoveReaction={handleRemoveReactionFromSheet}

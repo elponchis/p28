@@ -4307,7 +4307,9 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
             reaction_type: reactionType,
             created_at: new Date().toISOString(),
           },
-          { onConflict: 'post_id,user_id' }
+          // Includes reaction_type so a second emoji from the same person is a new row rather
+          // than an overwrite of their first (00091) -- the rule chat has (00084).
+          { onConflict: 'post_id,user_id,reaction_type' }
         );
         if (error) return toApiError(error);
       } catch (e) {
