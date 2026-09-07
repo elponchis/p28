@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated as RNAnimated,
   KeyboardAvoidingView,
@@ -423,7 +423,15 @@ export default function OnboardingScreen() {
   const [isSubmittingSignUp, setIsSubmittingSignUp] = useState(false);
   const isSubmitting = isSubmittingSignUp;
 
+  /**
+   * Reaching this screen without a sign-up in progress means going back to sign in — except when
+   * this screen is the one sending the reader there. Clearing the pending sign-up trips this
+   * guard, and its plain replace() landed after the deliberate one and dropped the notice it was
+   * carrying, so the explanation disappeared a second time.
+   */
+  const leavingWithNotice = useRef(false);
   useEffect(() => {
+    if (leavingWithNotice.current) return;
     if (!pendingSignUp && !session?.user?.id) {
       router.replace('/auth/sign-in');
     }
@@ -478,8 +486,9 @@ export default function OnboardingScreen() {
           // on a screen that clearPendingSignUp() had already sent away: the guard effect below
           // redirects the moment there is no pending sign-up, and the sentence went with it.
           setIsSubmittingSignUp(false);
+          leavingWithNotice.current = true;
           clearPendingSignUp();
-          router.replace('/auth/sign-in?notice=confirm-email');
+          router.replace({ pathname: '/auth/sign-in', params: { notice: 'confirm-email' } });
           return;
         }
         setError(getUserFacingError(err));
