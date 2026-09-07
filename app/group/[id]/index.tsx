@@ -629,21 +629,6 @@ export default function GroupDetailScreen() {
                     </Pressable>
                   </>
                 ) : null}
-                {isSuperAdmin && id ? (
-                  <Pressable
-                    onPress={() => router.push(`/group/${id}/super-admin`)}
-                    style={({ pressed }) => [styles.heroAnnounceBtn, pressed && { opacity: 0.85 }]}
-                    accessibilityLabel={t('groups.superAdminAssignEntryLabel')}
-                    accessibilityHint={t('groups.superAdminAssignEntryHint')}
-                    accessibilityRole="button"
-                  >
-                    <Ionicons
-                      name="shield-checkmark-outline"
-                      size={20}
-                      color={colors.onSecondaryContainer}
-                    />
-                  </Pressable>
-                ) : null}
               </View>
             ) : null}
           </View>

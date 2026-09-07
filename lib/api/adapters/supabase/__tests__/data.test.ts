@@ -1429,70 +1429,38 @@ describe('Supabase data adapter', () => {
     });
 
     describe('isUserGroupAdmin', () => {
-      it('returns true when group_admins row exists', async () => {
-        const getClient = (() => ({
-          from: jest.fn().mockReturnValue({
-            select: jest.fn().mockReturnThis(),
-            eq: jest.fn().mockReturnThis(),
-            maybeSingle: jest.fn().mockResolvedValue({ data: { user_id: 'u1' }, error: null }),
-          }),
-        })) as unknown as GetClient;
-        const adapter = createSupabaseDataAdapter(getClient);
-        const result = await adapter.isUserGroupAdmin('g1', 'u1');
-        expect(isApiError(result)).toBe(false);
-        expect(result).toBe(true);
-      });
-
-      it('returns true for super_admin without group_admins row', async () => {
-        const from = jest.fn((table: string) => {
-          if (table === 'group_admins') {
-            return {
-              select: jest.fn().mockReturnThis(),
-              eq: jest.fn().mockReturnThis(),
-              maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
-            };
-          }
-          if (table === 'app_roles') {
+      const rolesClient = (role: string | null) =>
+        (() => ({
+          from: jest.fn((table: string) => {
+            if (table !== 'app_roles') {
+              throw new Error(`isUserGroupAdmin should read app_roles, not ${table}`);
+            }
             return {
               select: jest.fn().mockReturnThis(),
               eq: jest.fn().mockReturnThis(),
               maybeSingle: jest
                 .fn()
-                .mockResolvedValue({ data: { role: 'super_admin' }, error: null }),
+                .mockResolvedValue({ data: role ? { role } : null, error: null }),
             };
-          }
-          return {};
-        });
-        const getClient = (() => ({ from })) as unknown as GetClient;
-        const adapter = createSupabaseDataAdapter(getClient);
-        const result = await adapter.isUserGroupAdmin('g1', 'u1');
-        expect(isApiError(result)).toBe(false);
-        expect(result).toBe(true);
+          }),
+        })) as unknown as GetClient;
+
+      // Since 00095 running a group is an app admin's job: the per-group appointment it replaced
+      // is not read at all, which is what these assert by refusing any other table.
+      it('is true for a super admin', async () => {
+        const adapter = createSupabaseDataAdapter(rolesClient('super_admin'));
+        expect(await adapter.isUserGroupAdmin('g1', 'u1')).toBe(true);
       });
 
-      it('returns false when not in group_admins and not super_admin', async () => {
-        const from = jest.fn((table: string) => {
-          if (table === 'group_admins') {
-            return {
-              select: jest.fn().mockReturnThis(),
-              eq: jest.fn().mockReturnThis(),
-              maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
-            };
-          }
-          if (table === 'app_roles') {
-            return {
-              select: jest.fn().mockReturnThis(),
-              eq: jest.fn().mockReturnThis(),
-              maybeSingle: jest.fn().mockResolvedValue({ data: { role: 'admin' }, error: null }),
-            };
-          }
-          return {};
-        });
-        const getClient = (() => ({ from })) as unknown as GetClient;
-        const adapter = createSupabaseDataAdapter(getClient);
-        const result = await adapter.isUserGroupAdmin('g1', 'u1');
-        expect(isApiError(result)).toBe(false);
-        expect(result).toBe(false);
+      it('is true for an admin', async () => {
+        const adapter = createSupabaseDataAdapter(rolesClient('admin'));
+        expect(await adapter.isUserGroupAdmin('g1', 'u1')).toBe(true);
+      });
+
+      it('is false for someone with no app role, whatever group is asked about', async () => {
+        const adapter = createSupabaseDataAdapter(rolesClient(null));
+        expect(await adapter.isUserGroupAdmin('g1', 'u1')).toBe(false);
+        expect(await adapter.isUserGroupAdmin('g2', 'u1')).toBe(false);
       });
     });
   });

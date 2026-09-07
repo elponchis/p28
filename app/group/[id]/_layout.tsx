@@ -34,12 +34,6 @@ export default function GroupDetailStackLayout() {
         }}
       />
       <Stack.Screen
-        name="super-admin"
-        options={{
-          title: t('groups.superAdminAssignTitle'),
-        }}
-      />
-      <Stack.Screen
         name="assignment/create"
         options={{
           title: t('assignments.addAssignment'),

@@ -2203,21 +2203,17 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
 
     async isUserGroupAdmin(groupId: string, userId: string): Promise<boolean | ApiError> {
       try {
+        // groupId is ignored: since 00095 administering the app is administering every group,
+        // and the per-group appointment it replaced is no longer read. The signature stays so
+        // the screens asking "may this person run this group?" keep asking it that way.
+        void groupId;
         const { data, error } = await getClient()
-          .from('group_admins')
-          .select('user_id')
-          .eq('group_id', groupId)
-          .eq('user_id', userId)
-          .maybeSingle();
-        if (error) return toApiError(error);
-        if (data) return true;
-        const { data: roleRow, error: roleError } = await getClient()
           .from('app_roles')
           .select('role')
           .eq('user_id', userId)
           .maybeSingle();
-        if (roleError) return toApiError(roleError);
-        return roleRow?.role === 'super_admin';
+        if (error) return toApiError(error);
+        return data?.role === 'super_admin' || data?.role === 'admin';
       } catch (e) {
         return toApiError(e);
       }
