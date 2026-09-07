@@ -14,7 +14,12 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/primitives';
-import { ALL_REACTION_OPTIONS, REACTION_EMOJI, REACTION_OPTIONS } from '@/components/messages';
+import {
+  ALL_REACTION_OPTIONS,
+  REACTION_EMOJI,
+  REACTION_OPTIONS,
+  REACTION_ORDER,
+} from '@/components/messages';
 import { useFadeSheetAnimation } from '@/hooks/useFadeSheetAnimation';
 import type { PostReactionType } from '@/lib/api';
 import { t } from '@/lib/i18n';
@@ -65,6 +70,20 @@ export function ReactionSheet({
   primaryActions = [],
 }: ReactionSheetProps) {
   const { sheetSlideAnim, sheetFadeAnim } = useFadeSheetAnimation(visible);
+
+  /** One entry per emoji, in catalogue order, so the rows never reshuffle between openings. */
+  const groupedReactions = React.useMemo(() => {
+    const byType = new Map<PostReactionType, typeof reactionDetails>();
+    for (const detail of reactionDetails) {
+      const list = byType.get(detail.reactionType);
+      if (list) list.push(detail);
+      else byType.set(detail.reactionType, [detail]);
+    }
+    return REACTION_ORDER.filter((type) => byType.has(type)).map((type) => ({
+      type,
+      people: byType.get(type)!,
+    }));
+  }, [reactionDetails]);
   const insets = useSafeAreaInsets();
   const [showAllReactions, setShowAllReactions] = React.useState(false);
   // Each opening starts folded, so the sheet does not remember an expansion from another message.
@@ -162,44 +181,34 @@ export function ReactionSheet({
                   contentContainerStyle={styles.listContent}
                   showsVerticalScrollIndicator={false}
                 >
-                  {reactionDetails.map((r, idx) => {
-                    const isCurrentUser = r.userId === currentUserId;
-                    return (
-                      <Pressable
-                        key={`${r.userId}-${r.reactionType}-${idx}`}
-                        onPress={
-                          isCurrentUser && canReact
-                            ? () => onRemoveReaction(r.reactionType)
-                            : undefined
-                        }
-                        style={({ pressed }) => [
-                          styles.row,
-                          pressed && isCurrentUser && canReact && styles.rowPressed,
-                        ]}
-                        disabled={!isCurrentUser || !canReact}
-                        accessibilityLabel={
-                          isCurrentUser
-                            ? `${r.displayName ?? 'You'}, ${REACTION_EMOJI[r.reactionType]}, ${t('message.tapToRemove')}`
-                            : `${r.displayName ?? t('common.loading')}, ${REACTION_EMOJI[r.reactionType]}`
-                        }
-                        accessibilityRole={isCurrentUser && canReact ? 'button' : 'text'}
-                      >
-                        <Avatar
-                          source={r.avatarUrl ? { uri: r.avatarUrl } : null}
-                          fallbackText={r.displayName}
-                          size="sm"
-                          accessibilityLabel={r.displayName ? `${r.displayName} profile` : ''}
-                        />
-                        <View style={styles.rowContent}>
-                          <Text style={styles.rowName}>{r.displayName ?? t('common.loading')}</Text>
-                          {isCurrentUser && canReact ? (
-                            <Text style={styles.rowHint}>{t('message.tapToRemove')}</Text>
-                          ) : null}
-                        </View>
-                        <Text style={styles.rowEmoji}>{REACTION_EMOJI[r.reactionType]}</Text>
-                      </Pressable>
-                    );
-                  })}
+                  {/* Grouped by emoji, not by person: the question this list answers is "who
+                      reacted with that one", and a row per person made the same heart appear
+                      five times down the page while nobody could see who was under it. */}
+                  {groupedReactions.map((group) => (
+                    <View key={group.type} style={styles.group}>
+                      <View style={styles.groupEmojiColumn}>
+                        <Text style={styles.groupEmoji}>{REACTION_EMOJI[group.type]}</Text>
+                        <Text style={styles.groupCount}>{group.people.length}</Text>
+                      </View>
+                      <View style={styles.groupPeople}>
+                        {group.people.map((person, idx) => (
+                          <View key={`${person.userId}-${idx}`} style={styles.person}>
+                            <Avatar
+                              source={person.avatarUrl ? { uri: person.avatarUrl } : null}
+                              fallbackText={person.displayName}
+                              size="sm"
+                              accessibilityLabel={
+                                person.displayName ? `${person.displayName} profile` : ''
+                              }
+                            />
+                            <Text style={styles.personName} numberOfLines={1}>
+                              {person.displayName ?? t('common.loading')}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  ))}
                 </ScrollView>
               )}
             </View>
@@ -328,27 +337,38 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
   },
-  row: {
+  group: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     gap: spacing.md,
   },
-  rowPressed: {
-    backgroundColor: colors.borderSubtle,
+  groupEmojiColumn: {
+    alignItems: 'center',
+    minWidth: 36,
   },
-  rowContent: { flex: 1 },
-  rowName: {
+  groupEmoji: { fontSize: 24 },
+  groupCount: {
+    ...typography.caption,
+    color: colors.textSecondary,
+  },
+  groupPeople: {
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    paddingTop: 2,
+  },
+  person: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  personName: {
     ...typography.body,
     color: colors.textPrimary,
   },
-  rowHint: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  rowEmoji: { fontSize: 24 },
   footer: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,

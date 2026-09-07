@@ -672,7 +672,6 @@ export const en = {
     whoReacted: 'See who reacted',
     whoReactedHint: 'Opens the list of people who reacted',
     reactionsMoreCount: '{{count}} more reactions',
-    tapToRemove: 'Tap to remove',
     noReactionsYet: 'No reactions so far...',
     noReactionsYetInvite: 'No reactions so far... be the first one!',
     sendFailed: "Couldn't send",

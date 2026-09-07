@@ -664,7 +664,6 @@ export const ko: TranslationShape = {
     whoReacted: '누가 반응했는지 보기',
     whoReactedHint: '반응한 사람 목록을 엽니다',
     reactionsMoreCount: '반응 {{count}}개 더 보기',
-    tapToRemove: '탭하여 제거',
     noReactionsYet: '아직 반응이 없어요...',
     noReactionsYetInvite: '아직 반응이 없어요... 먼저 남겨보세요!',
     sendFailed: '전송하지 못했습니다',

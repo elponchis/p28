@@ -670,7 +670,6 @@ export const km: TranslationShape = {
     whoReacted: 'មើលអ្នកដែលបានប្រតិកម្ម',
     whoReactedHint: 'បើកបញ្ជីអ្នកដែលបានប្រតិកម្ម',
     reactionsMoreCount: 'ប្រតិកម្មបន្ថែម {{count}}',
-    tapToRemove: 'ចុចដើម្បីយកចេញ',
     noReactionsYet: 'មិនទាន់មានប្រតិកម្មទេ...',
     noReactionsYetInvite: 'មិនទាន់មានប្រតិកម្មទេ... ធ្វើជាអ្នកដំបូង!',
     sendFailed: 'មិនអាចផ្ញើបានទេ',
