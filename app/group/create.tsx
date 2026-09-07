@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Image } from 'expo-image';
 import {
   FlatList,
@@ -21,9 +21,13 @@ import { UploadProgressBar } from '@/components/patterns/UploadProgressBar';
 import { DesktopContentContainer } from '@/components/layout/DesktopContentContainer';
 import { COUNTRIES } from '@/constants/countries';
 import { useAuth } from '@/hooks/useAuth';
-import { useCreateGroupMutation, useUploadGroupBannerImageMutation } from '@/hooks/useApiQueries';
+import {
+  useCreateGroupMutation,
+  useIsSuperAdminQuery,
+  useUploadGroupBannerImageMutation,
+} from '@/hooks/useApiQueries';
 import { getUserFacingError } from '@/lib/api';
-import { GROUP_TYPES, groupTypeLabel } from '@/lib/groupTypes';
+import { creatableGroupTypes, groupTypeLabel } from '@/lib/groupTypes';
 import { t } from '@/lib/i18n';
 import type { GroupType } from '@/lib/api';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
@@ -39,6 +43,10 @@ export default function CreateGroupScreen() {
   const router = useRouter();
   const [name, setName] = useState('');
   const [type, setType] = useState<GroupType>('forum');
+  const { data: isSuperAdmin = false } = useIsSuperAdminQuery(session?.user?.id, {
+    enabled: !!session?.user?.id,
+  });
+  const availableTypes = useMemo(() => creatableGroupTypes({ isSuperAdmin }), [isSuperAdmin]);
   const [description, setDescription] = useState('');
   const [preferredLanguage, setPreferredLanguage] = useState('en');
   const [country, setCountry] = useState('Online');
@@ -206,7 +214,7 @@ export default function CreateGroupScreen() {
 
           <Text style={styles.label}>{t('groups.type')}</Text>
           <View style={styles.chipRow}>
-            {GROUP_TYPES.map((typeOption) => (
+            {availableTypes.map((typeOption) => (
               <Pressable
                 key={typeOption}
                 onPress={() => setType(typeOption)}
