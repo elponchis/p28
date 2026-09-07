@@ -77,11 +77,10 @@ import {
 } from '@/lib/dates';
 import { USE_NATIVE_DRIVER } from '@/lib/animation';
 import { t } from '@/lib/i18n';
-import { isDesktopWebPointer } from '@/lib/pointer';
 import { postDeletionRight, wasRemovedByModerator } from '@/lib/moderation';
 import { confirm, notify } from '@/lib/dialogs';
 import { downloadFileInBrowser } from '@/lib/downloadFile';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { breakpoints, colors, radius, spacing, typography } from '@/theme/tokens';
 
 function OriginalPostRow({
   discussion,
@@ -130,27 +129,28 @@ function OriginalPostRow({
 
 /** Attachments allowed on one reply. */
 /**
- * Reaction emoji are read at a glance and clicked with a mouse on desktop, where there is room
- * for them; on a phone the same size would crowd the reply it belongs to.
+ * How reactions are drawn beside a reply, which is a question about how much room there is.
+ *
+ * Measured on the window rather than on the pointer: a mouse in a narrow window has the same
+ * shortage of space a phone does, and it was the space that decided both of these. Emoji are
+ * larger where there is room to read and click them; the row shows more kinds before sending the
+ * rest behind a button.
  */
-const REACTION_BADGE_EMOJI_SIZE = isDesktopWebPointer() ? 21 : 14;
-
-/** Roughly what a badge measures once its padding and border are counted. */
-const REACTION_BADGE_HEIGHT = REACTION_BADGE_EMOJI_SIZE + 12;
-
-/**
- * How far the badges hang below the reply they belong to. They are placed rather than laid out
- * so that adding a reaction does not push the sent time down — the time belongs to the reply and
- * should not move because someone reacted to it.
- */
-const REACTION_ROW_OVERHANG = Math.round(REACTION_BADGE_HEIGHT * 0.55);
-
-/**
- * How many kinds of reaction fit beside a reply before the rest go behind a button. Twelve of
- * them at desktop size is a row wide enough to reach the time; on a phone the line runs out far
- * sooner, so it holds fewer.
- */
-const MAX_VISIBLE_REACTIONS = isDesktopWebPointer() ? 10 : 4;
+function reactionMetrics(isWide: boolean) {
+  const emojiSize = isWide ? 21 : 14;
+  const badgeHeight = emojiSize + 12;
+  return {
+    emojiSize,
+    badgeHeight,
+    /**
+     * How far the badges hang below the reply. They are placed rather than laid out so that
+     * reacting does not push the sent time down — the time belongs to the reply and should not
+     * move because somebody reacted to it.
+     */
+    overhang: Math.round(badgeHeight * 0.55),
+    maxVisible: isWide ? 10 : 4,
+  };
+}
 
 const MAX_ATTACHMENTS = 5;
 
@@ -224,7 +224,10 @@ function ReplyRow({
     onLongPress,
   });
 
-  const hiddenReactionCount = Math.max(0, presentReactions.length - MAX_VISIBLE_REACTIONS);
+  const { width: windowWidth } = useWindowDimensions();
+  const metrics = reactionMetrics(windowWidth >= breakpoints.desktop);
+  const visibleReactions = presentReactions.slice(0, metrics.maxVisible);
+  const hiddenReactionCount = presentReactions.length - visibleReactions.length;
 
   return (
     <View
@@ -233,7 +236,7 @@ function ReplyRow({
         extraGapAfterPeerChange && styles.replyRowOuterPeerChange,
         // Room for the badges that hang below, so they do not land on the next reply. Taken here
         // rather than by laying the badges out, which would move the sent time.
-        hasReactions && styles.replyRowOuterWithReactions,
+        hasReactions && { marginBottom: metrics.overhang + spacing.xs },
       ]}
       {...hoverProps}
     >
@@ -361,8 +364,11 @@ function ReplyRow({
               ) : null}
             </Pressable>
             {hasReactions ? (
-              <View style={styles.reactionBadges} pointerEvents="box-none">
-                {presentReactions.slice(0, MAX_VISIBLE_REACTIONS).map((type) => {
+              <View
+                style={[styles.reactionBadges, { bottom: -metrics.overhang }]}
+                pointerEvents="box-none"
+              >
+                {visibleReactions.map((type) => {
                   const count = reactionCount(type);
                   const isMine = isUserReaction(type);
                   const onPress =
@@ -387,7 +393,9 @@ function ReplyRow({
                       }
                       accessibilityRole={onPress ? 'button' : 'text'}
                     >
-                      <Text style={styles.reactionBadgeEmoji}>{REACTION_EMOJI[type]}</Text>
+                      <Text style={[styles.reactionBadgeEmoji, { fontSize: metrics.emojiSize }]}>
+                        {REACTION_EMOJI[type]}
+                      </Text>
                       {count > 1 ? <Text style={styles.reactionBadgeCount}>{count}</Text> : null}
                     </Pressable>
                   );
@@ -410,7 +418,12 @@ function ReplyRow({
                     }
                     accessibilityHint={t('message.whoReactedHint')}
                   >
-                    <Text style={styles.reactionMoreText}>
+                    <Text
+                      style={[
+                        styles.reactionMoreText,
+                        { fontSize: Math.round(metrics.emojiSize * 0.7) },
+                      ]}
+                    >
                       {hiddenReactionCount > 0 ? `+${hiddenReactionCount}` : '···'}
                     </Text>
                   </Pressable>
@@ -1410,9 +1423,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: spacing.xs,
   },
-  replyRowOuterWithReactions: {
-    marginBottom: REACTION_ROW_OVERHANG + spacing.xs,
-  },
   replyRowOuterPeerChange: {
     marginTop: spacing.xxs,
   },
@@ -1472,7 +1482,6 @@ const styles = StyleSheet.create({
     // pushed it down the moment anyone reacted; hanging them off the bottom-left leaves the time
     // where it was and keeps them clear of it.
     position: 'absolute',
-    bottom: -REACTION_ROW_OVERHANG,
     left: spacing.xs,
     flexDirection: 'row',
     gap: spacing.xxs,
@@ -1483,7 +1492,6 @@ const styles = StyleSheet.create({
   },
   reactionMoreText: {
     ...typography.caption,
-    fontSize: Math.round(REACTION_BADGE_EMOJI_SIZE * 0.7),
     color: colors.textSecondary,
   },
   reactionBadge: {
@@ -1500,9 +1508,7 @@ const styles = StyleSheet.create({
   reactionBadgePressed: {
     opacity: 0.8,
   },
-  reactionBadgeEmoji: {
-    fontSize: REACTION_BADGE_EMOJI_SIZE,
-  },
+  reactionBadgeEmoji: {},
   reactionBadgeCount: {
     ...typography.caption,
     color: colors.textSecondary,
