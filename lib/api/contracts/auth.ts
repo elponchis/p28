@@ -9,11 +9,19 @@ export type AuthStateListener = (session: Session | null) => void;
  */
 export interface AuthContract {
   signIn(email: string, password: string): Promise<{ session: Session } | { error: ApiError }>;
-  /** metadata is forwarded as auth signUp options.data; the on_auth_user_created DB trigger reads it to create the profiles row. */
+  /**
+   * metadata is forwarded as auth signUp options.data; the on_auth_user_created DB trigger reads
+   * it to create the profiles row.
+   *
+   * emailRedirectTo is where the confirmation link lands. Say it explicitly: left out, the link
+   * goes wherever the project's Site URL points, which is a dashboard setting no reviewer of this
+   * code can see.
+   */
   signUp(
     email: string,
     password: string,
-    metadata?: SignUpProfileMetadata
+    metadata?: SignUpProfileMetadata,
+    options?: { emailRedirectTo?: string }
   ): Promise<{ session: Session } | { error: ApiError }>;
   /** Returns whether the email is available (not already registered). Does not create a user. */
   checkEmailAvailable(email: string): Promise<{ available: boolean } | { error: ApiError }>;

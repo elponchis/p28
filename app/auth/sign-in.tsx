@@ -33,6 +33,7 @@ const currentLocaleLabelKey = (loc: LocaleOption) =>
  */
 const NOTICE_MESSAGES = {
   'confirm-email': 'onboarding.emailConfirmThenSignIn',
+  confirmed: 'auth.emailConfirmed',
 } as const;
 
 export default function SignInScreen() {

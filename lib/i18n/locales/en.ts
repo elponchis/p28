@@ -142,6 +142,7 @@ export const en = {
     scriptureAttribution: '\u2014 Jeremiah 29:11',
   },
   auth: {
+    emailConfirmed: 'Your email is confirmed. Sign in to continue.',
     signIn: 'Sign in',
     signOut: 'Sign out',
     signOutConfirm: 'Are you sure you want to sign out?',

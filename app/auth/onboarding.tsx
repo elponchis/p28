@@ -13,6 +13,7 @@ import {
 import Animated, { FadeIn } from 'react-native-reanimated';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -449,14 +450,26 @@ export default function OnboardingScreen() {
 
     if (pendingSignUp && !userId) {
       setIsSubmittingSignUp(true);
-      const signUpResult = await auth.signUp(pendingSignUp.email, pendingSignUp.password, {
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        displayName: `${firstName.trim()} ${lastName.trim()}`.trim(),
-        birthDate: birthDate.trim() ? birthDate.trim() : undefined,
-        country: country ?? undefined,
-        preferredLanguage: preferredLanguage ?? undefined,
-      });
+      const signUpResult = await auth.signUp(
+        pendingSignUp.email,
+        pendingSignUp.password,
+        {
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          displayName: `${firstName.trim()} ${lastName.trim()}`.trim(),
+          birthDate: birthDate.trim() ? birthDate.trim() : undefined,
+          country: country ?? undefined,
+          preferredLanguage: preferredLanguage ?? undefined,
+        },
+        // Where the link in the confirmation email lands. Without this the address comes from
+        // the project's Site URL, which pointed at the Supabase API itself: the link verified
+        // the account and then dropped the reader on {"error":"requested path is invalid"}.
+        {
+          emailRedirectTo: Linking.createURL('/auth/sign-in', {
+            queryParams: { notice: 'confirmed' },
+          }),
+        }
+      );
       if ('error' in signUpResult) {
         const err = signUpResult.error as ApiError;
         if (err.code === 'EMAIL_CONFIRMATION_REQUIRED') {

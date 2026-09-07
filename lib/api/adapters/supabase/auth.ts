@@ -69,23 +69,31 @@ export function createSupabaseAuthAdapter(getClient: () => SupabaseClient): Auth
       }
     },
 
-    async signUp(email: string, password: string, metadata?: SignUpProfileMetadata) {
+    async signUp(
+      email: string,
+      password: string,
+      metadata?: SignUpProfileMetadata,
+      options?: { emailRedirectTo?: string }
+    ) {
       try {
         const { data, error } = await getClient().auth.signUp({
           email,
           password,
-          options: metadata
-            ? {
-                data: {
-                  first_name: metadata.firstName,
-                  last_name: metadata.lastName,
-                  display_name: metadata.displayName,
-                  birth_date: metadata.birthDate,
-                  country: metadata.country,
-                  preferred_language: metadata.preferredLanguage,
-                },
-              }
-            : undefined,
+          options: {
+            ...(options?.emailRedirectTo ? { emailRedirectTo: options.emailRedirectTo } : {}),
+            ...(metadata
+              ? {
+                  data: {
+                    first_name: metadata.firstName,
+                    last_name: metadata.lastName,
+                    display_name: metadata.displayName,
+                    birth_date: metadata.birthDate,
+                    country: metadata.country,
+                    preferred_language: metadata.preferredLanguage,
+                  },
+                }
+              : {}),
+          },
         });
         if (error) return { error: toApiError(error) };
         // Empty identities = email already exists (Supabase returns success but no new identity)

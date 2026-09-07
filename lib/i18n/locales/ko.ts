@@ -139,6 +139,7 @@ export const ko: TranslationShape = {
     scriptureAttribution: '\u2014 예레미야 29:11',
   },
   auth: {
+    emailConfirmed: '이메일이 확인되었습니다. 로그인해 주세요.',
     signIn: '로그인',
     signOut: '로그아웃',
     signOutConfirm: '로그아웃 하시겠습니까?',

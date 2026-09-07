@@ -141,6 +141,7 @@ export const km: TranslationShape = {
     scriptureAttribution: '\u2014 យេរេមា 29:11',
   },
   auth: {
+    emailConfirmed: 'អ៊ីមែលរបស់អ្នកត្រូវបានបញ្ជាក់។ សូមចូលគណនី។',
     signIn: 'ចូល',
     signOut: 'ចាកចេញ',
     signOutConfirm: 'តើអ្នកប្រាកដថាចង់ចាកចេញឬ?',
