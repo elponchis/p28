@@ -43,6 +43,7 @@ import {
   useGroupMembersQuery,
   useGroupQuery,
   useGroupsForUserQuery,
+  useIsAdminQuery,
   useIsSuperAdminQuery,
   useJoinGroupMutation,
   useLeaveGroupMutation,
@@ -115,6 +116,7 @@ export default function GroupDetailScreen() {
     enabled: !!id && !!userId,
   });
   const { data: isSuperAdmin = false } = useIsSuperAdminQuery(userId, { enabled: !!userId });
+  const { data: isAppAdmin } = useIsAdminQuery(userId, { enabled: !!userId });
   const createEventMutation = useCreateGroupEventMutation();
   const createRecurringMutation = useCreateGroupRecurringMeetingMutation();
   const updateRecurringMutation = useUpdateGroupRecurringMeetingMutation();
@@ -126,6 +128,13 @@ export default function GroupDetailScreen() {
     () => isGroupAdmin && (isMember || isSuperAdmin),
     [isGroupAdmin, isMember, isSuperAdmin]
   );
+  /**
+   * Authoring courses is an app admin's job (00093), not a group admin's: the video library is
+   * one library, and who may watch a course is a decision about the whole audience rather than
+   * one group's. Offering the button to a group admin would be offering a write the database
+   * refuses -- and RLS refuses by matching no rows, so the failure would be silent.
+   */
+  const canAuthorCourses = isAppAdmin === true;
   const joinMutation = useJoinGroupMutation();
   const leaveMutation = useLeaveGroupMutation();
   const isJoining = joinMutation.isPending || leaveMutation.isPending;
@@ -851,11 +860,11 @@ export default function GroupDetailScreen() {
         </View>
 
         {/* ── Courses (LMS) — hidden entirely for non-admins when the group has none ── */}
-        {courses.length > 0 || canModerateAsAdmin ? (
+        {courses.length > 0 || canAuthorCourses ? (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>{t('courses.sectionTitle')}</Text>
-              {canModerateAsAdmin && courses.length > 0 ? (
+              {canAuthorCourses && courses.length > 0 ? (
                 <Pressable
                   onPress={handleAddCourse}
                   style={styles.addTopicButton}
@@ -872,7 +881,7 @@ export default function GroupDetailScreen() {
                 iconName="school-outline"
                 title={t('courses.noCourses')}
                 subtitle={t('courses.noCoursesHint')}
-                actionLabel={canModerateAsAdmin ? t('courses.addCourse') : undefined}
+                actionLabel={canAuthorCourses ? t('courses.addCourse') : undefined}
                 onAction={canModerateAsAdmin ? handleAddCourse : undefined}
                 actionVariant="link"
                 actionAccessibilityHint={t('courses.addCourseHint')}

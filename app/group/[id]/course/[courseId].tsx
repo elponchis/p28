@@ -12,7 +12,7 @@ import {
   useDeleteLessonMutation,
   useDiscussionsQuery,
   useLessonsByCourseQuery,
-  useUserIsGroupAdminQuery,
+  useIsAdminQuery,
 } from '@/hooks/useApiQueries';
 import type { Discussion } from '@/lib/api';
 import { t } from '@/lib/i18n';
@@ -34,9 +34,9 @@ export default function CourseDetailScreen() {
     isLoading: lessonsLoading,
     refetch: refetchLessons,
   } = useLessonsByCourseQuery(courseId, { enabled: !!courseId });
-  const { data: isGroupAdmin = false } = useUserIsGroupAdminQuery(groupId, userId, {
-    enabled: !!groupId && !!userId,
-  });
+  // Course content is authored by app admins (00093); a group admin runs the group, not the
+  // video library. The buttons follow the policy so none of them fails silently.
+  const { data: isGroupAdmin = false } = useIsAdminQuery(userId, { enabled: !!userId });
   const deleteLessonMutation = useDeleteLessonMutation();
   const { data: boardDiscussions = [], isLoading: boardLoading } = useDiscussionsQuery({
     courseId,
