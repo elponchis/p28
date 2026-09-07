@@ -96,15 +96,23 @@ export function MessageHoverActions({
           <Ionicons name="pencil-outline" size={15} color={colors.onSurfaceVariant} />
         </Pressable>
       ) : null}
-      {isOwnMessage && onDelete ? (
+      {onDelete ? (
         // Destructive, but it opens a confirm dialog rather than deleting on the spot, which is
         // what makes it safe enough to sit a single click away.
+        //
+        // Not gated on the message being your own: a moderator is given this handler for someone
+        // else's reply, and it is labelled as a removal so it cannot be mistaken for tidying up
+        // after yourself.
         <Pressable
           onPress={onDelete}
           style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
           accessibilityRole="button"
-          accessibilityLabel={t('message.sheetDelete')}
-          accessibilityHint={t('message.sheetDeleteHint')}
+          accessibilityLabel={
+            isOwnMessage ? t('message.sheetDelete') : t('discussions.removeReply')
+          }
+          accessibilityHint={
+            isOwnMessage ? t('message.sheetDeleteHint') : t('discussions.removeReplyHint')
+          }
         >
           <Ionicons name="trash-outline" size={15} color={colors.error} />
         </Pressable>
