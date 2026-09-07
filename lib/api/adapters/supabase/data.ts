@@ -788,11 +788,12 @@ function mapGroupRecurringMeetingRow(row: GroupRecurringMeetingRow): GroupRecurr
 
 /** Every column mapCourseRow reads; the four course queries share it so none drifts. */
 const COURSE_COLUMNS =
-  'id, group_id, title, description, cover_image_url, sort_order, available_from, available_until, is_published, created_at, updated_at';
+  'id, group_id, track, title, description, cover_image_url, sort_order, available_from, available_until, is_published, created_at, updated_at';
 
 type CourseRow = {
   id: string;
   group_id: string | null;
+  track?: string | null;
   title: string;
   description: string | null;
   cover_image_url: string | null;
@@ -808,6 +809,7 @@ function mapCourseRow(row: CourseRow): Course {
   return {
     id: row.id,
     groupId: row.group_id ?? undefined,
+    track: row.track === 'training_school' ? 'training_school' : 'general',
     title: row.title,
     description: row.description ?? undefined,
     coverImageUrl: row.cover_image_url ?? undefined,
@@ -2855,6 +2857,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
           .update({
             title: input.title,
             description: input.description,
+            track: input.track,
             group_id: input.groupId,
             available_from: input.availableFrom,
             available_until: input.availableUntil,

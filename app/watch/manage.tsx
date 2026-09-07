@@ -25,7 +25,7 @@ import {
   useManagedCoursesQuery,
   useUpdateCourseSettingsMutation,
 } from '@/hooks/useApiQueries';
-import type { WatchCourse } from '@/lib/api';
+import type { CourseTrack, WatchCourse } from '@/lib/api';
 import { describeError } from '@/lib/api';
 import { notify } from '@/lib/dialogs';
 import { formatDateHeader, isIsoDate } from '@/lib/dates';
@@ -37,6 +37,7 @@ import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens'
 interface CourseDraft {
   title: string;
   description: string;
+  track: CourseTrack;
   groupId: string | null;
   availableFrom: string;
   availableUntil: string;
@@ -47,11 +48,17 @@ function draftFrom(course: WatchCourse): CourseDraft {
   return {
     title: course.title,
     description: course.description ?? '',
+    track: course.track ?? 'general',
     groupId: course.groupId ?? null,
     availableFrom: course.availableFrom ? course.availableFrom.slice(0, 10) : '',
     availableUntil: course.availableUntil ? course.availableUntil.slice(0, 10) : '',
     isPublished: course.isPublished ?? false,
   };
+}
+
+/** 'Training school · open to everyone' — what it is, then who may watch it. */
+function trackLabel(track: CourseTrack | undefined): string {
+  return track === 'training_school' ? t('watch.trainingSchool') : t('watchAdmin.trackGeneral');
 }
 
 function CourseCard({ course, onEdit }: { course: WatchCourse; onEdit: () => void }) {
@@ -84,7 +91,8 @@ function CourseCard({ course, onEdit }: { course: WatchCourse; onEdit: () => voi
         </View>
       </View>
       <Text style={styles.cardMeta}>
-        {audience} · {t('watch.videoCount', { count: course.lessonCount })} · {window}
+        {trackLabel(course.track)} · {audience} ·{' '}
+        {t('watch.videoCount', { count: course.lessonCount })} · {window}
       </Text>
     </Pressable>
   );
@@ -145,6 +153,7 @@ export default function WatchManageScreen() {
         input: {
           title,
           description: description || null,
+          track: draft.track,
           groupId: draft.groupId,
           availableFrom: draft.availableFrom ? `${draft.availableFrom}T00:00:00Z` : null,
           availableUntil: draft.availableUntil ? `${draft.availableUntil}T23:59:59Z` : null,
@@ -198,6 +207,25 @@ export default function WatchManageScreen() {
           containerStyle={styles.field}
         />
         <Text style={[styles.hint, styles.fieldHint]}>{t('watchAdmin.courseDescriptionHint')}</Text>
+
+        <Text style={styles.label}>{t('watchAdmin.track')}</Text>
+        <View style={[styles.chipRow, styles.trackRow]}>
+          {(['general', 'training_school'] as const).map((track) => (
+            <Pressable
+              key={track}
+              onPress={() => setDraft({ ...draft, track })}
+              style={[styles.chip, draft.track === track && styles.chipActive]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: draft.track === track }}
+              accessibilityLabel={trackLabel(track)}
+            >
+              <Text style={[styles.chipText, draft.track === track && styles.chipTextActive]}>
+                {trackLabel(track)}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+        <Text style={[styles.hint, styles.fieldHint]}>{t('watchAdmin.trackHint')}</Text>
 
         <Text style={styles.label}>{t('watchAdmin.audience')}</Text>
         <View style={styles.chipRow}>
@@ -376,6 +404,7 @@ const styles = StyleSheet.create({
   editSub: { ...typography.caption, color: colors.onSurfaceVariant, marginBottom: spacing.md },
   label: { ...typography.caption, color: colors.onSurfaceVariant, marginBottom: spacing.xs },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.lg },
+  trackRow: { marginBottom: spacing.xs },
   chip: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,

@@ -231,9 +231,17 @@ export interface UpdateGroupRecurringMeetingInput {
   monthWeekOrdinal?: number;
 }
 
+/**
+ * What a course is, as opposed to who may watch it. A training school course can be public — the
+ * ones sinaesga.org gives away are exactly that — so this is not derivable from the group.
+ */
+export type CourseTrack = 'general' | 'training_school';
+
 /** LMS course belonging to a group; access follows group membership/admin RLS. */
 export interface Course {
   id: string;
+  /** Which curriculum this belongs to. Defaults to 'general'. */
+  track?: CourseTrack;
   /**
    * The group whose members may watch this course. Absent means public — anyone signed in may
    * watch it, which is how the Watch tab's open shelf is expressed.
@@ -286,6 +294,7 @@ export interface UpdateCourseInput {
 export interface UpdateCourseSettingsInput {
   title: string;
   description: string | null;
+  track: CourseTrack;
   /** The group whose members may watch it, or null for everyone. */
   groupId: string | null;
   availableFrom: string | null;

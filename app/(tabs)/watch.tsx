@@ -1,10 +1,11 @@
 /**
  * Watch: every video this person is allowed to see, in one place.
  *
- * The shelves are the access rules made visible — open videos anyone signed in can watch, and
- * below them the courses that came with a group they belong to. Nothing here decides who sees
- * what: the read policy already returned only the courses this user may watch, so a course that
- * belongs to someone else's training school, or whose term has ended, is simply not in the list.
+ * The shelves are the access rules made visible — the courses that came with a group they belong
+ * to, then the ones open to everyone. Nothing here decides who sees what: the read policy already
+ * returned only the courses this user may watch, so a course that belongs to someone else's
+ * training school, or whose term has ended, is simply not in the list. How they divide up lives
+ * in lib/watchShelves.
  */
 import { useMemo } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -18,55 +19,8 @@ import { useIsAdminQuery, useWatchCoursesQuery } from '@/hooks/useApiQueries';
 import type { WatchCourse } from '@/lib/api';
 import { getUserFacingError } from '@/lib/api';
 import { t } from '@/lib/i18n';
+import { buildShelves } from '@/lib/watchShelves';
 import { colors, fontFamily, radius, spacing, tabScreenContent, typography } from '@/theme/tokens';
-
-interface Shelf {
-  key: string;
-  title: string;
-  /** Named on the shelf so a training school reads as one, rather than as a group of videos. */
-  isTrainingSchool: boolean;
-  courses: WatchCourse[];
-}
-
-function buildShelves(courses: WatchCourse[]): Shelf[] {
-  const open: WatchCourse[] = [];
-  const byGroup = new Map<string, Shelf>();
-
-  for (const course of courses) {
-    if (!course.groupId) {
-      open.push(course);
-      continue;
-    }
-    const existing = byGroup.get(course.groupId);
-    if (existing) {
-      existing.courses.push(course);
-      continue;
-    }
-    byGroup.set(course.groupId, {
-      key: course.groupId,
-      title: course.groupName ?? t('watch.groupCourses'),
-      isTrainingSchool: course.groupType === 'training_school',
-      courses: [course],
-    });
-  }
-
-  const shelves: Shelf[] = [];
-  if (open.length > 0) {
-    shelves.push({
-      key: 'open',
-      title: t('watch.openToEveryone'),
-      isTrainingSchool: false,
-      courses: open,
-    });
-  }
-  // Training schools first: they are the ones with a term running, and the reason someone opens
-  // this tab on a given week.
-  const groups = [...byGroup.values()].sort((a, b) => {
-    if (a.isTrainingSchool !== b.isTrainingSchool) return a.isTrainingSchool ? -1 : 1;
-    return a.title.localeCompare(b.title);
-  });
-  return [...groups, ...shelves.filter((s) => s.key === 'open')];
-}
 
 function CourseCard({ course, onPress }: { course: WatchCourse; onPress: () => void }) {
   return (
