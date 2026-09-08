@@ -24,11 +24,19 @@ function parseChatIdFromChannelId(channelId: RealtimeChannelId): string | null {
   return channelId.slice(prefix.length) || null;
 }
 
+/** Map contract channel ID notifications:user:{userId} to userId. */
+function parseUserIdFromChannelId(channelId: RealtimeChannelId): string | null {
+  const prefix = 'notifications:user:';
+  if (!channelId.startsWith(prefix)) return null;
+  return channelId.slice(prefix.length) || null;
+}
+
 /**
  * Supabase Realtime adapter. Subscribes to postgres_changes for:
  * - messages:group:{groupId} → group_discussions INSERT
  * - messages:discussion:{discussionId} → discussion_posts INSERT
  * - messages:chat:{chatId} → chat_messages INSERT
+ * - notifications:user:{userId} → in_app_notifications INSERT and UPDATE
  */
 export function createSupabaseRealtimeAdapter(getClient: () => SupabaseClient): RealtimeContract {
   const channels = new Map<RealtimeChannelId, RealtimeChannel>();
@@ -41,6 +49,38 @@ export function createSupabaseRealtimeAdapter(getClient: () => SupabaseClient): 
       const groupId = parseGroupIdFromChannelId(channelId);
       const discussionId = parseDiscussionIdFromChannelId(channelId);
       const chatId = parseChatIdFromChannelId(channelId);
+      const notificationsUserId = parseUserIdFromChannelId(channelId);
+
+      if (notificationsUserId) {
+        if (channels.has(channelId)) return {};
+        const channel = getClient()
+          .channel(channelId)
+          // Both events matter: an INSERT is a new notification, and an UPDATE is one being
+          // marked read — often from another tab or by opening the chat, and the badge has to
+          // come down as well as go up.
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'in_app_notifications',
+              filter: `user_id=eq.${notificationsUserId}`,
+            },
+            (payload) => {
+              handlers.onMessage?.(payload as Record<string, unknown>);
+            }
+          )
+          .subscribe((status, err) => {
+            if (status === 'CHANNEL_ERROR' && err && handlers.onError) {
+              handlers.onError({
+                message: err.message ?? 'Realtime subscription error',
+                code: err.name,
+              });
+            }
+          });
+        channels.set(channelId, channel);
+        return {};
+      }
 
       if (groupId) {
         if (channels.has(channelId)) return {};
@@ -152,7 +192,7 @@ export function createSupabaseRealtimeAdapter(getClient: () => SupabaseClient): 
       return {
         error: {
           message:
-            'Invalid channel ID. Expected messages:group:{groupId}, messages:discussion:{discussionId}, or messages:chat:{chatId}',
+            'Invalid channel ID. Expected messages:group:{groupId}, messages:discussion:{discussionId}, messages:chat:{chatId}, or notifications:user:{userId}',
           code: 'VALIDATION_ERROR',
         },
       };

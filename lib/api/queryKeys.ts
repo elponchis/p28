@@ -32,6 +32,9 @@ export const queryKeys = {
   sentFriendRequests: (userId: string) => ['sentFriendRequests', userId] as const,
   pendingFriendRequestCount: (userId: string) => ['pendingFriendRequestCount', userId] as const,
   inAppNotifications: (userId: string) => ['inAppNotifications', userId] as const,
+  /** Every unread-count key for this user, whatever their badge-cleared timestamp is. */
+  inAppUnreadNotificationCountRoot: (userId: string) =>
+    ['inAppUnreadNotificationCount', userId] as const,
   inAppUnreadNotificationCount: (userId: string, badgeClearedAt: string | null) =>
     ['inAppUnreadNotificationCount', userId, badgeClearedAt ?? ''] as const,
   appBadgeCount: (userId: string) => ['appBadgeCount', userId] as const,

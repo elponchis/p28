@@ -9,6 +9,7 @@ import { useLocale } from '@/contexts/LocaleContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useDesktopFullWidth } from '@/hooks/useDesktopFullWidth';
 import { useInAppBadgeClearTimestamp } from '@/hooks/useInAppBadgeClearTimestamp';
+import { useInAppNotificationsRealtime } from '@/hooks/useInAppNotificationsRealtime';
 import {
   useChatsForUserQuery,
   useInAppUnreadNotificationCountQuery,
@@ -31,6 +32,7 @@ export default function TabLayout() {
   const { data: inAppUnread = 0 } = useInAppUnreadNotificationCountQuery(userId, badgeClearedAt, {
     enabled: !!userId && hydrated,
   });
+  useInAppNotificationsRealtime(userId);
   const { data: chats = [] } = useChatsForUserQuery(userId);
   const unreadConversationCount = useMemo(
     () => chats.filter((c) => (c.unreadCount ?? 0) > 0).length,
