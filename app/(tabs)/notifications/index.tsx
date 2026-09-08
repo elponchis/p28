@@ -5,6 +5,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { useAuth } from '@/hooks/useAuth';
 import {
+  useDismissInAppNotificationsMutation,
   useInAppNotificationsQuery,
   useMarkInAppNotificationsReadMutation,
   usePendingFriendRequestCountQuery,
@@ -22,6 +23,7 @@ export default function NotificationsScreen() {
   const { data: pendingCount } = usePendingFriendRequestCountQuery(userId);
   const { data: inAppItems = [], isLoading: inAppLoading } = useInAppNotificationsQuery(userId);
   const markRead = useMarkInAppNotificationsReadMutation();
+  const dismiss = useDismissInAppNotificationsMutation();
 
   const hasFriendNotifications = pendingCount != null && pendingCount > 0;
   const hasGroupActivity = inAppItems.length > 0;
@@ -36,6 +38,18 @@ export default function NotificationsScreen() {
       if (route) router.push(route);
     },
     [markRead, router, userId]
+  );
+
+  /**
+   * Reading a notification marks it read; only this removes it. The two were the same act
+   * before, which meant a list you could not keep and a nudge you lost by looking at it.
+   */
+  const handleDismiss = useCallback(
+    (item: InAppNotification) => {
+      if (!userId) return;
+      dismiss.mutate({ userId, notificationIds: [item.id] });
+    },
+    [dismiss, userId]
   );
 
   return (
@@ -122,7 +136,16 @@ export default function NotificationsScreen() {
                   </Text>
                   <Text style={styles.timeText}>{formatRelativeTime(item.createdAt)}</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color={colors.ink300} />
+                <Pressable
+                  onPress={() => handleDismiss(item)}
+                  style={({ pressed }) => [styles.dismiss, pressed && styles.cardPressed]}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('notifications.dismiss', { title: item.title })}
+                  accessibilityHint={t('notifications.dismissHint')}
+                  hitSlop={8}
+                >
+                  <Ionicons name="close" size={18} color={colors.ink300} />
+                </Pressable>
               </Pressable>
             );
           })}
@@ -187,6 +210,10 @@ const styles = StyleSheet.create({
   },
   cardPressed: {
     opacity: 0.85,
+  },
+  dismiss: {
+    padding: spacing.xs,
+    marginLeft: spacing.xxs,
   },
   cardIconWrap: {
     width: 40,

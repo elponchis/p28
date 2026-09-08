@@ -4,6 +4,7 @@ import { Tabs, useSegments } from 'expo-router';
 
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 import { FloatingTabBar } from '@/components/navigation/FloatingTabBar';
+import { ClearNotificationsButton } from '@/components/navigation/ClearNotificationsButton';
 import { NotificationsBellButton } from '@/components/navigation/NotificationsBellButton';
 import { useLocale } from '@/contexts/LocaleContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -109,8 +110,9 @@ export default function TabLayout() {
             title: t('tabs.notifications'),
             // No nav icon (sidebar or bottom bar) — reached via the header bell instead.
             href: null,
-            // Don't show a bell that just re-opens the screen you're already on.
-            headerRight: undefined,
+            // A bell here would just re-open the screen you are on; clearing the list is what
+            // this screen's header is for.
+            headerRight: () => <ClearNotificationsButton userId={userId} />,
           }}
         />
         <Tabs.Screen

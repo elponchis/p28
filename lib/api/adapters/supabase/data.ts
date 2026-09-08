@@ -5970,6 +5970,29 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
       }
     },
 
+    async dismissInAppNotifications(notificationIds: string[]): Promise<number | ApiError> {
+      try {
+        if (notificationIds.length === 0) return 0;
+        const { data, error } = await getClient().rpc('dismiss_in_app_notifications', {
+          p_ids: notificationIds,
+        });
+        if (error) return toApiError(error);
+        return typeof data === 'number' ? data : 0;
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async clearInAppNotifications(): Promise<number | ApiError> {
+      try {
+        const { data, error } = await getClient().rpc('clear_in_app_notifications');
+        if (error) return toApiError(error);
+        return typeof data === 'number' ? data : 0;
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
     async markInAppNotificationsRead(
       input: MarkInAppNotificationsReadInput
     ): Promise<void | ApiError> {

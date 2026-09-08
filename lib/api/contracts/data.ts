@@ -207,6 +207,13 @@ export interface DataContract {
     options?: { createdAfter?: string }
   ): Promise<number | ApiError>;
   markInAppNotificationsRead(input: MarkInAppNotificationsReadInput): Promise<void | ApiError>;
+  /**
+   * Removes notifications the reader has finished with. Reading one marks it read; dismissing it
+   * is a separate decision, and the only thing that takes it out of the list.
+   */
+  dismissInAppNotifications(notificationIds: string[]): Promise<number | ApiError>;
+  /** Empties the reader's notification list. */
+  clearInAppNotifications(): Promise<number | ApiError>;
 
   /** Total app-icon badge: unread chats + pending friend requests + in-app unread (respects notifications_badge_cleared_at). */
   getAppBadgeCount(userId: string): Promise<number | ApiError>;

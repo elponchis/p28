@@ -370,6 +370,31 @@ export function useSetNotificationsBadgeClearedAtMutation() {
   });
 }
 
+/** Invalidates everything that lists or counts notifications for one user. */
+function invalidateNotificationViews(qc: ReturnType<typeof useQueryClient>, userId: string) {
+  qc.invalidateQueries({ queryKey: queryKeys.inAppNotifications(userId) });
+  qc.invalidateQueries({ queryKey: queryKeys.inAppUnreadNotificationCountRoot(userId) });
+  qc.invalidateQueries({ queryKey: queryKeys.appBadgeCount(userId) });
+}
+
+export function useDismissInAppNotificationsMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ notificationIds }: { userId: string; notificationIds: string[] }) =>
+      queryFn(api.data.dismissInAppNotifications(notificationIds)) as Promise<number>,
+    onSuccess: (_, { userId }) => invalidateNotificationViews(qc, userId),
+  });
+}
+
+export function useClearInAppNotificationsMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (_input: { userId: string }) =>
+      queryFn(api.data.clearInAppNotifications()) as Promise<number>,
+    onSuccess: (_, { userId }) => invalidateNotificationViews(qc, userId),
+  });
+}
+
 export function useMarkInAppNotificationsReadMutation() {
   const qc = useQueryClient();
   return useMutation({
