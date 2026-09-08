@@ -534,7 +534,11 @@ export interface PushToken {
 }
 
 /** In-app notification row (group announcement or event); list + unread badge. */
-export type InAppNotificationKind = 'announcement' | 'group_event' | 'chat_message';
+export type InAppNotificationKind =
+  | 'announcement'
+  | 'group_event'
+  | 'chat_message'
+  | 'global_announcement';
 
 export interface InAppNotification {
   id: string;
@@ -547,6 +551,7 @@ export interface InAppNotification {
   groupEventId?: string;
   chatId?: string;
   chatMessageId?: string;
+  globalAnnouncementId?: string;
   title: string;
   summary: string;
   createdAt: string;

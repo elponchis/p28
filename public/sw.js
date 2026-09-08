@@ -18,6 +18,7 @@ function targetFor(data) {
     return `/group/announcement/${data.announcementId}${data.groupId ? `?groupId=${data.groupId}` : ''}`;
   }
   if (data.type === 'group_event' && data.eventId) return `/group/event/${data.eventId}`;
+  // A platform-wide announcement has no page of its own; it sits at the top of the home feed.
   return '/';
 }
 
@@ -40,9 +41,11 @@ self.addEventListener('push', (event) => {
     ? `chat:${data.chatId}`
     : data.announcementId
       ? `announcement:${data.announcementId}`
-      : data.eventId
-        ? `event:${data.eventId}`
-        : undefined;
+      : data.globalAnnouncementId
+        ? `global:${data.globalAnnouncementId}`
+        : data.eventId
+          ? `event:${data.eventId}`
+          : undefined;
 
   const options = {
     body: payload.body || '',

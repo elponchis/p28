@@ -14,6 +14,7 @@ import { t } from '@/lib/i18n';
  * the params it actually takes, and a single shape covering all three satisfies none of them.
  */
 export type NotificationRoute =
+  | { pathname: '/(tabs)'; params?: undefined }
   | { pathname: '/group/announcement/[id]'; params: { id: string; groupId: string } }
   | { pathname: '/group/event/[id]'; params: { id: string } }
   | { pathname: '/messages/chat/[id]'; params: { id: string } };
@@ -31,6 +32,14 @@ export function inAppNotificationPresentation(
   item: Pick<InAppNotification, 'kind' | 'groupId' | 'announcementId' | 'groupEventId' | 'chatId'>
 ): NotificationPresentation {
   switch (item.kind) {
+    case 'global_announcement':
+      return {
+        iconName: 'megaphone-outline',
+        kindLabel: t('notifications.kindGlobalAnnouncement'),
+        openHint: t('notifications.openGlobalAnnouncementHint'),
+        // It lives at the top of the home feed; there is no page of its own to open.
+        route: { pathname: '/(tabs)' },
+      };
     case 'chat_message':
       return {
         iconName: 'chatbubble-ellipses-outline',

@@ -30,11 +30,17 @@ describe('inAppNotificationPresentation', () => {
     });
   });
 
+  it('sends a platform-wide announcement to the home feed, where it lives', () => {
+    const p = inAppNotificationPresentation({ kind: 'global_announcement' });
+    expect(p.iconName).toBe('megaphone-outline');
+    expect(p.route).toEqual({ pathname: '/(tabs)' });
+  });
+
   it('gives every kind its own label', () => {
-    const labels = (['announcement', 'group_event', 'chat_message'] as const).map(
-      (kind) => inAppNotificationPresentation({ kind }).kindLabel
-    );
-    expect(new Set(labels).size).toBe(3);
+    const labels = (
+      ['announcement', 'group_event', 'chat_message', 'global_announcement'] as const
+    ).map((kind) => inAppNotificationPresentation({ kind }).kindLabel);
+    expect(new Set(labels).size).toBe(4);
     expect(labels.every((l) => l.length > 0)).toBe(true);
   });
 
