@@ -178,7 +178,8 @@ export default function HomeScreen() {
           {displayName ? <Text style={styles.nameText}>{displayName}.</Text> : null}
         </View>
 
-        {/* Platform global announcements + super-admin compose */}
+        {/* Composing a platform-wide announcement; the announcements themselves are further
+            down, under Latest updates, with everything else worth reading. */}
         {userId ? (
           <View style={styles.sectionPadded}>
             {!superAdminRoleLoading && isSuperAdmin ? (
@@ -200,27 +201,6 @@ export default function HomeScreen() {
                   {t('home.postGlobalAnnouncementLink')}
                 </Text>
               </Pressable>
-            ) : null}
-            {globalAnnouncementsLoading ? (
-              <View style={styles.loadingRow}>
-                <ActivityIndicator size="small" color={colors.primary} />
-              </View>
-            ) : globalAnnouncementsIsError ? (
-              <Text style={styles.inlineError} accessibilityLiveRegion="polite">
-                {globalAnnouncementsError != null && isApiError(globalAnnouncementsError)
-                  ? getUserFacingError(globalAnnouncementsError)
-                  : t('common.error')}
-              </Text>
-            ) : globalAnnouncements.length > 0 ? (
-              <View style={styles.globalAnnouncementStack}>
-                {globalAnnouncements.map((ga) => (
-                  <GlobalAnnouncementCard
-                    key={ga.id}
-                    title={ga.title}
-                    description={ga.description}
-                  />
-                ))}
-              </View>
             ) : null}
           </View>
         ) : null}
@@ -273,8 +253,10 @@ export default function HomeScreen() {
           />
         )}
 
-        {/* Latest published announcement per joined group */}
-        {myGroups.length > 0 ? (
+        {/* Everything worth reading: the platform-wide announcements first, then the latest
+            published announcement from each joined group. A global announcement is addressed to
+            everyone, so this section exists even for someone who has joined nothing yet. */}
+        {myGroups.length > 0 || globalAnnouncements.length > 0 ? (
           <View style={styles.latestUpdatesSection}>
             <View style={styles.sectionPadded}>
               <View style={styles.latestUpdatesHeader}>
@@ -283,7 +265,26 @@ export default function HomeScreen() {
                 </Text>
               </View>
             </View>
-            {latestAnnouncementsLoading ? (
+            {globalAnnouncementsIsError ? (
+              <View style={styles.sectionPadded}>
+                <Text style={styles.inlineError} accessibilityLiveRegion="polite">
+                  {globalAnnouncementsError != null && isApiError(globalAnnouncementsError)
+                    ? getUserFacingError(globalAnnouncementsError)
+                    : t('common.error')}
+                </Text>
+              </View>
+            ) : globalAnnouncements.length > 0 ? (
+              <View style={[styles.sectionPadded, styles.globalAnnouncementStack]}>
+                {globalAnnouncements.map((ga) => (
+                  <GlobalAnnouncementCard
+                    key={ga.id}
+                    title={ga.title}
+                    description={ga.description}
+                  />
+                ))}
+              </View>
+            ) : null}
+            {globalAnnouncementsLoading || latestAnnouncementsLoading ? (
               <View style={styles.loadingRow}>
                 <ActivityIndicator size="small" color={colors.primary} />
               </View>
@@ -296,13 +297,15 @@ export default function HomeScreen() {
                 </Text>
               </View>
             ) : latestAnnouncements.length === 0 ? (
-              <View style={styles.sectionPadded}>
-                <EmptyState
-                  iconName="megaphone-outline"
-                  title={t('announcements.noAnnouncements')}
-                  subtitle={t('announcements.noAnnouncementsHint')}
-                />
-              </View>
+              globalAnnouncements.length === 0 ? (
+                <View style={styles.sectionPadded}>
+                  <EmptyState
+                    iconName="megaphone-outline"
+                    title={t('announcements.noAnnouncements')}
+                    subtitle={t('announcements.noAnnouncementsHint')}
+                  />
+                </View>
+              ) : null
             ) : (
               <View style={[styles.sectionPadded, styles.latestUpdatesList]}>
                 {latestAnnouncements.map((item) => (
