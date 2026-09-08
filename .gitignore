@@ -55,3 +55,6 @@ mcp-deploy-inline.json
 
 # VAPID keypair for web push (private key — never commit)
 .vapid.env
+
+# Supabase CLI scratch (version marker it rewrites on every run)
+supabase/.temp/
