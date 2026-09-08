@@ -5,7 +5,8 @@
  * Switching conversations otherwise means going back to the list and finding the row, which is
  * fine for one chat and tedious for the handful someone keeps up with. Closing a row removes it
  * from here and nothing else — the conversation is untouched, and opening it again brings the
- * row back.
+ * row back. Closing the one you are reading also leaves it: staying on a thread that is no
+ * longer in the switcher is a screen with no way back to it, so the app returns to the list.
  *
  * Ordered by conversation activity: a chat rises when someone writes in it, never because it was
  * clicked. The reader's own clicks are the one thing that must not shuffle the list, since they
@@ -120,7 +121,11 @@ export function OpenChatsList() {
                   </View>
                 ) : null}
                 <Pressable
-                  onPress={() => closeChat(chat.id)}
+                  onPress={() => {
+                    closeChat(chat.id);
+                    // Closing the conversation you are standing in should close the conversation.
+                    if (isCurrent) router.replace('/(tabs)/messages');
+                  }}
                   style={({ pressed }) => [styles.openChatClose, pressed && { opacity: 0.6 }]}
                   accessibilityRole="button"
                   accessibilityLabel={t('messages.closeOpenChat', { name: chat.title })}

@@ -26,6 +26,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.95.3';
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.95.3';
 
 import { getAppBadgeCountForUser } from '../_shared/app-badge.ts';
+import { shouldNotifyForMessage } from '../_shared/notify-window.ts';
 import { sendWebPushToUsers } from '../_shared/web-push.ts';
 import {
   json,
@@ -163,12 +164,8 @@ async function sendChatMessagePushes(
     });
 
   /**
-   * Only the first unread message in a chat notifies.
-   *
-   * Ten people writing in a group produced ten pushes, which is how a chat app teaches people to
-   * turn notifications off. A recipient who already has something unread here has already been
-   * told; the badge keeps counting, and the next push waits until they have read and fallen
-   * behind again.
+   * One notification per burst, not per message -- and not per conversation forever. The rule is
+   * in _shared/notify-window.ts; see it for why the clock is there.
    *
    * "Unread" is measured from last_read_at, or from joined_at for someone who has never opened
    * the chat -- otherwise a new member's entire backlog would count as prior unread and they
@@ -198,11 +195,14 @@ async function sendChatMessagePushes(
   const recipients = candidates
     .filter((m) => {
       const threshold = m.last_read_at ?? m.joined_at;
-      const thresholdAt = threshold ? new Date(threshold).getTime() : 0;
-      const hasPriorUnread = priorMessages.some(
-        (row) => row.user_id !== m.user_id && new Date(row.created_at).getTime() > thresholdAt
-      );
-      return !hasPriorUnread;
+      return shouldNotifyForMessage({
+        sentAt,
+        readAt: threshold ? new Date(threshold).getTime() : 0,
+        // Their own messages are not something they need telling about.
+        priorMessageTimes: priorMessages
+          .filter((row) => row.user_id !== m.user_id)
+          .map((row) => new Date(row.created_at).getTime()),
+      });
     })
     .map((m) => m.user_id);
 
