@@ -178,8 +178,8 @@ export default function HomeScreen() {
           {displayName ? <Text style={styles.nameText}>{displayName}.</Text> : null}
         </View>
 
-        {/* Composing a platform-wide announcement; the announcements themselves are further
-            down, under Latest updates, with everything else worth reading. */}
+        {/* Composing a platform-wide announcement. The announcements themselves are in
+            Latest updates just below, with everything else worth reading. */}
         {userId ? (
           <View style={styles.sectionPadded}>
             {!superAdminRoleLoading && isSuperAdmin ? (
@@ -213,49 +213,12 @@ export default function HomeScreen() {
           errorMessage={globalFormError}
         />
 
-        {/* My Groups — horizontal scroll */}
-        <View style={styles.sectionPadded}>
-          <SectionHeader
-            title={t('home.yourGroups')}
-            actionLabel={myGroups.length > 0 ? t('home.seeAll') : undefined}
-            onAction={
-              myGroups.length > 0
-                ? () => router.navigate('/(tabs)/groups?filter=joined')
-                : undefined
-            }
-          />
-        </View>
+        {/* Everything worth reading, and first on the screen: the platform-wide announcements,
+            then the latest published announcement from each joined group. News is what someone
+            opens the app for; the groups strip below it is navigation, which can wait.
 
-        {groupsLoading ? (
-          <View style={styles.loadingRow}>
-            <ActivityIndicator size="small" color={colors.primary} />
-          </View>
-        ) : myGroups.length === 0 ? (
-          <View style={styles.sectionPadded}>
-            <EmptyState
-              iconName="people-outline"
-              title={t('home.noGroupsYet')}
-              subtitle={t('home.noGroupsSubtitle')}
-              actionLabel={t('home.browseGroups')}
-              onAction={() => router.navigate('/(tabs)/groups')}
-            />
-          </View>
-        ) : (
-          <FlatList
-            data={myGroups}
-            renderItem={renderGroupItem}
-            keyExtractor={(item) => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.carouselContent}
-            ItemSeparatorComponent={() => <View style={styles.carouselSeparator} />}
-            scrollEnabled
-          />
-        )}
-
-        {/* Everything worth reading: the platform-wide announcements first, then the latest
-            published announcement from each joined group. A global announcement is addressed to
-            everyone, so this section exists even for someone who has joined nothing yet. */}
+            A global announcement is addressed to everyone, so this section exists even for
+            someone who has joined nothing yet. */}
         {myGroups.length > 0 || globalAnnouncements.length > 0 ? (
           <View style={styles.latestUpdatesSection}>
             <View style={styles.sectionPadded}>
@@ -332,6 +295,46 @@ export default function HomeScreen() {
             )}
           </View>
         ) : null}
+
+        {/* My Groups — horizontal scroll */}
+        <View style={styles.sectionPadded}>
+          <SectionHeader
+            title={t('home.yourGroups')}
+            actionLabel={myGroups.length > 0 ? t('home.seeAll') : undefined}
+            onAction={
+              myGroups.length > 0
+                ? () => router.navigate('/(tabs)/groups?filter=joined')
+                : undefined
+            }
+          />
+        </View>
+
+        {groupsLoading ? (
+          <View style={styles.loadingRow}>
+            <ActivityIndicator size="small" color={colors.primary} />
+          </View>
+        ) : myGroups.length === 0 ? (
+          <View style={styles.sectionPadded}>
+            <EmptyState
+              iconName="people-outline"
+              title={t('home.noGroupsYet')}
+              subtitle={t('home.noGroupsSubtitle')}
+              actionLabel={t('home.browseGroups')}
+              onAction={() => router.navigate('/(tabs)/groups')}
+            />
+          </View>
+        ) : (
+          <FlatList
+            data={myGroups}
+            renderItem={renderGroupItem}
+            keyExtractor={(item) => item.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.carouselContent}
+            ItemSeparatorComponent={() => <View style={styles.carouselSeparator} />}
+            scrollEnabled
+          />
+        )}
 
         {/* Upcoming events from joined groups */}
         {myGroups.length > 0 ? (
