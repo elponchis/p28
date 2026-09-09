@@ -6,9 +6,20 @@
  * clicked, and how many kinds fit before the row runs into what sits beside it.
  *
  * Shared by the chat bubble and the discussion reply so the two cannot drift apart, which is how
- * they came to disagree about reactions in the first place.
+ * they came to disagree about reactions in the first place. They do differ in one thing, and only
+ * one: how large the emoji may be.
  */
 import { breakpoints } from '@/theme/tokens';
+
+/**
+ * Where the row is being drawn.
+ *
+ * A discussion reply is a block of its own with room under it, so a wide window gets a larger
+ * emoji — that is what the bigger icons were asked for. A chat bubble has the timestamp sitting
+ * against its bottom edge, and a badge grown to the same size covers it. So chat keeps the size
+ * it always had, on every screen.
+ */
+export type ReactionSurface = 'chat' | 'discussion';
 
 export interface ReactionRowMetrics {
   /** Font size for the emoji in a badge. */
@@ -21,9 +32,15 @@ export interface ReactionRowMetrics {
   maxVisible: number;
 }
 
-export function reactionRowMetrics(windowWidth: number): ReactionRowMetrics {
+/** The size a chat badge has always been, and the small end of the discussion range. */
+const BASE_EMOJI_SIZE = 14;
+
+export function reactionRowMetrics(
+  windowWidth: number,
+  surface: ReactionSurface = 'discussion'
+): ReactionRowMetrics {
   const isWide = windowWidth >= breakpoints.desktop;
-  const emojiSize = isWide ? 21 : 14;
+  const emojiSize = isWide && surface === 'discussion' ? 21 : BASE_EMOJI_SIZE;
   const badgeHeight = emojiSize + 12;
   return {
     emojiSize,

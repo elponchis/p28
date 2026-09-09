@@ -124,7 +124,7 @@ export function MessageRow({
   const selectableText = isDesktopWebPointer();
 
   const { width: windowWidth } = useWindowDimensions();
-  const reactionMetrics = reactionRowMetrics(windowWidth);
+  const reactionMetrics = reactionRowMetrics(windowWidth, 'chat');
   const { visible: visibleReactions, hidden: hiddenReactionCount } = splitVisibleReactions(
     presentReactions,
     reactionMetrics

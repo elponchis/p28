@@ -202,7 +202,7 @@ function ReplyRow({
   });
 
   const { width: windowWidth } = useWindowDimensions();
-  const metrics = reactionRowMetrics(windowWidth);
+  const metrics = reactionRowMetrics(windowWidth, 'discussion');
   const { visible: visibleReactions, hidden: hiddenReactionCount } = splitVisibleReactions(
     presentReactions,
     metrics

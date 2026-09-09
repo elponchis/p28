@@ -21,6 +21,23 @@ describe('reactionRowMetrics', () => {
     expect(reactionRowMetrics(640)).toEqual(reactionRowMetrics(WIDE));
   });
 
+  it('keeps a chat badge at its original size, wide window or not', () => {
+    // The timestamp sits against the bubble's bottom edge; a badge grown to discussion size
+    // covers it, which is what happened when the two shared one answer.
+    expect(reactionRowMetrics(WIDE, 'chat').emojiSize).toBe(14);
+    expect(reactionRowMetrics(NARROW, 'chat').emojiSize).toBe(14);
+  });
+
+  it('still gives chat the same overflow rules as a discussion', () => {
+    expect(reactionRowMetrics(WIDE, 'chat').maxVisible).toBe(10);
+    expect(reactionRowMetrics(NARROW, 'chat').maxVisible).toBe(4);
+  });
+
+  it('defaults to the discussion, which is where the larger emoji was asked for', () => {
+    expect(reactionRowMetrics(WIDE)).toEqual(reactionRowMetrics(WIDE, 'discussion'));
+    expect(reactionRowMetrics(WIDE, 'discussion').emojiSize).toBe(21);
+  });
+
   it('hangs a badge row less than its own height, so it straddles rather than clears', () => {
     for (const w of [WIDE, NARROW]) {
       const m = reactionRowMetrics(w);
