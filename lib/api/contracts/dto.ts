@@ -243,10 +243,13 @@ export interface Course {
   /** Which curriculum this belongs to. Defaults to 'general'. */
   track?: CourseTrack;
   /**
-   * The group whose members may watch this course. Absent means public — anyone signed in may
+   * The groups whose members may watch this course. Empty means public — anyone signed in may
    * watch it, which is how the Watch tab's open shelf is expressed.
+   *
+   * Several, because groups here are split by language and culture and the same course is
+   * taught in more than one of them.
    */
-  groupId?: string;
+  groupIds: string[];
   title: string;
   description?: string;
   coverImageUrl?: string;
@@ -264,9 +267,15 @@ export interface Course {
 }
 
 /** A course with the group it belongs to named, for a list that spans groups. */
+/** A group a course is taught in, named for display on the Watch shelf. */
+export interface CourseGroupRef {
+  id: string;
+  name: string;
+  type: GroupType;
+}
+
 export interface WatchCourse extends Course {
-  groupName?: string;
-  groupType?: GroupType;
+  groups: CourseGroupRef[];
   lessonCount: number;
 }
 
@@ -295,8 +304,8 @@ export interface UpdateCourseSettingsInput {
   title: string;
   description: string | null;
   track: CourseTrack;
-  /** The group whose members may watch it, or null for everyone. */
-  groupId: string | null;
+  /** The groups whose members may watch it. Empty means everyone. */
+  groupIds: string[];
   availableFrom: string | null;
   availableUntil: string | null;
   isPublished: boolean;

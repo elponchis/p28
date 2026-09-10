@@ -38,7 +38,8 @@ interface CourseDraft {
   title: string;
   description: string;
   track: CourseTrack;
-  groupId: string | null;
+  /** Empty means public. A course can be taught in several groups at once. */
+  groupIds: string[];
   availableFrom: string;
   availableUntil: string;
   isPublished: boolean;
@@ -49,7 +50,7 @@ function draftFrom(course: WatchCourse): CourseDraft {
     title: course.title,
     description: course.description ?? '',
     track: course.track ?? 'general',
-    groupId: course.groupId ?? null,
+    groupIds: [...course.groupIds],
     availableFrom: course.availableFrom ? course.availableFrom.slice(0, 10) : '',
     availableUntil: course.availableUntil ? course.availableUntil.slice(0, 10) : '',
     isPublished: course.isPublished ?? false,
@@ -62,9 +63,10 @@ function trackLabel(track: CourseTrack | undefined): string {
 }
 
 function CourseCard({ course, onEdit }: { course: WatchCourse; onEdit: () => void }) {
-  const audience = course.groupId
-    ? (course.groupName ?? t('watch.groupCourses'))
-    : t('watch.openToEveryone');
+  const audience =
+    course.groups.length > 0
+      ? course.groups.map((group) => group.name).join(', ')
+      : t('watch.openToEveryone');
   const window =
     course.availableFrom || course.availableUntil
       ? `${course.availableFrom ? formatDateHeader(course.availableFrom) : '—'} ~ ${
@@ -154,7 +156,7 @@ export default function WatchManageScreen() {
           title,
           description: description || null,
           track: draft.track,
-          groupId: draft.groupId,
+          groupIds: draft.groupIds,
           availableFrom: draft.availableFrom ? `${draft.availableFrom}T00:00:00Z` : null,
           availableUntil: draft.availableUntil ? `${draft.availableUntil}T23:59:59Z` : null,
           isPublished: draft.isPublished,
@@ -230,32 +232,43 @@ export default function WatchManageScreen() {
         <Text style={styles.label}>{t('watchAdmin.audience')}</Text>
         <View style={styles.chipRow}>
           <Pressable
-            onPress={() => setDraft({ ...draft, groupId: null })}
-            style={[styles.chip, draft.groupId === null && styles.chipActive]}
+            onPress={() => setDraft({ ...draft, groupIds: [] })}
+            style={[styles.chip, draft.groupIds.length === 0 && styles.chipActive]}
             accessibilityRole="button"
-            accessibilityState={{ selected: draft.groupId === null }}
+            accessibilityState={{ selected: draft.groupIds.length === 0 }}
             accessibilityLabel={t('watch.openToEveryone')}
           >
-            <Text style={[styles.chipText, draft.groupId === null && styles.chipTextActive]}>
+            <Text style={[styles.chipText, draft.groupIds.length === 0 && styles.chipTextActive]}>
               {t('watch.openToEveryone')}
             </Text>
           </Pressable>
-          {groups.map((group) => (
-            <Pressable
-              key={group.id}
-              onPress={() => setDraft({ ...draft, groupId: group.id })}
-              style={[styles.chip, draft.groupId === group.id && styles.chipActive]}
-              accessibilityRole="button"
-              accessibilityState={{ selected: draft.groupId === group.id }}
-              accessibilityLabel={group.name}
-            >
-              <Text style={[styles.chipText, draft.groupId === group.id && styles.chipTextActive]}>
-                {group.name}
-                <Text style={styles.chipType}> · {groupTypeLabel(group.type)}</Text>
-              </Text>
-            </Pressable>
-          ))}
+          {groups.map((group) => {
+            const selected = draft.groupIds.includes(group.id);
+            return (
+              <Pressable
+                key={group.id}
+                onPress={() =>
+                  setDraft({
+                    ...draft,
+                    groupIds: selected
+                      ? draft.groupIds.filter((id) => id !== group.id)
+                      : [...draft.groupIds, group.id],
+                  })
+                }
+                style={[styles.chip, selected && styles.chipActive]}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                accessibilityLabel={group.name}
+              >
+                <Text style={[styles.chipText, selected && styles.chipTextActive]}>
+                  {group.name}
+                  <Text style={styles.chipType}> · {groupTypeLabel(group.type)}</Text>
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
+        <Text style={[styles.hint, styles.fieldHint]}>{t('watchAdmin.audienceHint')}</Text>
 
         <Input
           label={t('watchAdmin.availableFrom')}

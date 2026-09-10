@@ -46,6 +46,7 @@ import type {
   CreateGroupRecurringMeetingInput,
   CreateGroupInput,
   Course,
+  CourseGroupRef,
   GroupType,
   WatchCourse,
   Discussion,
@@ -793,12 +794,34 @@ function mapGroupRecurringMeetingRow(row: GroupRecurringMeetingRow): GroupRecurr
 }
 
 /** Every column mapCourseRow reads; the four course queries share it so none drifts. */
-const COURSE_COLUMNS =
-  'id, group_id, track, title, description, cover_image_url, sort_order, available_from, available_until, is_published, created_at, updated_at';
+const COURSE_SCALAR_COLUMNS =
+  'id, track, title, description, cover_image_url, sort_order, available_from, available_until, is_published, created_at, updated_at';
+
+const COURSE_COLUMNS = `${COURSE_SCALAR_COLUMNS}, course_groups(group_id, groups(name, type))`;
+
+/**
+ * The same columns, but the link is an inner join so a filter on it selects courses rather than
+ * only deciding which links come back embedded.
+ */
+const COURSE_COLUMNS_IN_GROUP = `${COURSE_SCALAR_COLUMNS}, course_groups!inner(group_id, groups(name, type))`;
+
+/**
+ * The embedded link rows: `course_groups(group_id, groups(name, type))`.
+ *
+ * PostgREST returns an embedded to-one as an object on some paths and a one-element array on
+ * others, so the shape allows both and the mapper normalizes.
+ */
+type EmbeddedGroup = { name?: string | null; type?: string | null };
+
+type CourseGroupRow = {
+  group_id: string;
+  groups?: EmbeddedGroup | EmbeddedGroup[] | null;
+};
 
 type CourseRow = {
   id: string;
   group_id: string | null;
+  course_groups?: CourseGroupRow[] | null;
   track?: string | null;
   title: string;
   description: string | null;
@@ -811,10 +834,25 @@ type CourseRow = {
   updated_at: string;
 };
 
+/** The groups a course is taught in, named for display. Unnamed links are dropped. */
+function mapCourseGroupRefs(row: CourseRow): CourseGroupRef[] {
+  return (row.course_groups ?? [])
+    .map((link) => {
+      const group = Array.isArray(link.groups) ? link.groups[0] : link.groups;
+      return {
+        id: link.group_id,
+        name: group?.name ?? '',
+        type: (group?.type as GroupType) ?? 'forum',
+      };
+    })
+    .filter((group) => group.name.length > 0);
+}
+
 function mapCourseRow(row: CourseRow): Course {
   return {
     id: row.id,
-    groupId: row.group_id ?? undefined,
+    // course_groups is the answer since 00103; group_id is left unread on the row.
+    groupIds: (row.course_groups ?? []).map((link) => link.group_id),
     track: row.track === 'training_school' ? 'training_school' : 'general',
     title: row.title,
     description: row.description ?? undefined,
@@ -2792,8 +2830,8 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
       try {
         const { data: rows, error } = await getClient()
           .from('courses')
-          .select(COURSE_COLUMNS)
-          .eq('group_id', groupId)
+          .select(COURSE_COLUMNS_IN_GROUP)
+          .eq('course_groups.group_id', groupId)
           .order('sort_order', { ascending: true });
         if (error) return toApiError(error);
         return ((rows ?? []) as CourseRow[]).map(mapCourseRow);
@@ -2808,23 +2846,20 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
         // caller -- public ones, their groups' ones inside the window, everything for an admin.
         const { data: rows, error } = await getClient()
           .from('courses')
-          .select(`${COURSE_COLUMNS}, groups(name, type), lessons(count)`)
+          .select(`${COURSE_COLUMNS}, lessons(count)`)
           .order('sort_order', { ascending: true })
           .order('created_at', { ascending: true });
         if (error) return toApiError(error);
 
         return (
           (rows ?? []) as (CourseRow & {
-            groups?: { name?: string; type?: GroupType } | { name?: string; type?: GroupType }[];
             lessons?: { count: number }[] | { count: number };
           })[]
         ).map((row) => {
-          const group = Array.isArray(row.groups) ? row.groups[0] : row.groups;
           const lessons = Array.isArray(row.lessons) ? row.lessons[0] : row.lessons;
           return {
             ...mapCourseRow(row),
-            groupName: group?.name ?? undefined,
-            groupType: group?.type ?? undefined,
+            groups: mapCourseGroupRefs(row),
             lessonCount: lessons?.count ?? 0,
           };
         });
@@ -2839,22 +2874,19 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
         // admins who may act on them and to nobody else. No separate admin query to keep in step.
         const { data: rows, error } = await getClient()
           .from('courses')
-          .select(`${COURSE_COLUMNS}, groups(name, type), lessons(count)`)
+          .select(`${COURSE_COLUMNS}, lessons(count)`)
           .order('is_published', { ascending: true })
           .order('title', { ascending: true });
         if (error) return toApiError(error);
         return (
           (rows ?? []) as (CourseRow & {
-            groups?: { name?: string; type?: GroupType } | { name?: string; type?: GroupType }[];
             lessons?: { count: number }[] | { count: number };
           })[]
         ).map((row) => {
-          const group = Array.isArray(row.groups) ? row.groups[0] : row.groups;
           const lessons = Array.isArray(row.lessons) ? row.lessons[0] : row.lessons;
           return {
             ...mapCourseRow(row),
-            groupName: group?.name ?? undefined,
-            groupType: group?.type ?? undefined,
+            groups: mapCourseGroupRefs(row),
             lessonCount: lessons?.count ?? 0,
           };
         });
@@ -2874,7 +2906,6 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
             title: input.title,
             description: input.description,
             track: input.track,
-            group_id: input.groupId,
             available_from: input.availableFrom,
             available_until: input.availableUntil,
             is_published: input.isPublished,
@@ -2885,7 +2916,30 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
         if (error) return toApiError(error);
         // RLS filters rather than raises: no row back means this admin may not change this course.
         if (!data) return { message: 'Not authorized to change this course', code: 'FORBIDDEN' };
-        return mapCourseRow(data as CourseRow);
+
+        // The audience is the set of links, so it is replaced rather than edited: work out what
+        // changed and write only that, so an unchanged save touches nothing.
+        const wanted = [...new Set(input.groupIds)];
+        const current = ((data as CourseRow).course_groups ?? []).map((l) => l.group_id);
+        const toAdd = wanted.filter((id) => !current.includes(id));
+        const toRemove = current.filter((id) => !wanted.includes(id));
+
+        if (toRemove.length > 0) {
+          const { error: removeError } = await getClient()
+            .from('course_groups')
+            .delete()
+            .eq('course_id', courseId)
+            .in('group_id', toRemove);
+          if (removeError) return toApiError(removeError);
+        }
+        if (toAdd.length > 0) {
+          const { error: addError } = await getClient()
+            .from('course_groups')
+            .insert(toAdd.map((groupId) => ({ course_id: courseId, group_id: groupId })));
+          if (addError) return toApiError(addError);
+        }
+
+        return { ...mapCourseRow(data as CourseRow), groupIds: wanted };
       } catch (e) {
         return toApiError(e);
       }
@@ -2915,7 +2969,6 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
         const { data: row, error } = await getClient()
           .from('courses')
           .insert({
-            group_id: groupId,
             title,
             description: input.description?.trim() || null,
             cover_image_url: input.coverImageUrl || null,
@@ -2924,7 +2977,16 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
           .select(COURSE_COLUMNS)
           .single();
         if (error) return toApiError(error);
-        return mapCourseRow(row as CourseRow);
+
+        // The course belongs to the group that made it; a course with no link is public, which
+        // is not what "add a course to this group" means.
+        const created = row as CourseRow;
+        const { error: linkError } = await getClient()
+          .from('course_groups')
+          .insert({ course_id: created.id, group_id: groupId });
+        if (linkError) return toApiError(linkError);
+
+        return { ...mapCourseRow(created), groupIds: [groupId] };
       } catch (e) {
         return toApiError(e);
       }
