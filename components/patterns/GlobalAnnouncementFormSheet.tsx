@@ -98,10 +98,7 @@ export function GlobalAnnouncementFormSheet({
               contentContainerStyle={[
                 styles.scrollContent,
                 {
-                  paddingBottom:
-                    spacing.majorSectionGap * 2 +
-                    spacing.xl +
-                    Math.max(insets.bottom, Platform.OS === 'ios' ? spacing.xxl : spacing.xl),
+                  paddingBottom: spacing.lg,
                 },
               ]}
             >
@@ -130,7 +127,18 @@ export function GlobalAnnouncementFormSheet({
                 accessibilityLabel={t('home.globalAnnouncementDescriptionLabel')}
                 accessibilityHint={t('home.globalAnnouncementDescriptionPlaceholder')}
               />
-
+            </ScrollView>
+            <View
+              style={[
+                styles.footer,
+                {
+                  paddingBottom: Math.max(
+                    insets.bottom,
+                    Platform.OS === 'ios' ? spacing.xxl : spacing.xl
+                  ),
+                },
+              ]}
+            >
               {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
 
               <Button
@@ -143,7 +151,7 @@ export function GlobalAnnouncementFormSheet({
               {isSubmitting ? (
                 <ActivityIndicator style={styles.spinner} color={colors.primary} />
               ) : null}
-            </ScrollView>
+            </View>
           </View>
         </Animated.View>
       </KeyboardAvoidingView>
@@ -170,6 +178,15 @@ const styles = StyleSheet.create({
   // The sheet is capped at 92% of the screen, so everything between it and the fields has
   // to be allowed to shrink. Without this a ScrollView on the web grows to its content,
   // never scrolls, and the submit button at the bottom is clipped out of reach.
+  // The primary action lives outside the scroll area so it is on screen whatever the window
+  // height. Inside the ScrollView it started below the fold on a laptop, and with no scrollbar on
+  // the web nothing said it was there — the form looked like it had no way to submit.
+  footer: {
+    paddingTop: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.outlineVariant,
+    backgroundColor: colors.surfaceContainerLowest,
+  },
   scroll: {
     flexShrink: 1,
     minHeight: 0,
