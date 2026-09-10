@@ -594,7 +594,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     // Centred, not bottom-aligned: this composer's box is 72 tall against 44-tall buttons, so
     // sharing a bottom edge left the + sitting 14px below the middle of the field it belongs to.
-    // Chat bottom-aligns because there the two are the same height.
     alignItems: 'center',
     gap: spacing.sm,
   },
@@ -706,7 +705,11 @@ const chatStyles = StyleSheet.create({
 
   inputRow: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    // Centred, like the discussion composer. Bottom-aligning assumed the three were the same
+    // height, and they never were: the send button is 36 against a 40 field, so it sat low even
+    // on one line, and once the text wrapped the field grew upward and left both buttons stuck
+    // along the bottom edge.
+    alignItems: 'center',
     gap: spacing.xs,
   },
   attachButton: {
