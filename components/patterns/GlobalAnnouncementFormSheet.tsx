@@ -92,6 +92,7 @@ export function GlobalAnnouncementFormSheet({
             </View>
 
             <ScrollView
+              style={styles.scroll}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
               contentContainerStyle={[
@@ -166,7 +167,16 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radius.xl,
     paddingTop: spacing.sm,
   },
+  // The sheet is capped at 92% of the screen, so everything between it and the fields has
+  // to be allowed to shrink. Without this a ScrollView on the web grows to its content,
+  // never scrolls, and the submit button at the bottom is clipped out of reach.
+  scroll: {
+    flexShrink: 1,
+    minHeight: 0,
+  },
   sheetInner: {
+    flexShrink: 1,
+    minHeight: 0,
     paddingHorizontal: spacing.lg,
   },
   handle: {
