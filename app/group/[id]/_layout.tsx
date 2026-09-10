@@ -29,7 +29,14 @@ export default function GroupDetailStackLayout() {
           headerTransparent: true,
           headerStyle: { backgroundColor: 'transparent' },
           headerLeft: () => (
-            <StackHeaderBack iconColor="#ffffff" accessibilityHint={t('groups.backToGroupsHint')} />
+            // The header floats over the group's hero image and stays put as the page scrolls,
+            // so the white chevron ends up over pale content and vanishes. The scrim travels
+            // with it.
+            <StackHeaderBack
+              iconColor="#ffffff"
+              onScrim
+              accessibilityHint={t('groups.backToGroupsHint')}
+            />
           ),
         }}
       />
