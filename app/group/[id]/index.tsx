@@ -730,6 +730,45 @@ export default function GroupDetailScreen() {
           </View>
         ) : null}
 
+        {/* ── Announcements (Stitch “Latest Updates” layout) ── */}
+        <View style={styles.section}>
+          <View style={styles.latestUpdatesHeader}>
+            <Text style={styles.latestUpdatesTitle}>
+              {t('announcements.latestUpdatesSectionTitle')}
+            </Text>
+            {announcements.length > 0 ? (
+              <Pressable
+                onPress={handleSeeAllAnnouncements}
+                style={styles.addTopicButton}
+                accessibilityLabel={t('announcements.seeAll')}
+                accessibilityHint={t('announcements.seeAll')}
+              >
+                <Text style={styles.addTopicText}>{t('announcements.seeAll')}</Text>
+                <Ionicons name="chevron-forward" size={14} color={colors.secondary} />
+              </Pressable>
+            ) : null}
+          </View>
+          {latestPublished ? (
+            <View style={styles.latestUpdatesList}>
+              <LatestAnnouncementRow
+                title={latestPublished.title}
+                body={latestPublished.body}
+                createdAt={latestPublished.createdAt}
+                onPress={handleOpenLatestAnnouncementDetail}
+                meetingLink={latestPublished.meetingLink ?? undefined}
+                showMeetingLink={isMember && !!latestPublished.meetingLink?.trim()}
+              />
+            </View>
+          ) : null}
+          {!latestPublished ? (
+            <EmptyState
+              iconName="megaphone-outline"
+              title={t('announcements.noAnnouncements')}
+              subtitle={t('announcements.noAnnouncementsHint')}
+            />
+          ) : null}
+        </View>
+
         {/* ── Events (cards + RSVP CTA) ── */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -1019,45 +1058,6 @@ export default function GroupDetailScreen() {
             )}
           </View>
         ) : null}
-
-        {/* ── Announcements (Stitch “Latest Updates” layout) ── */}
-        <View style={styles.section}>
-          <View style={styles.latestUpdatesHeader}>
-            <Text style={styles.latestUpdatesTitle}>
-              {t('announcements.latestUpdatesSectionTitle')}
-            </Text>
-            {announcements.length > 0 ? (
-              <Pressable
-                onPress={handleSeeAllAnnouncements}
-                style={styles.addTopicButton}
-                accessibilityLabel={t('announcements.seeAll')}
-                accessibilityHint={t('announcements.seeAll')}
-              >
-                <Text style={styles.addTopicText}>{t('announcements.seeAll')}</Text>
-                <Ionicons name="chevron-forward" size={14} color={colors.secondary} />
-              </Pressable>
-            ) : null}
-          </View>
-          {latestPublished ? (
-            <View style={styles.latestUpdatesList}>
-              <LatestAnnouncementRow
-                title={latestPublished.title}
-                body={latestPublished.body}
-                createdAt={latestPublished.createdAt}
-                onPress={handleOpenLatestAnnouncementDetail}
-                meetingLink={latestPublished.meetingLink ?? undefined}
-                showMeetingLink={isMember && !!latestPublished.meetingLink?.trim()}
-              />
-            </View>
-          ) : null}
-          {!latestPublished ? (
-            <EmptyState
-              iconName="megaphone-outline"
-              title={t('announcements.noAnnouncements')}
-              subtitle={t('announcements.noAnnouncementsHint')}
-            />
-          ) : null}
-        </View>
 
         {/* ── Discussions section ── */}
         <View style={styles.section}>

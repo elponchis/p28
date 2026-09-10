@@ -51,6 +51,13 @@ describe('GroupDetailScreen discussion contract', () => {
     expect(addEvent).toBeGreaterThan(seeAll);
   });
 
+  it('shows Latest Updates above Events', () => {
+    const latest = groupDetailSource.indexOf("t('announcements.latestUpdatesSectionTitle')");
+    const events = groupDetailSource.indexOf("t('groupEvents.sectionTitle')");
+    expect(latest).toBeGreaterThan(-1);
+    expect(events).toBeGreaterThan(latest);
+  });
+
   it('navigates latest announcement card to announcement detail', () => {
     expect(groupDetailSource).toMatch(/handleOpenLatestAnnouncementDetail/);
     expect(groupDetailSource).toMatch(/\/group\/announcement\/\$\{latestPublished\.id\}/);
