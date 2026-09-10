@@ -142,6 +142,21 @@ export function isGroupEventDiscussionReadOnly(event: {
 }
 
 /**
+ * The value an <input type="datetime-local"> expects: YYYY-MM-DDTHH:mm in *local* time.
+ *
+ * Not toISOString().slice(0, 16) — that is UTC, and would show a Seoul evening as the same
+ * afternoon. Shared because every form that takes a date and time needs it on web, and the
+ * copy that lived beside one field was about to become the copy beside three.
+ */
+export function toDatetimeLocalValue(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return (
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+    `T${pad(date.getHours())}:${pad(date.getMinutes())}`
+  );
+}
+
+/**
  * A date typed as YYYY-MM-DD, and a real one — 2026-02-31 parses but is not a day.
  *
  * Typed dates decide who may watch what and until when, so the check is shared rather than

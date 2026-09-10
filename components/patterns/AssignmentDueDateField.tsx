@@ -4,7 +4,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { LabeledSwitchRow } from './LabeledSwitchRow';
-import { formatGroupEventDateTime } from '@/lib/dates';
+import { formatGroupEventDateTime, toDatetimeLocalValue } from '@/lib/dates';
 import { t } from '@/lib/i18n';
 import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
@@ -19,11 +19,6 @@ function defaultDueDate(): Date {
   d.setDate(d.getDate() + 7);
   d.setMinutes(0, 0, 0);
   return d;
-}
-
-function toDatetimeLocalValue(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 /**
