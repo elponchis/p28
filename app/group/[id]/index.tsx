@@ -733,32 +733,36 @@ export default function GroupDetailScreen() {
         {/* ── Events (cards + RSVP CTA) ── */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{t('groupEvents.sectionTitle')}</Text>
-            {/* Add sits at the right edge, where Courses, Assignments and Discussions put theirs. */}
-            <View style={styles.sectionActions}>
-              {groupEvents.length > 0 ? (
-                <Pressable
-                  onPress={handleSeeAllEvents}
-                  style={styles.addTopicButton}
-                  accessibilityLabel={t('groupEvents.seeAll')}
-                  accessibilityHint={t('groupEvents.seeAll')}
-                >
-                  <Text style={styles.addTopicText}>{t('groupEvents.seeAll')}</Text>
-                  <Ionicons name="chevron-forward" size={14} color={colors.secondary} />
-                </Pressable>
-              ) : null}
-              {canModerateAsAdmin && upcomingEvents.length > 0 ? (
-                <Pressable
-                  onPress={handleOpenCreateEvent}
-                  style={styles.addTopicButton}
-                  accessibilityLabel={t('groupEvents.addEvent')}
-                  accessibilityHint={t('groupEvents.addEventHint')}
-                >
-                  <Ionicons name="add-circle" size={16} color={colors.secondary} />
-                  <Text style={styles.addTopicText}>{t('groupEvents.addEvent')}</Text>
-                </Pressable>
-              ) : null}
-            </View>
+            {/* The title takes the free space so both actions sit right, each baseline-aligned in the
+                header like Courses, Assignments and Discussions — Add last, at the right edge. */}
+            <Text style={[styles.sectionTitle, styles.sectionTitleFill]}>
+              {t('groupEvents.sectionTitle')}
+            </Text>
+            {groupEvents.length > 0 ? (
+              <Pressable
+                onPress={handleSeeAllEvents}
+                style={[
+                  styles.addTopicButton,
+                  canModerateAsAdmin && upcomingEvents.length > 0 && styles.sectionActionSpacer,
+                ]}
+                accessibilityLabel={t('groupEvents.seeAll')}
+                accessibilityHint={t('groupEvents.seeAll')}
+              >
+                <Text style={styles.addTopicText}>{t('groupEvents.seeAll')}</Text>
+                <Ionicons name="chevron-forward" size={14} color={colors.secondary} />
+              </Pressable>
+            ) : null}
+            {canModerateAsAdmin && upcomingEvents.length > 0 ? (
+              <Pressable
+                onPress={handleOpenCreateEvent}
+                style={styles.addTopicButton}
+                accessibilityLabel={t('groupEvents.addEvent')}
+                accessibilityHint={t('groupEvents.addEventHint')}
+              >
+                <Ionicons name="add-circle" size={16} color={colors.secondary} />
+                <Text style={styles.addTopicText}>{t('groupEvents.addEvent')}</Text>
+              </Pressable>
+            ) : null}
           </View>
           {(() => {
             if (upcomingEvents.length === 0) {
@@ -1389,10 +1393,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: spacing.md,
   },
-  sectionActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.lg,
+  sectionTitleFill: {
+    flex: 1,
+  },
+  sectionActionSpacer: {
+    marginRight: spacing.lg,
   },
   sectionTitle: {
     fontFamily: fontFamily.serif,
