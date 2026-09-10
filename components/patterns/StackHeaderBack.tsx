@@ -1,6 +1,6 @@
 import type { Href } from 'expo-router';
 import { useRouter } from 'expo-router';
-import { Pressable } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { t } from '@/lib/i18n';
@@ -19,6 +19,13 @@ export interface StackHeaderBackProps {
    * on the home tab.
    */
   returnTo?: Href;
+  /**
+   * Draw the chevron on a translucent dark disc.
+   *
+   * For a transparent header floating over content: the icon has to survive whatever scrolls
+   * under it, and a bare white chevron disappears the moment a pale section arrives.
+   */
+  onScrim?: boolean;
 }
 
 /**
@@ -30,6 +37,7 @@ export function StackHeaderBack({
   accessibilityHint,
   fallbackHref,
   returnTo,
+  onScrim = false,
 }: StackHeaderBackProps) {
   const router = useRouter();
   return (
@@ -46,7 +54,7 @@ export function StackHeaderBack({
           router.replace(fallbackHref);
         }
       }}
-      style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, padding: 8 })}
+      style={({ pressed }) => [styles.button, onScrim && styles.scrim, pressed && styles.pressed]}
       accessibilityLabel={t('common.back')}
       accessibilityHint={accessibilityHint ?? t('common.navigateBackHint')}
       accessibilityRole="button"
@@ -55,3 +63,23 @@ export function StackHeaderBack({
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  button: {
+    padding: 8,
+  },
+  pressed: {
+    opacity: 0.6,
+  },
+  scrim: {
+    // Sized to the 22px icon plus its padding, so the disc is a circle rather than a lozenge.
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    // Dark enough for a white chevron to read against a white page, light enough not to blot
+    // out the hero photograph it sits on at the top of the screen.
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+  },
+});
