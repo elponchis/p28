@@ -52,7 +52,7 @@ import {
 import { getUserFacingError, isApiError } from '@/lib/api';
 import type { CreateGroupRecurringMeetingInput, GroupRecurringMeeting } from '@/lib/api';
 import { formatGroupEventDateTime, formatRelativeTime, isGroupEventPast } from '@/lib/dates';
-import { compareGroupEventsByStartThenCreated } from '@/lib/groupEventsSort';
+import { upcomingGroupEvents } from '@/lib/groupEventsSort';
 import { t } from '@/lib/i18n';
 import { formatRecurringMeetingSummary } from '@/lib/recurringMeetingSummary';
 import { confirm } from '@/lib/dialogs';
@@ -489,6 +489,7 @@ export default function GroupDetailScreen() {
   const typeLabel = group.type === 'forum' ? t('groups.forum') : t('groups.ministry');
   const languageName = getLanguageName(group.preferredLanguage);
   const memberCountLabel = `${members.length} ${members.length === 1 ? t('groups.member') : t('groups.members')}`;
+  const upcomingEvents = upcomingGroupEvents(groupEvents);
 
   return (
     <ScrollView
@@ -733,30 +734,43 @@ export default function GroupDetailScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{t('groupEvents.sectionTitle')}</Text>
-            {groupEvents.length > 0 ? (
-              <Pressable
-                onPress={handleSeeAllEvents}
-                style={styles.addTopicButton}
-                accessibilityLabel={t('groupEvents.seeAll')}
-                accessibilityHint={t('groupEvents.seeAll')}
-              >
-                <Text style={styles.addTopicText}>{t('groupEvents.seeAll')}</Text>
-                <Ionicons name="chevron-forward" size={14} color={colors.secondary} />
-              </Pressable>
-            ) : null}
+            <View style={styles.sectionActions}>
+              {canModerateAsAdmin && upcomingEvents.length > 0 ? (
+                <Pressable
+                  onPress={handleOpenCreateEvent}
+                  style={styles.addTopicButton}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('groupEvents.addEvent')}
+                  accessibilityHint={t('groupEvents.addEventHint')}
+                >
+                  <Ionicons name="add-circle" size={16} color={colors.secondary} />
+                  <Text style={styles.addTopicText}>{t('groupEvents.addEvent')}</Text>
+                </Pressable>
+              ) : null}
+              {groupEvents.length > 0 ? (
+                <Pressable
+                  onPress={handleSeeAllEvents}
+                  style={styles.addTopicButton}
+                  accessibilityLabel={t('groupEvents.seeAll')}
+                  accessibilityHint={t('groupEvents.seeAll')}
+                >
+                  <Text style={styles.addTopicText}>{t('groupEvents.seeAll')}</Text>
+                  <Ionicons name="chevron-forward" size={14} color={colors.secondary} />
+                </Pressable>
+              ) : null}
+            </View>
           </View>
           {(() => {
-            const now = Date.now();
-            const upcoming = groupEvents
-              .filter((e) => e.status === 'active' && new Date(e.startsAt).getTime() > now)
-              .sort(compareGroupEventsByStartThenCreated)
-              .slice(0, 3);
-            if (upcoming.length === 0) {
+            if (upcomingEvents.length === 0) {
               return (
                 <EmptyState
                   iconName="calendar-outline"
                   title={t('groupEvents.noEvents')}
                   subtitle={t('groupEvents.noEventsHint')}
+                  actionLabel={canModerateAsAdmin ? t('groupEvents.addEvent') : undefined}
+                  onAction={canModerateAsAdmin ? handleOpenCreateEvent : undefined}
+                  actionVariant="link"
+                  actionAccessibilityHint={t('groupEvents.addEventHint')}
                 />
               );
             }
@@ -771,7 +785,7 @@ export default function GroupDetailScreen() {
                   contentContainerStyle={styles.recurringListHorizontal}
                   accessibilityLabel={t('groupEvents.sectionTitle')}
                 >
-                  {upcoming.map((ev) => {
+                  {upcomingEvents.map((ev) => {
                     const openEvent = () =>
                       router.push({
                         pathname: '/group/event/[id]',
@@ -1374,6 +1388,11 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
     justifyContent: 'space-between',
     marginBottom: spacing.md,
+  },
+  sectionActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
   },
   sectionTitle: {
     fontFamily: fontFamily.serif,

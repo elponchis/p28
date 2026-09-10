@@ -36,6 +36,14 @@ describe('GroupDetailScreen discussion contract', () => {
     expect(groupDetailSource).not.toMatch(/lib\/api\/adapters/);
   });
 
+  it('offers admins an Add event button in the events section, like courses and assignments', () => {
+    expect(groupDetailSource).toMatch(/t\(['"]groupEvents\.addEvent['"]\)/);
+    expect(groupDetailSource).toMatch(/canModerateAsAdmin && upcomingEvents\.length > 0/);
+    expect(groupDetailSource).toMatch(
+      /onAction=\{canModerateAsAdmin \? handleOpenCreateEvent : undefined\}/
+    );
+  });
+
   it('navigates latest announcement card to announcement detail', () => {
     expect(groupDetailSource).toMatch(/handleOpenLatestAnnouncementDetail/);
     expect(groupDetailSource).toMatch(/\/group\/announcement\/\$\{latestPublished\.id\}/);
