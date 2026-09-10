@@ -30,6 +30,7 @@ import { getUserFacingError } from '@/lib/api';
 import type { QuizQuestionInput, UploadedFile } from '@/lib/api';
 import { findQuizDraftProblem, toQuizQuestionInput } from '@/lib/quiz';
 import { describeQuizDraftProblem } from '@/lib/quizMessages';
+import { parseMaxScoreInput } from '@/lib/assignmentScore';
 import { t } from '@/lib/i18n';
 import { confirm } from '@/lib/dialogs';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
@@ -63,6 +64,7 @@ export default function EditAssignmentScreen() {
   const [materials, setMaterials] = useState<UploadedFile[]>([]);
   const [questions, setQuestions] = useState<QuizQuestionInput[]>([]);
   const [allowResubmission, setAllowResubmission] = useState(true);
+  const [maxScore, setMaxScore] = useState('100');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -72,6 +74,7 @@ export default function EditAssignmentScreen() {
     setDueDate(assignment.dueDate ? new Date(assignment.dueDate) : null);
     setMaterials(assignment.materials);
     setAllowResubmission(assignment.allowResubmission);
+    setMaxScore(String(assignment.maxScore));
   }, [assignment]);
 
   useEffect(() => {
@@ -98,6 +101,11 @@ export default function EditAssignmentScreen() {
         return;
       }
     }
+    const parsedMax = parseMaxScoreInput(maxScore);
+    if (!parsedMax.ok) {
+      setError(t('assignments.maxScoreInvalid'));
+      return;
+    }
     setError(null);
     updateMutation.mutate(
       {
@@ -107,6 +115,7 @@ export default function EditAssignmentScreen() {
           description: description.trim() || undefined,
           dueDate: dueDate ? dueDate.toISOString() : undefined,
           sortOrder: assignment?.sortOrder ?? 0,
+          maxScore: parsedMax.maxScore,
           materials,
           allowResubmission,
           questions: isQuiz ? questions : undefined,
@@ -210,6 +219,16 @@ export default function EditAssignmentScreen() {
             variant="sheet"
             accessibilityLabel={t('assignments.allowResubmissionLabel')}
             accessibilityHint={t('assignments.allowResubmissionHint')}
+          />
+
+          <Input
+            label={t('assignments.maxScoreLabel')}
+            value={maxScore}
+            onChangeText={setMaxScore}
+            keyboardType="number-pad"
+            editable={!isSubmitting}
+            accessibilityLabel={t('assignments.maxScoreLabel')}
+            accessibilityHint={t('assignments.maxScoreHint')}
           />
 
           <AssignmentDueDateField

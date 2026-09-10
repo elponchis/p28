@@ -898,6 +898,20 @@ export function useCourseQuery(courseId: string | undefined, options?: { enabled
   });
 }
 
+/**
+ * Refresh the course list of every group this course is taught in. A course can be in several
+ * since 00103, and the group that was just unlinked has to be refreshed too — which is why
+ * callers pass the ids they know about rather than this reading them back.
+ */
+function invalidateCourseGroupLists(
+  qc: ReturnType<typeof useQueryClient>,
+  groupIds: readonly string[]
+) {
+  for (const groupId of groupIds) {
+    qc.invalidateQueries({ queryKey: queryKeys.coursesByGroup(groupId) });
+  }
+}
+
 export function useCreateCourseMutation() {
   const qc = useQueryClient();
   return useMutation({
@@ -909,8 +923,7 @@ export function useCreateCourseMutation() {
       input: import('@/lib/api').CreateCourseInput;
     }) => queryFn(api.data.createCourse(groupId, input)),
     onSuccess: (course) => {
-      if (course.groupId)
-        qc.invalidateQueries({ queryKey: queryKeys.coursesByGroup(course.groupId) });
+      invalidateCourseGroupLists(qc, course.groupIds);
       qc.invalidateQueries({ queryKey: queryKeys.watchCourses() });
     },
   });
@@ -929,8 +942,7 @@ export function useUpdateCourseMutation() {
     onSuccess: (course) => {
       qc.invalidateQueries({ queryKey: queryKeys.course(course.id) });
       // A public course has no group list to refresh; the watch shelf is where it shows.
-      if (course.groupId)
-        qc.invalidateQueries({ queryKey: queryKeys.coursesByGroup(course.groupId) });
+      invalidateCourseGroupLists(qc, course.groupIds);
       qc.invalidateQueries({ queryKey: queryKeys.watchCourses() });
     },
   });
@@ -987,9 +999,7 @@ export function useUpdateCourseSettingsMutation() {
       qc.invalidateQueries({ queryKey: queryKeys.managedCourses() });
       qc.invalidateQueries({ queryKey: queryKeys.watchCourses() });
       qc.invalidateQueries({ queryKey: queryKeys.course(course.id) });
-      if (course.groupId) {
-        qc.invalidateQueries({ queryKey: queryKeys.coursesByGroup(course.groupId) });
-      }
+      invalidateCourseGroupLists(qc, course.groupIds);
     },
   });
 }

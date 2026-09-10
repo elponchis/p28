@@ -74,6 +74,7 @@ export type {
   UpdateAssignmentInput,
   UpdateChatInput,
   UpdateChatMessageInput,
+  CourseGroupRef,
   CourseTrack,
   UpdateCourseSettingsInput,
   UpdateCourseInput,

@@ -10,14 +10,16 @@
  * Extracted from the screen because the ordering has a rule worth stating and testing: the
  * training school comes first, since a term running this week is why someone opens the tab.
  */
-import type { CourseTrack, GroupType } from '@/lib/api';
+import type { CourseGroupRef, CourseTrack } from '@/lib/api';
 import { t } from '@/lib/i18n';
 
 /** The minimum a course must say for shelving; the screen passes whole WatchCourses. */
 export interface ShelvableCourse {
-  groupId?: string;
-  groupName?: string;
-  groupType?: GroupType;
+  /**
+   * Every group this course is taught in. A course taught in three groups appears on three
+   * shelves; a reader belongs to one of them and sees it once.
+   */
+  groups?: CourseGroupRef[];
   track?: CourseTrack;
 }
 
@@ -35,23 +37,26 @@ export function buildShelves<C extends ShelvableCourse>(courses: C[]): Shelf<C>[
   const open: C[] = [];
 
   for (const course of courses) {
-    if (!course.groupId) {
+    const groups = course.groups ?? [];
+    if (groups.length === 0) {
       (course.track === 'training_school' ? openTrainingSchool : open).push(course);
       continue;
     }
-    const existing = byGroup.get(course.groupId);
-    if (existing) {
-      existing.courses.push(course);
-      continue;
+    for (const group of groups) {
+      const existing = byGroup.get(group.id);
+      if (existing) {
+        existing.courses.push(course);
+        // Either fact makes it a training school shelf: the group is one, or a course in it is.
+        existing.isTrainingSchool = existing.isTrainingSchool || course.track === 'training_school';
+        continue;
+      }
+      byGroup.set(group.id, {
+        key: group.id,
+        title: group.name || t('watch.groupCourses'),
+        isTrainingSchool: group.type === 'training_school' || course.track === 'training_school',
+        courses: [course],
+      });
     }
-    byGroup.set(course.groupId, {
-      key: course.groupId,
-      title: course.groupName ?? t('watch.groupCourses'),
-      // Either fact makes it a training school shelf: the group is one, or the courses in it are.
-      isTrainingSchool:
-        course.groupType === 'training_school' || course.track === 'training_school',
-      courses: [course],
-    });
   }
 
   const groups = [...byGroup.values()].sort((a, b) => {

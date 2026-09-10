@@ -28,6 +28,7 @@ import {
 import { getUserFacingError } from '@/lib/api';
 import { formatRelativeTime } from '@/lib/dates';
 import { answersById } from '@/lib/quiz';
+import { parseScoreInput } from '@/lib/assignmentScore';
 import { t } from '@/lib/i18n';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
@@ -60,6 +61,8 @@ export default function SubmissionReviewScreen() {
 
   const { data: assignment } = useAssignmentQuery(assignmentId, { enabled: !!assignmentId });
   const isQuiz = assignment?.assignmentType === 'quiz';
+  /** 100 until the assignment loads: the same default the column was added with. */
+  const maxScore = assignment?.maxScore ?? 100;
   const { data: questions = [] } = useAssignmentQuestionsQuery(assignmentId, {
     enabled: !!assignmentId && isQuiz,
   });
@@ -105,12 +108,18 @@ export default function SubmissionReviewScreen() {
 
   const handleSave = () => {
     if (!userId || !submission) return;
-    const trimmedScore = scoreInput.trim();
-    const parsedScore = trimmedScore ? parseInt(trimmedScore, 10) : undefined;
-    if (trimmedScore && Number.isNaN(parsedScore)) {
-      setError(t('common.error'));
+    // The database refuses a score outside the assignment's range; saying so here means the
+    // grader finds out before the save rather than after it.
+    const parsed = parseScoreInput(scoreInput, maxScore);
+    if (!parsed.ok) {
+      setError(
+        parsed.reason === 'not_a_number'
+          ? t('submissions.scoreNotANumber')
+          : t('submissions.scoreOutOfRange', { max: maxScore })
+      );
       return;
     }
+    const parsedScore = parsed.score ?? undefined;
     setError(null);
     updateFeedbackMutation.mutate(
       {
@@ -237,13 +246,14 @@ export default function SubmissionReviewScreen() {
           />
 
           <Input
-            label={t('submissions.scoreLabel')}
+            label={t('submissions.scoreRangeLabel', { max: maxScore })}
             value={scoreInput}
             onChangeText={setScoreInput}
             placeholder={t('submissions.scorePlaceholder')}
             keyboardType="number-pad"
             editable={!isSaving}
-            accessibilityLabel={t('submissions.scoreLabel')}
+            accessibilityLabel={t('submissions.scoreRangeLabel', { max: maxScore })}
+            accessibilityHint={t('submissions.scoreRangeHint', { max: maxScore })}
           />
 
           {error ? (
