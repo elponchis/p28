@@ -4,6 +4,7 @@ import {
   isGroupEventDiscussionReadOnly,
   isGroupEventPast,
   messageLocalMinuteKey,
+  toDatetimeLocalValue,
 } from '@/lib/dates';
 
 describe('isGroupEventDiscussionReadOnly', () => {
@@ -78,5 +79,26 @@ describe('formatMessageSentDateTime', () => {
     const older = formatMessageSentDateTime(new Date(thisYear - 3, 7, 20, 14, 52).toISOString());
     expect(current).not.toContain(String(thisYear));
     expect(older).toContain(String(thisYear - 3));
+  });
+});
+
+describe('toDatetimeLocalValue', () => {
+  it('formats what <input type="datetime-local"> expects', () => {
+    expect(toDatetimeLocalValue(new Date(2026, 8, 10, 19, 30))).toBe('2026-09-10T19:30');
+  });
+
+  it('pads every field, so a single-digit month or minute is still valid', () => {
+    expect(toDatetimeLocalValue(new Date(2026, 0, 5, 9, 5))).toBe('2026-01-05T09:05');
+  });
+
+  it('stays in local time rather than UTC', () => {
+    // The bug this guards: toISOString().slice(0, 16) shows a Seoul evening as that afternoon.
+    const d = new Date(2026, 8, 10, 23, 0);
+    expect(toDatetimeLocalValue(d)).toBe('2026-09-10T23:00');
+    expect(toDatetimeLocalValue(d).slice(11)).toBe('23:00');
+  });
+
+  it('drops seconds, which the input does not take', () => {
+    expect(toDatetimeLocalValue(new Date(2026, 8, 10, 19, 30, 45))).toBe('2026-09-10T19:30');
   });
 });
