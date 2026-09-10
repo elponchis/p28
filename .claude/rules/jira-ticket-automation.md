@@ -59,10 +59,14 @@ preview 배포도 프로덕션과 **같은 Supabase를 쓴다** — 마이그레
 
 ## 도구
 
-`jira.cjs`(스크래치패드)가 REST API를 감싼다: `todo KAN`, `issue <KEY>`,
-`transitions <KEY>`, `move <KEY> "<상태>"`, `comment <KEY> "<본문>"`. 인증은 `.env`의
-`JIRA_BASE_URL` / `JIRA_EMAIL` / `JIRA_API_TOKEN`. `JIRA_BASE_URL`은 사이트 루트여야 한다
-(`https://p28app.atlassian.net`) — 보드 주소를 넣으면 JSON 대신 HTML이 돌아온다.
+`scripts/jira.cjs`가 REST API를 감싼다: `todo KAN`, `issue <KEY>`, `attachments <KEY> <dir>`,
+`transitions <KEY>`, `move <KEY> "<상태>"`, `comment <KEY> "<본문>"`. 인증값은 **환경변수를 먼저,
+없으면 `.env`를** 읽는다 — 노트북에서는 `.env`에, 클라우드 세션에서는 환경 설정에 있다.
+필요한 값: `JIRA_BASE_URL` / `JIRA_EMAIL` / `JIRA_API_TOKEN`. `JIRA_BASE_URL`에 보드 주소를
+넣어도 스크립트가 사이트 루트만 남기지만, 원래는 `https://p28app.atlassian.net`이다.
+
+한국어가 섞인 출력은 `OUT=<파일>`로 UTF-8 파일에 쓰고 읽는다 — Windows 콘솔은 코드페이지에 따라
+깨진다.
 
 서브태스크는 Kanban 보드에 카드로 나오지 않는다. 사람이 "그런 티켓 없다"고 할 때 먼저
 확인할 것.
