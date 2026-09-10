@@ -21,19 +21,12 @@ import {
   useSearchProfilesQuery,
   useSentFriendRequestsQuery,
 } from '@/hooks/useApiQueries';
+import { friendDisplayName as getDisplayName, friendRows, type FriendRow } from '@/lib/friendsList';
 import { t } from '@/lib/i18n';
 import type { Profile } from '@/lib/api';
 import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
 const SEARCH_DEBOUNCE_MS = 200;
-
-function getDisplayName(profile: Profile | undefined): string {
-  return (
-    profile?.displayName ??
-    [profile?.firstName, profile?.lastName].filter(Boolean).join(' ') ??
-    t('common.loading')
-  );
-}
 
 export default function FriendsListScreen() {
   const { session } = useAuth();
@@ -145,7 +138,7 @@ export default function FriendsListScreen() {
   }, [searchResults, friendIdSet, pendingIdSet, debouncedSearch]);
 
   const sections = useMemo(() => {
-    const result: { title: string; data: { userId: string; profile: Profile }[] }[] = [];
+    const result: { title: string; data: FriendRow[] }[] = [];
     if (filteredPendingPeople.length > 0) {
       result.push({
         title: t('messages.pendingSection'),
@@ -155,10 +148,9 @@ export default function FriendsListScreen() {
     if (filteredFriendIds.length > 0) {
       result.push({
         title: t('messages.friendsSection'),
-        data: filteredFriendIds.map((id) => ({
-          userId: id,
-          profile: profileMap.get(id)!,
-        })),
+        // The profiles load after the ids, so a friend can be listed before their profile is
+        // known. That row shows as loading; asserting the profile was there crashed it.
+        data: friendRows(filteredFriendIds, profileMap),
       });
     }
     if (otherPeopleProfiles.length > 0) {
@@ -199,7 +191,7 @@ export default function FriendsListScreen() {
 
   const showLoading = isLoading || (showSearchResults && isSearching && sections.length === 0);
 
-  const renderPersonRow = ({ item }: { item: { userId: string; profile: Profile } }) => {
+  const renderPersonRow = ({ item }: { item: FriendRow }) => {
     const displayName = getDisplayName(item.profile);
     return (
       <Pressable
@@ -210,7 +202,7 @@ export default function FriendsListScreen() {
         accessibilityRole="button"
       >
         <Avatar
-          source={item.profile.avatarUrl ? { uri: item.profile.avatarUrl } : null}
+          source={item.profile?.avatarUrl ? { uri: item.profile.avatarUrl } : null}
           fallbackText={displayName}
           size="md"
         />
