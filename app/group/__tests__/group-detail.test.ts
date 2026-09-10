@@ -44,6 +44,13 @@ describe('GroupDetailScreen discussion contract', () => {
     );
   });
 
+  it('puts Add event at the right edge of the events header, after See all', () => {
+    const seeAll = groupDetailSource.indexOf("{t('groupEvents.seeAll')}</Text>");
+    const addEvent = groupDetailSource.indexOf("{t('groupEvents.addEvent')}</Text>");
+    expect(seeAll).toBeGreaterThan(-1);
+    expect(addEvent).toBeGreaterThan(seeAll);
+  });
+
   it('navigates latest announcement card to announcement detail', () => {
     expect(groupDetailSource).toMatch(/handleOpenLatestAnnouncementDetail/);
     expect(groupDetailSource).toMatch(/\/group\/announcement\/\$\{latestPublished\.id\}/);
