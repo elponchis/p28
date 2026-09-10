@@ -36,6 +36,40 @@ describe('GroupDetailScreen discussion contract', () => {
     expect(groupDetailSource).not.toMatch(/lib\/api\/adapters/);
   });
 
+  it('gives Events, Courses and Assignments the same header "+ Add" as Discussions, empty or not', () => {
+    // Gated on permission only — never on whether the list has items.
+    expect(groupDetailSource).toMatch(
+      /\{canModerateAsAdmin \? \(\s*<Pressable\s+onPress=\{handleOpenCreateEvent\}/
+    );
+    expect(groupDetailSource).toMatch(
+      /\{canAuthorCourses \? \(\s*<Pressable\s+onPress=\{handleAddCourse\}/
+    );
+    expect(groupDetailSource).toMatch(
+      /\{canModerateAsAdmin \? \(\s*<Pressable\s+onPress=\{handleAddAssignment\}/
+    );
+    expect(groupDetailSource).toMatch(
+      /\{isMember \? \(\s*<Pressable\s+onPress=\{handleCreateDiscussion\}/
+    );
+    // No second, differently styled add link inside the empty states.
+    expect(groupDetailSource).not.toMatch(/onAction=\{[^}]*handleOpenCreateEvent/);
+    expect(groupDetailSource).not.toMatch(/onAction=\{[^}]*handleAddCourse/);
+    expect(groupDetailSource).not.toMatch(/onAction=\{[^}]*handleAddAssignment/);
+  });
+
+  it('puts Add event at the right edge of the events header, after See all', () => {
+    const seeAll = groupDetailSource.indexOf("{t('groupEvents.seeAll')}</Text>");
+    const addEvent = groupDetailSource.indexOf("{t('groupEvents.addEvent')}</Text>");
+    expect(seeAll).toBeGreaterThan(-1);
+    expect(addEvent).toBeGreaterThan(seeAll);
+  });
+
+  it('shows Latest Updates above Events', () => {
+    const latest = groupDetailSource.indexOf("t('announcements.latestUpdatesSectionTitle')");
+    const events = groupDetailSource.indexOf("t('groupEvents.sectionTitle')");
+    expect(latest).toBeGreaterThan(-1);
+    expect(events).toBeGreaterThan(latest);
+  });
+
   it('navigates latest announcement card to announcement detail', () => {
     expect(groupDetailSource).toMatch(/handleOpenLatestAnnouncementDetail/);
     expect(groupDetailSource).toMatch(/\/group\/announcement\/\$\{latestPublished\.id\}/);

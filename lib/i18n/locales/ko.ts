@@ -501,6 +501,8 @@ export const ko: TranslationShape = {
     sectionTitle: '이벤트',
     newEvent: '새 이벤트',
     newEventHint: '이 그룹 구성원을 위한 일정을 만듭니다',
+    addEvent: '이벤트 추가',
+    addEventHint: '이 그룹에 새 이벤트를 만듭니다',
     createEvent: '이벤트 만들기',
     saveEvent: '변경 저장',
     editEvent: '이벤트 수정',

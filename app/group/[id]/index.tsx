@@ -52,7 +52,7 @@ import {
 import { getUserFacingError, isApiError } from '@/lib/api';
 import type { CreateGroupRecurringMeetingInput, GroupRecurringMeeting } from '@/lib/api';
 import { formatGroupEventDateTime, formatRelativeTime, isGroupEventPast } from '@/lib/dates';
-import { compareGroupEventsByStartThenCreated } from '@/lib/groupEventsSort';
+import { upcomingGroupEvents } from '@/lib/groupEventsSort';
 import { t } from '@/lib/i18n';
 import { formatRecurringMeetingSummary } from '@/lib/recurringMeetingSummary';
 import { confirm } from '@/lib/dialogs';
@@ -489,6 +489,7 @@ export default function GroupDetailScreen() {
   const typeLabel = group.type === 'forum' ? t('groups.forum') : t('groups.ministry');
   const languageName = getLanguageName(group.preferredLanguage);
   const memberCountLabel = `${members.length} ${members.length === 1 ? t('groups.member') : t('groups.members')}`;
+  const upcomingEvents = upcomingGroupEvents(groupEvents);
 
   return (
     <ScrollView
@@ -729,14 +730,58 @@ export default function GroupDetailScreen() {
           </View>
         ) : null}
 
+        {/* ── Announcements (Stitch “Latest Updates” layout) ── */}
+        <View style={styles.section}>
+          <View style={styles.latestUpdatesHeader}>
+            <Text style={styles.latestUpdatesTitle}>
+              {t('announcements.latestUpdatesSectionTitle')}
+            </Text>
+            {announcements.length > 0 ? (
+              <Pressable
+                onPress={handleSeeAllAnnouncements}
+                style={styles.addTopicButton}
+                accessibilityLabel={t('announcements.seeAll')}
+                accessibilityHint={t('announcements.seeAll')}
+              >
+                <Text style={styles.addTopicText}>{t('announcements.seeAll')}</Text>
+                <Ionicons name="chevron-forward" size={14} color={colors.secondary} />
+              </Pressable>
+            ) : null}
+          </View>
+          {latestPublished ? (
+            <View style={styles.latestUpdatesList}>
+              <LatestAnnouncementRow
+                title={latestPublished.title}
+                body={latestPublished.body}
+                createdAt={latestPublished.createdAt}
+                onPress={handleOpenLatestAnnouncementDetail}
+                meetingLink={latestPublished.meetingLink ?? undefined}
+                showMeetingLink={isMember && !!latestPublished.meetingLink?.trim()}
+              />
+            </View>
+          ) : null}
+          {!latestPublished ? (
+            <EmptyState
+              iconName="megaphone-outline"
+              title={t('announcements.noAnnouncements')}
+              subtitle={t('announcements.noAnnouncementsHint')}
+            />
+          ) : null}
+        </View>
+
         {/* ── Events (cards + RSVP CTA) ── */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{t('groupEvents.sectionTitle')}</Text>
+            {/* Same rule as Courses, Assignments and Discussions: whoever may add always gets
+                "+ Add" at the right edge of the header, empty or not. The title takes the free space
+                so See all (when there are events) sits just left of it. */}
+            <Text style={[styles.sectionTitle, styles.sectionTitleFill]}>
+              {t('groupEvents.sectionTitle')}
+            </Text>
             {groupEvents.length > 0 ? (
               <Pressable
                 onPress={handleSeeAllEvents}
-                style={styles.addTopicButton}
+                style={[styles.addTopicButton, canModerateAsAdmin && styles.sectionActionSpacer]}
                 accessibilityLabel={t('groupEvents.seeAll')}
                 accessibilityHint={t('groupEvents.seeAll')}
               >
@@ -744,14 +789,20 @@ export default function GroupDetailScreen() {
                 <Ionicons name="chevron-forward" size={14} color={colors.secondary} />
               </Pressable>
             ) : null}
+            {canModerateAsAdmin ? (
+              <Pressable
+                onPress={handleOpenCreateEvent}
+                style={styles.addTopicButton}
+                accessibilityLabel={t('groupEvents.addEvent')}
+                accessibilityHint={t('groupEvents.addEventHint')}
+              >
+                <Ionicons name="add-circle" size={16} color={colors.secondary} />
+                <Text style={styles.addTopicText}>{t('groupEvents.addEvent')}</Text>
+              </Pressable>
+            ) : null}
           </View>
           {(() => {
-            const now = Date.now();
-            const upcoming = groupEvents
-              .filter((e) => e.status === 'active' && new Date(e.startsAt).getTime() > now)
-              .sort(compareGroupEventsByStartThenCreated)
-              .slice(0, 3);
-            if (upcoming.length === 0) {
+            if (upcomingEvents.length === 0) {
               return (
                 <EmptyState
                   iconName="calendar-outline"
@@ -771,7 +822,7 @@ export default function GroupDetailScreen() {
                   contentContainerStyle={styles.recurringListHorizontal}
                   accessibilityLabel={t('groupEvents.sectionTitle')}
                 >
-                  {upcoming.map((ev) => {
+                  {upcomingEvents.map((ev) => {
                     const openEvent = () =>
                       router.push({
                         pathname: '/group/event/[id]',
@@ -849,7 +900,7 @@ export default function GroupDetailScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>{t('courses.sectionTitle')}</Text>
-              {canAuthorCourses && courses.length > 0 ? (
+              {canAuthorCourses ? (
                 <Pressable
                   onPress={handleAddCourse}
                   style={styles.addTopicButton}
@@ -866,10 +917,6 @@ export default function GroupDetailScreen() {
                 iconName="school-outline"
                 title={t('courses.noCourses')}
                 subtitle={t('courses.noCoursesHint')}
-                actionLabel={canAuthorCourses ? t('courses.addCourse') : undefined}
-                onAction={canModerateAsAdmin ? handleAddCourse : undefined}
-                actionVariant="link"
-                actionAccessibilityHint={t('courses.addCourseHint')}
               />
             ) : (
               <View style={styles.courseList}>
@@ -937,7 +984,7 @@ export default function GroupDetailScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>{t('assignments.sectionTitle')}</Text>
-              {canModerateAsAdmin && assignments.length > 0 ? (
+              {canModerateAsAdmin ? (
                 <Pressable
                   onPress={handleAddAssignment}
                   style={styles.addTopicButton}
@@ -954,10 +1001,6 @@ export default function GroupDetailScreen() {
                 iconName="document-text-outline"
                 title={t('assignments.noAssignments')}
                 subtitle={t('assignments.noAssignmentsHint')}
-                actionLabel={canModerateAsAdmin ? t('assignments.addAssignment') : undefined}
-                onAction={canModerateAsAdmin ? handleAddAssignment : undefined}
-                actionVariant="link"
-                actionAccessibilityHint={t('assignments.addAssignmentHint')}
               />
             ) : (
               <View style={styles.assignmentList}>
@@ -1001,45 +1044,6 @@ export default function GroupDetailScreen() {
             )}
           </View>
         ) : null}
-
-        {/* ── Announcements (Stitch “Latest Updates” layout) ── */}
-        <View style={styles.section}>
-          <View style={styles.latestUpdatesHeader}>
-            <Text style={styles.latestUpdatesTitle}>
-              {t('announcements.latestUpdatesSectionTitle')}
-            </Text>
-            {announcements.length > 0 ? (
-              <Pressable
-                onPress={handleSeeAllAnnouncements}
-                style={styles.addTopicButton}
-                accessibilityLabel={t('announcements.seeAll')}
-                accessibilityHint={t('announcements.seeAll')}
-              >
-                <Text style={styles.addTopicText}>{t('announcements.seeAll')}</Text>
-                <Ionicons name="chevron-forward" size={14} color={colors.secondary} />
-              </Pressable>
-            ) : null}
-          </View>
-          {latestPublished ? (
-            <View style={styles.latestUpdatesList}>
-              <LatestAnnouncementRow
-                title={latestPublished.title}
-                body={latestPublished.body}
-                createdAt={latestPublished.createdAt}
-                onPress={handleOpenLatestAnnouncementDetail}
-                meetingLink={latestPublished.meetingLink ?? undefined}
-                showMeetingLink={isMember && !!latestPublished.meetingLink?.trim()}
-              />
-            </View>
-          ) : null}
-          {!latestPublished ? (
-            <EmptyState
-              iconName="megaphone-outline"
-              title={t('announcements.noAnnouncements')}
-              subtitle={t('announcements.noAnnouncementsHint')}
-            />
-          ) : null}
-        </View>
 
         {/* ── Discussions section ── */}
         <View style={styles.section}>
@@ -1374,6 +1378,12 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
     justifyContent: 'space-between',
     marginBottom: spacing.md,
+  },
+  sectionTitleFill: {
+    flex: 1,
+  },
+  sectionActionSpacer: {
+    marginRight: spacing.lg,
   },
   sectionTitle: {
     fontFamily: fontFamily.serif,

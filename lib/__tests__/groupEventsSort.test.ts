@@ -2,6 +2,7 @@ import type { GroupEvent } from '@/lib/api';
 import {
   compareGroupEventsByStartThenCreated,
   sortGroupEventsForList,
+  upcomingGroupEvents,
 } from '@/lib/groupEventsSort';
 
 function ev(
@@ -90,5 +91,40 @@ describe('sortGroupEventsForList', () => {
     });
     const sorted = sortGroupEventsForList([olderPast, newerPast], nowMs);
     expect(sorted.map((e) => e.id)).toEqual(['n', 'o']);
+  });
+});
+
+describe('upcomingGroupEvents', () => {
+  const nowMs = new Date('2025-06-15T12:00:00.000Z').getTime();
+  const created = '2025-01-01T00:00:00.000Z';
+
+  it('leaves out events that already started and cancelled ones', () => {
+    const past = ev({ id: 'past', startsAt: '2025-06-01T10:00:00.000Z', createdAt: created });
+    const cancelled = ev({
+      id: 'cancelled',
+      startsAt: '2025-06-20T10:00:00.000Z',
+      createdAt: created,
+      status: 'cancelled',
+    });
+    const next = ev({ id: 'next', startsAt: '2025-06-20T10:00:00.000Z', createdAt: created });
+    expect(upcomingGroupEvents([past, cancelled, next], nowMs).map((e) => e.id)).toEqual(['next']);
+  });
+
+  it('returns nothing when only past events exist, so the section offers to add one', () => {
+    const past = ev({ id: 'past', startsAt: '2025-06-01T10:00:00.000Z', createdAt: created });
+    expect(upcomingGroupEvents([past], nowMs)).toEqual([]);
+  });
+
+  it('keeps the soonest three without reordering the input', () => {
+    const input = ['2025-06-25', '2025-06-17', '2025-06-30', '2025-06-16'].map((day) =>
+      ev({ id: day, startsAt: `${day}T10:00:00.000Z`, createdAt: created })
+    );
+    const before = input.map((e) => e.id);
+    expect(upcomingGroupEvents(input, nowMs).map((e) => e.id)).toEqual([
+      '2025-06-16',
+      '2025-06-17',
+      '2025-06-25',
+    ]);
+    expect(input.map((e) => e.id)).toEqual(before);
   });
 });
