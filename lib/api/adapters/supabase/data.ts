@@ -870,6 +870,7 @@ type AssignmentRow = {
   due_date: string | null;
   created_by_user_id: string;
   sort_order: number;
+  max_score?: number | null;
   created_at: string;
   updated_at: string;
   materials: unknown;
@@ -886,6 +887,9 @@ function mapAssignmentRow(row: AssignmentRow): Assignment {
     dueDate: row.due_date ?? undefined,
     createdByUserId: row.created_by_user_id,
     sortOrder: row.sort_order,
+    // Rows written before the column existed are out of 100, which is the default it was added
+    // with.
+    maxScore: row.max_score ?? 100,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     materials: mapUploadedFileRows(row.materials),
@@ -896,7 +900,7 @@ function mapAssignmentRow(row: AssignmentRow): Assignment {
 }
 
 const ASSIGNMENT_ROW_COLUMNS =
-  'id, group_id, title, description, due_date, created_by_user_id, sort_order, created_at, updated_at, materials, assignment_type, allow_resubmission';
+  'id, group_id, title, description, due_date, created_by_user_id, sort_order, max_score, created_at, updated_at, materials, assignment_type, allow_resubmission';
 
 type QuizQuestionRow = {
   id: string;
@@ -3147,6 +3151,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
             due_date: input.dueDate || null,
             created_by_user_id: userId,
             sort_order: input.sortOrder,
+            max_score: input.maxScore ?? 100,
             materials: input.materials ?? [],
             assignment_type: assignmentType,
             allow_resubmission: input.allowResubmission ?? true,
@@ -3191,6 +3196,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
           sort_order: input.sortOrder,
         };
         if (input.materials !== undefined) payload.materials = input.materials;
+        if (input.maxScore !== undefined) payload.max_score = input.maxScore;
         if (input.assignmentType !== undefined) payload.assignment_type = input.assignmentType;
         if (input.allowResubmission !== undefined)
           payload.allow_resubmission = input.allowResubmission;
