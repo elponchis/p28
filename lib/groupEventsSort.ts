@@ -9,6 +9,21 @@ export function compareGroupEventsByStartThenCreated(a: GroupEvent, b: GroupEven
 }
 
 /**
+ * The next few active events that have not started yet, soonest first — the preview on the group
+ * page. Admins get an "Add event" link in the section when this is empty, so it decides both.
+ */
+export function upcomingGroupEvents(
+  events: GroupEvent[],
+  nowMs: number = Date.now(),
+  limit = 3
+): GroupEvent[] {
+  return events
+    .filter((e) => e.status === 'active' && new Date(e.startsAt).getTime() > nowMs)
+    .sort(compareGroupEventsByStartThenCreated)
+    .slice(0, limit);
+}
+
+/**
  * Active upcoming events first (same order as group detail preview). Past and
  * cancelled events follow, ordered by most recent start time, then newest created.
  */

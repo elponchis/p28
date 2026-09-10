@@ -506,6 +506,8 @@ export const km: TranslationShape = {
     sectionTitle: 'ព្រឹត្តិការណ៍',
     newEvent: 'ព្រឹត្តិការណ៍ថ្មី',
     newEventHint: 'កំណត់ពេលវេលាសម្រាប់សមាជិកក្រុមនេះ',
+    addEvent: 'បន្ថែមព្រឹត្តិការណ៍',
+    addEventHint: 'បង្កើតព្រឹត្តិការណ៍ថ្មីសម្រាប់ក្រុមនេះ',
     createEvent: 'បង្កើតព្រឹត្តិការណ៍',
     saveEvent: 'រក្សាទុកការផ្លាស់ប្តូរ',
     editEvent: 'កែសម្រួលព្រឹត្តិការណ៍',

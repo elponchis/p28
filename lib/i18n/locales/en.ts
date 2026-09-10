@@ -507,6 +507,8 @@ export const en = {
     sectionTitle: 'Events',
     newEvent: 'New event',
     newEventHint: 'Schedule an event for members of this group',
+    addEvent: 'Add event',
+    addEventHint: 'Create a new event for this group',
     createEvent: 'Create event',
     saveEvent: 'Save changes',
     editEvent: 'Edit event',
