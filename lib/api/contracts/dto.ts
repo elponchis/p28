@@ -410,6 +410,8 @@ export interface Assignment {
   dueDate?: string;
   createdByUserId: string;
   sortOrder: number;
+  /** What the assignment is out of. A submission's score must be between 0 and this. */
+  maxScore: number;
   createdAt: string;
   updatedAt: string;
   /** Reference material an instructor attached to the assignment (public bucket). */
@@ -424,6 +426,8 @@ export interface CreateAssignmentInput {
   description?: string;
   dueDate?: string;
   sortOrder: number;
+  /** Defaults to 100 when omitted. */
+  maxScore?: number;
   materials?: UploadedFile[];
   /** Defaults to `'file'` when omitted. */
   assignmentType?: AssignmentType;
@@ -438,6 +442,7 @@ export interface UpdateAssignmentInput {
   description?: string;
   dueDate?: string;
   sortOrder: number;
+  maxScore?: number;
   materials?: UploadedFile[];
   assignmentType?: AssignmentType;
   allowResubmission?: boolean;
