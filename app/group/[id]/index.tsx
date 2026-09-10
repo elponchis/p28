@@ -772,18 +772,16 @@ export default function GroupDetailScreen() {
         {/* ── Events (cards + RSVP CTA) ── */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            {/* The title takes the free space so both actions sit right, each baseline-aligned in the
-                header like Courses, Assignments and Discussions — Add last, at the right edge. */}
+            {/* Same rule as Courses, Assignments and Discussions: whoever may add always gets
+                "+ Add" at the right edge of the header, empty or not. The title takes the free space
+                so See all (when there are events) sits just left of it. */}
             <Text style={[styles.sectionTitle, styles.sectionTitleFill]}>
               {t('groupEvents.sectionTitle')}
             </Text>
             {groupEvents.length > 0 ? (
               <Pressable
                 onPress={handleSeeAllEvents}
-                style={[
-                  styles.addTopicButton,
-                  canModerateAsAdmin && upcomingEvents.length > 0 && styles.sectionActionSpacer,
-                ]}
+                style={[styles.addTopicButton, canModerateAsAdmin && styles.sectionActionSpacer]}
                 accessibilityLabel={t('groupEvents.seeAll')}
                 accessibilityHint={t('groupEvents.seeAll')}
               >
@@ -791,7 +789,7 @@ export default function GroupDetailScreen() {
                 <Ionicons name="chevron-forward" size={14} color={colors.secondary} />
               </Pressable>
             ) : null}
-            {canModerateAsAdmin && upcomingEvents.length > 0 ? (
+            {canModerateAsAdmin ? (
               <Pressable
                 onPress={handleOpenCreateEvent}
                 style={styles.addTopicButton}
@@ -810,10 +808,6 @@ export default function GroupDetailScreen() {
                   iconName="calendar-outline"
                   title={t('groupEvents.noEvents')}
                   subtitle={t('groupEvents.noEventsHint')}
-                  actionLabel={canModerateAsAdmin ? t('groupEvents.addEvent') : undefined}
-                  onAction={canModerateAsAdmin ? handleOpenCreateEvent : undefined}
-                  actionVariant="link"
-                  actionAccessibilityHint={t('groupEvents.addEventHint')}
                 />
               );
             }
@@ -906,7 +900,7 @@ export default function GroupDetailScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>{t('courses.sectionTitle')}</Text>
-              {canAuthorCourses && courses.length > 0 ? (
+              {canAuthorCourses ? (
                 <Pressable
                   onPress={handleAddCourse}
                   style={styles.addTopicButton}
@@ -923,10 +917,6 @@ export default function GroupDetailScreen() {
                 iconName="school-outline"
                 title={t('courses.noCourses')}
                 subtitle={t('courses.noCoursesHint')}
-                actionLabel={canAuthorCourses ? t('courses.addCourse') : undefined}
-                onAction={canModerateAsAdmin ? handleAddCourse : undefined}
-                actionVariant="link"
-                actionAccessibilityHint={t('courses.addCourseHint')}
               />
             ) : (
               <View style={styles.courseList}>
@@ -994,7 +984,7 @@ export default function GroupDetailScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>{t('assignments.sectionTitle')}</Text>
-              {canModerateAsAdmin && assignments.length > 0 ? (
+              {canModerateAsAdmin ? (
                 <Pressable
                   onPress={handleAddAssignment}
                   style={styles.addTopicButton}
@@ -1011,10 +1001,6 @@ export default function GroupDetailScreen() {
                 iconName="document-text-outline"
                 title={t('assignments.noAssignments')}
                 subtitle={t('assignments.noAssignmentsHint')}
-                actionLabel={canModerateAsAdmin ? t('assignments.addAssignment') : undefined}
-                onAction={canModerateAsAdmin ? handleAddAssignment : undefined}
-                actionVariant="link"
-                actionAccessibilityHint={t('assignments.addAssignmentHint')}
               />
             ) : (
               <View style={styles.assignmentList}>
