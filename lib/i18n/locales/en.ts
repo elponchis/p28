@@ -8,6 +8,7 @@ export const en = {
     manage: 'Manage',
     manageHint: 'Opens the screen for assigning courses to groups and terms',
     audience: 'Who may watch',
+    audienceHint: 'Pick every group this course is taught in. None selected means everyone.',
     track: 'What this is',
     trackGeneral: 'General',
     trackHint: 'A training school course can still be open to everyone.',

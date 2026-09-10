@@ -9,6 +9,7 @@ export const ko: TranslationShape = {
     manage: '관리',
     manageHint: '코스를 그룹과 기간에 배정하는 화면을 엽니다',
     audience: '볼 수 있는 사람',
+    audienceHint: '이 코스를 가르치는 그룹을 모두 고르세요. 아무것도 안 고르면 전체 공개입니다.',
     track: '구분',
     trackGeneral: '일반',
     trackHint: '훈련학교 과정이라도 모두에게 공개할 수 있습니다.',
