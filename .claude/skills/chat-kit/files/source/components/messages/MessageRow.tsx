@@ -347,9 +347,18 @@ export function MessageRow({
                 {isOwnMessage ? null : hoverActions}
               </View>
               {hasReactions ? (
-                // Own messages keep their unread count and time on the bubble's left, so badges
-                // hung from the left edge land on the time. They hang from the bubble's side instead.
-                <View style={[styles.reactionBadges, isOwnMessage && styles.reactionBadgesOwn]}>
+                // Badges hang from the bubble's own side (right for your messages, where the unread
+                // count and time are not). And when a time or unread count sits beside the bubble they
+                // sit just below instead of tucking up under it: a row wider than a short bubble runs
+                // past its edge, and tucked up it lands on that time.
+                <View
+                  style={[
+                    styles.reactionBadges,
+                    isOwnMessage && styles.reactionBadgesOwn,
+                    (showSentClockTime || (isOwnMessage && unreadCount > 0)) &&
+                      styles.reactionBadgesBelowMeta,
+                  ]}
+                >
                   {visibleReactions.map((type) => {
                     const count = reactionCount(type);
                     const isMine = isUserReaction(type);
@@ -690,6 +699,9 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     paddingLeft: 0,
     paddingRight: spacing.xs,
+  },
+  reactionBadgesBelowMeta: {
+    marginTop: spacing.xxs,
   },
   reactionBadge: {
     flexDirection: 'row',
