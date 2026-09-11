@@ -347,7 +347,9 @@ export function MessageRow({
                 {isOwnMessage ? null : hoverActions}
               </View>
               {hasReactions ? (
-                <View style={styles.reactionBadges}>
+                // Own messages keep their unread count and time on the bubble's left, so badges
+                // hung from the left edge land on the time. They hang from the bubble's side instead.
+                <View style={[styles.reactionBadges, isOwnMessage && styles.reactionBadgesOwn]}>
                   {visibleReactions.map((type) => {
                     const count = reactionCount(type);
                     const isMine = isUserReaction(type);
@@ -381,7 +383,16 @@ export function MessageRow({
                         >
                           {REACTION_EMOJI[type]}
                         </Text>
-                        {count > 1 ? <Text style={styles.reactionCount}>{count}</Text> : null}
+                        {count > 1 ? (
+                          <Text
+                            style={[
+                              styles.reactionCount,
+                              isOwnMessage && styles.reactionCountOwnBubble,
+                            ]}
+                          >
+                            {count}
+                          </Text>
+                        ) : null}
                       </Pressable>
                     );
                   })}
@@ -408,6 +419,7 @@ export function MessageRow({
                       <Text
                         style={[
                           styles.reactionCount,
+                          isOwnMessage && styles.reactionCountOwnBubble,
                           { fontSize: Math.round(reactionMetrics.emojiSize * 0.7) },
                         ]}
                       >
@@ -673,6 +685,12 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingLeft: spacing.xs,
   },
+  reactionBadgesOwn: {
+    alignSelf: 'flex-end',
+    justifyContent: 'flex-end',
+    paddingLeft: 0,
+    paddingRight: spacing.xs,
+  },
   reactionBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -699,5 +717,9 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.sans,
     fontSize: 12,
     color: colors.onSurfaceVariant,
+  },
+  /** On the dark own-bubble badge the default grey all but vanished — the "···" read as an empty pill. */
+  reactionCountOwnBubble: {
+    color: colors.onPrimaryContainer,
   },
 });
