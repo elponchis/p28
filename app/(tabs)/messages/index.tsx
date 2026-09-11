@@ -135,6 +135,9 @@ function ChatRow({
       accessibilityHint={t('messages.lastMessage')}
       accessibilityRole="button"
     >
+      {unread ? (
+        <View style={styles.unreadDot} accessibilityElementsHidden importantForAccessibility="no" />
+      ) : null}
       {isGroupChat && !chat.imageUrl ? (
         <StackedAvatars
           members={chat.members ?? []}
@@ -536,6 +539,17 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     borderRadius: radius.lg,
     marginHorizontal: spacing.xs,
+  },
+  /** Sits in the row's left padding, so read and unread rows keep the same layout. */
+  unreadDot: {
+    position: 'absolute',
+    left: spacing.xs,
+    top: '50%',
+    marginTop: -spacing.xxs,
+    width: spacing.xs,
+    height: spacing.xs,
+    borderRadius: radius.chip,
+    backgroundColor: colors.secondary,
   },
   chatRowUnread: {
     backgroundColor: colors.surfaceContainerLowest,

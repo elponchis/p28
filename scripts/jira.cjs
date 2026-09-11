@@ -174,11 +174,30 @@ const say = (line) => out.push(line);
     const dir = b || '.';
     fs.mkdirSync(dir, { recursive: true });
     const i = await jira('GET', `/rest/api/3/issue/${a}?fields=attachment`);
+    // A blocked or failed download must not look like a screenshot. Behind an egress proxy the
+    // media host answered with a text error ("Host not in allowlist: …"), and saving that body as
+    // .png printed a path as if it had worked — so a reader "opened" a 110-byte file of prose.
+    // Check the status and that the bytes are the attachment Jira describes; save nothing otherwise.
+    const failures = [];
     for (const att of i.fields.attachment || []) {
       const res = await fetch(att.content, { headers: { Authorization: AUTH } });
+      const bytes = Buffer.from(await res.arrayBuffer());
+      const type = (res.headers.get('content-type') || '').split(';')[0].trim();
+      let problem = null;
+      if (!res.ok) problem = `HTTP ${res.status}: ${bytes.toString('utf8', 0, 200).trim()}`;
+      else if (typeof att.size === 'number' && bytes.length !== att.size) {
+        problem = `got ${bytes.length} bytes, Jira says ${att.size}${type ? ` (${type})` : ''}: ${bytes.toString('utf8', 0, 120).trim()}`;
+      }
+      if (problem) {
+        failures.push(`${att.filename} — ${problem}`);
+        continue;
+      }
       const file = path.join(dir, `${a}-${att.id}-${att.filename}`);
-      fs.writeFileSync(file, Buffer.from(await res.arrayBuffer()));
+      fs.writeFileSync(file, bytes);
       say(file);
+    }
+    if (failures.length > 0) {
+      throw new Error(`${failures.length} attachment(s) not downloaded:\n${failures.join('\n')}`);
     }
     if (out.length === 0) say('no attachments');
   } else if (action === 'transitions') {
