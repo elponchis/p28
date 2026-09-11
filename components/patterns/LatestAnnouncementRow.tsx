@@ -2,6 +2,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
+import { TagChip } from '@/components/patterns/TagChip';
 import { formatGroupEventCalendarBlock } from '@/lib/dates';
 import { t } from '@/lib/i18n';
 import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
@@ -18,6 +19,8 @@ export interface LatestAnnouncementRowProps {
   meetingLink?: string;
   /** When true and `meetingLink` is set, shows join meeting as a footer on the same row/card. */
   showMeetingLink?: boolean;
+  /** Group or channel the item belongs to, shown as a small chip at the right of the row. */
+  tagLabel?: string;
 }
 
 export function LatestAnnouncementRow({
@@ -30,6 +33,7 @@ export function LatestAnnouncementRow({
   statusBadgeLabel,
   meetingLink,
   showMeetingLink = false,
+  tagLabel,
 }: LatestAnnouncementRowProps) {
   const { month, day } = formatGroupEventCalendarBlock(createdAt);
   const link = meetingLink?.trim();
@@ -71,6 +75,7 @@ export function LatestAnnouncementRow({
             {body}
           </Text>
         </View>
+        {tagLabel ? <TagChip label={tagLabel} /> : null}
         <Ionicons
           name="chevron-forward"
           size={22}

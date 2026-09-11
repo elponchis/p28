@@ -49,3 +49,5 @@ export { UploadProgressBar } from './UploadProgressBar';
 export type { UploadProgressBarProps } from './UploadProgressBar';
 export { AssignmentMaterialsField } from './AssignmentMaterialsField';
 export type { AssignmentMaterialsFieldProps } from './AssignmentMaterialsField';
+export { TagChip } from './TagChip';
+export type { TagChipProps } from './TagChip';
