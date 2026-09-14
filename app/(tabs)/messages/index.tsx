@@ -28,11 +28,12 @@ import { t } from '@/lib/i18n';
 import {
   colors,
   fontFamily,
+  listAccents,
   radius,
   shadow,
   spacing,
-  typography,
   tabScreenContent,
+  typography,
 } from '@/theme/tokens';
 
 const CHAT_AVATAR_SIZE = 56;
@@ -545,11 +546,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: spacing.xs,
     top: '50%',
-    marginTop: -spacing.xxs,
-    width: spacing.xs,
-    height: spacing.xs,
+    marginTop: -listAccents.unreadDot.size / 2,
+    width: listAccents.unreadDot.size,
+    height: listAccents.unreadDot.size,
     borderRadius: radius.chip,
-    backgroundColor: colors.secondary,
+    backgroundColor: colors.unreadIndicator,
   },
   chatRowUnread: {
     backgroundColor: colors.surfaceContainerLowest,

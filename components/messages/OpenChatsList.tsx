@@ -26,7 +26,7 @@ import { useChatsForUserQuery } from '@/hooks/useApiQueries';
 import { useAuth } from '@/hooks/useAuth';
 import { t } from '@/lib/i18n';
 import { orderByActivity } from '@/lib/openChats';
-import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, listAccents, radius, spacing, typography } from '@/theme/tokens';
 
 export function OpenChatsList() {
   const { openChats, closeChat, collapsed, toggleCollapsed } = useOpenChats();
@@ -193,11 +193,10 @@ const styles = StyleSheet.create({
   /** Right-aligned and quiet, so the numbers line up in a column next to the names. */
   openChatCount: {
     ...typography.caption,
-    fontSize: 11,
-    minWidth: spacing.md + spacing.xxs,
+    fontSize: listAccents.count.fontSize,
+    minWidth: listAccents.count.minWidth,
     textAlign: 'right',
-    color: colors.onSurfaceVariant,
-    opacity: 0.6,
+    color: colors.textMuted,
     fontVariant: ['tabular-nums'],
   },
   openChatClose: {
