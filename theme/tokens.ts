@@ -5,7 +5,11 @@
  * Aesthetic: High-end editorial — warm, spacious, deeply personal.
  * Palette: "Spirit and Earth" — deep authoritative blues + warm illuminating golds.
  * Typography: Noto Serif (headlines) + Plus Jakarta Sans (body).
- * Depth: Tonal layering, NO 1px borders, ambient shadows only.
+ * Depth: Tonal layering with light hairline borders; shadows kept faint.
+ *
+ * List styling (2026-09): one quieter secondary grey for meta text, a lighter muted grey for
+ * timestamps and counts, visible light borders, tighter card corners and list padding. Navy,
+ * amber and the lavender-grey surfaces are unchanged; so are the fonts.
  */
 
 // ---------------------------------------------------------------------------
@@ -54,11 +58,27 @@ export const colors = {
 
   // Text / on-surface
   onSurface: '#151c27',
-  onSurfaceVariant: '#44474e',
-  outlineVariant: '#c4c6cf',
+  /** Secondary text. At least 5.3:1 on every surface, including surfaceContainerHighest. */
+  onSurfaceVariant: '#555a6b',
+  /**
+   * Meta text — timestamps, counts, previews. At least 4.5:1 on white, background,
+   * surfaceContainerLow/Container/High; not for text on surfaceContainerHighest.
+   */
+  textMuted: '#62677a',
+  /** Light hairline border for chips, dividers and outlined surfaces. */
+  outlineVariant: '#dfe3ec',
 
-  // Ghost border (accessibility fallback ONLY — 15% opacity)
-  ghostBorder: 'rgba(196, 198, 207, 0.15)',
+  /** Hairline for separators on tinted surfaces (sidebar rails, list dividers). */
+  ghostBorder: 'rgba(0, 32, 70, 0.08)',
+
+  // List accents
+  /** Unread marker at the left of a list row. */
+  unreadIndicator: '#775a19',
+  /** Outlined tag chip naming where an item belongs. */
+  chipBackground: '#ffffff',
+  chipBorder: '#dfe3ec',
+  chipText: '#62677a',
+  chipAccent: '#775a19',
 
   // Glassmorphism
   glass: {
@@ -84,10 +104,10 @@ export const colors = {
   // Backward-compat aliases (map old names → new values during migration)
   // ---------------------------------------------------------------------------
   textPrimary: '#151c27',
-  textSecondary: '#44474e',
-  ink700: '#44474e',
-  ink300: '#c4c6cf',
-  ink500: '#6b6f7a',
+  textSecondary: '#555a6b',
+  ink700: '#555a6b',
+  ink300: '#dfe3ec',
+  ink500: '#62677a',
   brandSoft: '#d6e3ff',
   surfaceHighlight: '#f0f3ff',
   surface100: '#e7eefe',
@@ -106,7 +126,7 @@ export const colors = {
   greenSoft: '#e2e8f8',
   amberSoft: '#fed488',
   shadow: '#151c27',
-  borderSubtle: 'rgba(196, 198, 207, 0.15)',
+  borderSubtle: 'rgba(0, 32, 70, 0.08)',
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -122,7 +142,7 @@ export const spacing = {
   xl: 32,
   xxl: 40,
   screenHorizontal: 20,
-  cardPadding: 20,
+  cardPadding: 16,
   cardPaddingTop: 16,
   cardPaddingBottom: 24,
   cardGap: 16,
@@ -138,11 +158,11 @@ export const radius = {
   sm: 4,
   md: 8,
   button: 9999, // pill shape — "Soft-Touch CTA"
-  card: 24, // xl = 1.5rem
+  card: 16, // tighter corners for the list-style surfaces
   /** Stitch “Sacred Gatherings” cards — 2rem corners */
   sacredGatheringCard: 32,
   chip: 9999, // pill
-  lg: 16,
+  lg: 12,
   xl: 24,
   input: 12, // md = 0.75rem
 } as const;
@@ -310,7 +330,7 @@ export const shadow = {
   },
   // Backward-compat aliases
   cardSoft: {
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.02,
     shadowRadius: 24,
     shadowOffset: { width: 0 as const, height: 4 },
   },
@@ -320,7 +340,7 @@ export const shadow = {
     shadowOffset: { width: 0 as const, height: 8 },
   },
   card: {
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.02,
     shadowRadius: 24,
     shadowOffset: { width: 0 as const, height: 4 },
   },
@@ -331,6 +351,27 @@ export const shadow = {
 // ---------------------------------------------------------------------------
 
 export const avatarSizes = { sm: 28, md: 36, lg: 48, xl: 72, xxl: 100 } as const;
+
+// ---------------------------------------------------------------------------
+// List accents — shapes shared by the tag chip, unread dot and sidebar counts
+// ---------------------------------------------------------------------------
+
+export const listAccents = {
+  chip: {
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.xxs,
+    borderWidth: 1,
+    borderRadius: radius.chip,
+    fontSize: 12,
+  },
+  unreadDot: {
+    size: spacing.xs,
+  },
+  count: {
+    fontSize: 11,
+    minWidth: spacing.md + spacing.xxs,
+  },
+} as const;
 
 // ---------------------------------------------------------------------------
 // Auth / form screens
@@ -385,6 +426,7 @@ export const tokens = {
   fontFamily,
   minTouchTarget,
   avatarSizes,
+  listAccents,
   breakpoints,
   tabScreenContent,
 } as const;

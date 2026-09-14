@@ -26,7 +26,7 @@ import { useChatsForUserQuery } from '@/hooks/useApiQueries';
 import { useAuth } from '@/hooks/useAuth';
 import { t } from '@/lib/i18n';
 import { orderByActivity } from '@/lib/openChats';
-import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, listAccents, radius, spacing, typography } from '@/theme/tokens';
 
 export function OpenChatsList() {
   const { openChats, closeChat, collapsed, toggleCollapsed } = useOpenChats();
@@ -75,9 +75,7 @@ export function OpenChatsList() {
           {t('messages.openChats', { count: rows.length })}
         </Text>
         {hiddenUnread > 0 ? (
-          <View style={styles.openChatBadge}>
-            <Text style={styles.openChatBadgeText}>{hiddenUnread > 99 ? '99+' : hiddenUnread}</Text>
-          </View>
+          <Text style={styles.openChatCount}>{hiddenUnread > 99 ? '99+' : hiddenUnread}</Text>
         ) : null}
       </Pressable>
       {collapsed
@@ -116,9 +114,7 @@ export function OpenChatsList() {
                   </Text>
                 </Pressable>
                 {unread > 0 ? (
-                  <View style={styles.openChatBadge}>
-                    <Text style={styles.openChatBadgeText}>{unread > 99 ? '99+' : unread}</Text>
-                  </View>
+                  <Text style={styles.openChatCount}>{unread > 99 ? '99+' : unread}</Text>
                 ) : null}
                 <Pressable
                   onPress={() => {
@@ -194,21 +190,14 @@ const styles = StyleSheet.create({
     color: colors.onSurface,
     fontFamily: fontFamily.sansSemiBold,
   },
-  openChatBadge: {
-    minWidth: 16,
-    height: 16,
-    paddingHorizontal: 4,
-    borderRadius: 8,
-    backgroundColor: colors.error,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  openChatBadgeText: {
+  /** Right-aligned and quiet, so the numbers line up in a column next to the names. */
+  openChatCount: {
     ...typography.caption,
-    fontSize: 10,
-    lineHeight: 16,
-    fontFamily: fontFamily.sansSemiBold,
-    color: '#fff',
+    fontSize: listAccents.count.fontSize,
+    minWidth: listAccents.count.minWidth,
+    textAlign: 'right',
+    color: colors.textMuted,
+    fontVariant: ['tabular-nums'],
   },
   openChatClose: {
     padding: 6,

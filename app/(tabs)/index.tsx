@@ -273,10 +273,8 @@ export default function HomeScreen() {
               <View style={[styles.sectionPadded, styles.latestUpdatesList]}>
                 {latestAnnouncements.map((item) => (
                   <View key={item.id} style={styles.latestUpdateBlock}>
-                    <Text style={styles.latestUpdateGroupLabel} numberOfLines={1}>
-                      {item.groupName}
-                    </Text>
                     <LatestAnnouncementRow
+                      tagLabel={item.groupName}
                       title={item.title}
                       body={item.body}
                       createdAt={item.createdAt}
@@ -486,11 +484,6 @@ const styles = StyleSheet.create({
   },
   latestUpdateBlock: {
     gap: spacing.xxs,
-  },
-  latestUpdateGroupLabel: {
-    ...typography.labelSm,
-    color: colors.onSurfaceVariant,
-    paddingHorizontal: spacing.xxs,
   },
 
   emptyUpcomingTitle: {
