@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, fontFamily, radius, spacing } from '@/theme/tokens';
+import { colors, fontFamily, listAccents, spacing } from '@/theme/tokens';
 
 export interface TagChipProps {
   /** Where the item comes from — a group or channel name. */
@@ -31,22 +31,22 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     maxWidth: 180,
     gap: spacing.xxs,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: spacing.xxs,
-    borderRadius: radius.chip,
-    borderWidth: 1,
-    borderColor: colors.outlineVariant,
-    backgroundColor: colors.surfaceContainerLowest,
+    paddingHorizontal: listAccents.chip.paddingHorizontal,
+    paddingVertical: listAccents.chip.paddingVertical,
+    borderRadius: listAccents.chip.borderRadius,
+    borderWidth: listAccents.chip.borderWidth,
+    borderColor: colors.chipBorder,
+    backgroundColor: colors.chipBackground,
   },
   label: {
     flexShrink: 1,
     fontFamily: fontFamily.sans,
-    fontSize: 12,
-    color: colors.onSurfaceVariant,
+    fontSize: listAccents.chip.fontSize,
+    color: colors.chipText,
   },
   hash: {
     fontFamily: fontFamily.sansSemiBold,
-    fontSize: 12,
-    color: colors.secondary,
+    fontSize: listAccents.chip.fontSize,
+    color: colors.chipAccent,
   },
 });

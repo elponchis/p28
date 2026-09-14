@@ -15,7 +15,7 @@ describe('unread dot on the messages list', () => {
   it('draws a dot only for unread chats, without moving the row', () => {
     expect(source).toMatch(/\{unread \? \(\s*<View\s+style=\{styles\.unreadDot\}/);
     expect(source).toMatch(/unreadDot: \{\s*position: 'absolute'/);
-    expect(source).toMatch(/unreadDot: \{[^}]*backgroundColor: colors\.secondary/);
+    expect(source).toMatch(/unreadDot: \{[^}]*backgroundColor: colors\.unreadIndicator/);
   });
 
   it('keeps the existing unread count badge', () => {
