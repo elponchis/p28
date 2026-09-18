@@ -650,6 +650,7 @@ export const ko: TranslationShape = {
     voiceRecorderRecording: '녹음 중…',
     voiceRecorderSend: '음성 메시지 보내기',
     voiceRecorderSendHint: '녹음을 멈추고 음성 메시지를 첨부합니다',
+    recordVoiceHint: '탭하면 바로 녹음을 시작합니다',
   },
   message: {
     reply: '댓글',

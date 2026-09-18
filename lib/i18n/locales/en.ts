@@ -658,6 +658,7 @@ export const en = {
     voiceRecorderRecording: 'Recording…',
     voiceRecorderSend: 'Send voice message',
     voiceRecorderSendHint: 'Stops recording and attaches the voice message',
+    recordVoiceHint: 'Starts recording right away',
   },
   message: {
     reply: 'reply',

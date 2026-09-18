@@ -656,6 +656,7 @@ export const km: TranslationShape = {
     voiceRecorderRecording: 'កំពុងថត…',
     voiceRecorderSend: 'ផ្ញើសារជាសំឡេង',
     voiceRecorderSendHint: 'បញ្ឈប់ការថត ហើយភ្ជាប់សារជាសំឡេង',
+    recordVoiceHint: 'ចាប់ផ្តើមថតភ្លាមៗ',
   },
   message: {
     reply: 'ចម្លើយ',
