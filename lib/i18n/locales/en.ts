@@ -1156,6 +1156,16 @@ export const en = {
     referenceRequired: 'Enter the reference',
     passageRequired: 'Enter the passage text',
     notAllowed: 'Only group leaders can set the devotion.',
+    edit: 'Edit',
+    delete: 'Delete',
+    cancel: 'Cancel',
+    saveEdit: 'Save',
+    edited: '(edited)',
+    deleteShareConfirm: 'Delete this share? Its replies will be deleted too.',
+    editDevotion: 'Edit passage',
+    deleteDevotion: 'Delete devotion',
+    deleteDevotionConfirm: 'Delete today’s devotion? Everything shared on it will be deleted too.',
+    questionSectionHint: 'Shows the shares for this question',
   },
 } as const;
 

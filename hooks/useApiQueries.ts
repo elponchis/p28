@@ -2711,3 +2711,41 @@ export function useSetDevotionShareHeartMutation() {
     },
   });
 }
+
+export function useUpdateDevotionShareMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ shareId, userId, body }: { shareId: string; userId: string; body: string }) =>
+      queryFn(api.data.updateDevotionShare(shareId, userId, body)),
+    onSuccess: (row) => {
+      qc.invalidateQueries({ queryKey: ['devotionShares', row.devotionId] });
+    },
+  });
+}
+
+export function useDeleteDevotionShareMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ shareId, userId }: { devotionId: string; shareId: string; userId: string }) =>
+      queryFn(api.data.deleteDevotionShare(shareId, userId)),
+    onSuccess: (_data, { devotionId }) => {
+      qc.invalidateQueries({ queryKey: ['devotionShares', devotionId] });
+    },
+  });
+}
+
+export function useDeleteGroupDevotionMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ devotionId }: { devotionId: string; groupId: string }) =>
+      queryFn(api.data.deleteGroupDevotion(devotionId)),
+    onSuccess: (_data, { groupId }) => {
+      qc.invalidateQueries({
+        predicate: (q) =>
+          Array.isArray(q.queryKey) &&
+          q.queryKey[0] === 'currentGroupDevotion' &&
+          q.queryKey[1] === groupId,
+      });
+    },
+  });
+}

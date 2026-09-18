@@ -578,11 +578,34 @@ type DevotionShareRow = {
   question: DevotionQuestion | null;
   body: string;
   created_at: string;
+  edited_at: string | null;
   devotion_share_hearts?: { user_id: string }[];
 };
 
+function mapDevotionShareRow(
+  r: DevotionShareRow,
+  viewerUserId: string,
+  author?: { displayName?: string; avatarUrl?: string }
+): DevotionShare {
+  const hearts = r.devotion_share_hearts ?? [];
+  return {
+    id: r.id,
+    devotionId: r.devotion_id,
+    userId: r.user_id,
+    parentShareId: r.parent_share_id,
+    question: r.question,
+    body: r.body,
+    createdAt: r.created_at,
+    editedAt: r.edited_at ?? undefined,
+    authorDisplayName: author?.displayName,
+    authorAvatarUrl: author?.avatarUrl,
+    heartCount: hearts.length,
+    heartedByMe: hearts.some((h) => h.user_id === viewerUserId),
+  };
+}
+
 const DEVOTION_SHARE_COLUMNS =
-  'id, devotion_id, user_id, parent_share_id, question, body, created_at, devotion_share_hearts(user_id)';
+  'id, devotion_id, user_id, parent_share_id, question, body, created_at, edited_at, devotion_share_hearts(user_id)';
 
 const DEVOTION_QUESTIONS: readonly DevotionQuestion[] = [
   'who_is_god',
@@ -6238,23 +6261,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
           getClient,
           rows.map((r) => r.user_id)
         );
-        return rows.map((r) => {
-          const hearts = r.devotion_share_hearts ?? [];
-          const author = profiles.get(r.user_id);
-          return {
-            id: r.id,
-            devotionId: r.devotion_id,
-            userId: r.user_id,
-            parentShareId: r.parent_share_id,
-            question: r.question,
-            body: r.body,
-            createdAt: r.created_at,
-            authorDisplayName: author?.displayName,
-            authorAvatarUrl: author?.avatarUrl,
-            heartCount: hearts.length,
-            heartedByMe: hearts.some((h) => h.user_id === viewerUserId),
-          };
-        });
+        return rows.map((r) => mapDevotionShareRow(r, viewerUserId, profiles.get(r.user_id)));
       } catch (e) {
         return toApiError(e);
       }
@@ -6295,18 +6302,67 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
           .select(DEVOTION_SHARE_COLUMNS)
           .single();
         if (error) return toApiError(error);
-        const r = data as DevotionShareRow;
-        return {
-          id: r.id,
-          devotionId: r.devotion_id,
-          userId: r.user_id,
-          parentShareId: r.parent_share_id,
-          question: r.question,
-          body: r.body,
-          createdAt: r.created_at,
-          heartCount: 0,
-          heartedByMe: false,
-        };
+        return mapDevotionShareRow(data as DevotionShareRow, userId);
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async updateDevotionShare(
+      shareId: string,
+      userId: string,
+      body: string
+    ): Promise<DevotionShare | ApiError> {
+      try {
+        const text = body.trim();
+        if (!text || text.length > 2000) {
+          return {
+            message: 'Write at least one line (up to 2000 characters)',
+            code: 'VALIDATION_ERROR',
+          };
+        }
+        const { data, error } = await getClient()
+          .from('devotion_shares')
+          .update({ body: text })
+          .eq('id', shareId)
+          .eq('user_id', userId)
+          .select(DEVOTION_SHARE_COLUMNS)
+          .maybeSingle();
+        if (error) return toApiError(error);
+        if (!data) return { message: 'You can only edit your own share', code: 'FORBIDDEN' };
+        return mapDevotionShareRow(data as DevotionShareRow, userId);
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async deleteDevotionShare(shareId: string, userId: string): Promise<void | ApiError> {
+      try {
+        const { data, error } = await getClient()
+          .from('devotion_shares')
+          .delete()
+          .eq('id', shareId)
+          .eq('user_id', userId)
+          .select('id');
+        if (error) return toApiError(error);
+        if (!data?.length)
+          return { message: 'You can only delete your own share', code: 'FORBIDDEN' };
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async deleteGroupDevotion(devotionId: string): Promise<void | ApiError> {
+      try {
+        const { data, error } = await getClient()
+          .from('group_devotions')
+          .delete()
+          .eq('id', devotionId)
+          .select('id');
+        if (error) return toApiError(error);
+        if (!data?.length) {
+          return { message: 'Only group leaders can delete the devotion', code: 'FORBIDDEN' };
+        }
       } catch (e) {
         return toApiError(e);
       }

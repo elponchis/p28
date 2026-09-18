@@ -978,6 +978,8 @@ export interface DevotionShare {
   authorAvatarUrl?: string;
   heartCount: number;
   heartedByMe: boolean;
+  /** When the author last changed the text; absent if never edited. */
+  editedAt?: string;
 }
 
 /** An answer passes `question`; a reply passes `parentShareId`. */

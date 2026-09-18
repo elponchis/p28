@@ -6,6 +6,7 @@ import { DesktopContentContainer } from '@/components/layout/DesktopContentConta
 import { Button, Input } from '@/components/primitives';
 import {
   useCurrentGroupDevotionQuery,
+  useDeleteGroupDevotionMutation,
   useGroupQuery,
   useGroupsForUserQuery,
   useIsSuperAdminQuery,
@@ -15,6 +16,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { getUserFacingError, isApiError } from '@/lib/api';
 import { localDateKey } from '@/lib/devotion';
+import { confirm } from '@/lib/dialogs';
 import { t } from '@/lib/i18n';
 import { colors, spacing, typography } from '@/theme/tokens';
 
@@ -42,6 +44,8 @@ export default function DevotionSettingsScreen() {
     enabled: canManage,
   });
   const save = useSaveGroupDevotionMutation();
+  const remove = useDeleteGroupDevotionMutation();
+  const hasToday = !!current && current.devotionDate === today;
 
   const [reference, setReference] = useState('');
   const [passage, setPassage] = useState('');
@@ -67,6 +71,26 @@ export default function DevotionSettingsScreen() {
     setFormError(null);
     save.mutate(
       { groupId, userId, input: { devotionDate: today, reference, passage } },
+      {
+        onSuccess: () => router.back(),
+        onError: (e) => setFormError(isApiError(e) ? getUserFacingError(e) : t('common.error')),
+      }
+    );
+  };
+
+  const handleDelete = async () => {
+    if (!groupId || !current || !hasToday) return;
+    const ok = await confirm({
+      title: t('devotion.deleteDevotion'),
+      message: t('devotion.deleteDevotionConfirm'),
+      confirmLabel: t('devotion.delete'),
+      cancelLabel: t('devotion.cancel'),
+      destructive: true,
+    });
+    if (!ok) return;
+    setFormError(null);
+    remove.mutate(
+      { devotionId: current.id, groupId },
       {
         onSuccess: () => router.back(),
         onError: (e) => setFormError(isApiError(e) ? getUserFacingError(e) : t('common.error')),
@@ -126,6 +150,17 @@ export default function DevotionSettingsScreen() {
           accessibilityLabel={t('devotion.save')}
           accessibilityHint={t('devotion.saveHint')}
         />
+        {hasToday ? (
+          <Button
+            title={t('devotion.deleteDevotion')}
+            variant="text"
+            onPress={handleDelete}
+            disabled={remove.isPending}
+            accessibilityLabel={t('devotion.deleteDevotion')}
+            accessibilityHint={t('devotion.deleteDevotionConfirm')}
+            style={styles.deleteButton}
+          />
+        ) : null}
       </DesktopContentContainer>
     </ScrollView>
   );
@@ -165,6 +200,10 @@ const styles = StyleSheet.create({
   passageInput: {
     minHeight: 140,
     textAlignVertical: 'top',
+  },
+  deleteButton: {
+    alignSelf: 'center',
+    marginTop: spacing.md,
   },
   error: {
     ...typography.bodyMd,
