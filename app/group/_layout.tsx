@@ -54,6 +54,12 @@ export default function GroupLayout() {
           }}
         />
         <Stack.Screen
+          name="devotion-settings"
+          options={{
+            title: t('devotion.settingsTitle'),
+          }}
+        />
+        <Stack.Screen
           name="discussion/[id]"
           options={{
             title: '',

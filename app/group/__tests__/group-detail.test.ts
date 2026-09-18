@@ -70,6 +70,19 @@ describe('GroupDetailScreen discussion contract', () => {
     expect(events).toBeGreaterThan(latest);
   });
 
+  it('shows 오늘의 묵상 where the leaders block was, to members and leaders only', () => {
+    expect(groupDetailSource).toMatch(/<DailyDevotionCard/);
+    expect(groupDetailSource).toMatch(
+      /\(isMember \|\| canModerateAsAdmin\) \? \(\s*<View style=\{styles\.section\}>\s*<DailyDevotionCard/
+    );
+    expect(groupDetailSource).not.toMatch(/GroupLeaderRows/);
+  });
+
+  it('offers leaders 오늘의 묵상 설정 in the group menu', () => {
+    expect(groupDetailSource).toMatch(/label: t\('devotion\.settingsTitle'\)/);
+    expect(groupDetailSource).toMatch(/\/group\/devotion-settings\?groupId=/);
+  });
+
   it('navigates latest announcement card to announcement detail', () => {
     expect(groupDetailSource).toMatch(/handleOpenLatestAnnouncementDetail/);
     expect(groupDetailSource).toMatch(/\/group\/announcement\/\$\{latestPublished\.id\}/);
