@@ -3,6 +3,7 @@ import {
   DEVOTION_QUESTIONS,
   DEVOTION_QUESTION_KEYS,
   devotionTotals,
+  groupThreadsByQuestion,
   localDateKey,
   threadDevotionShares,
   validateShareBody,
@@ -92,5 +93,25 @@ describe('devotionTotals', () => {
       ])
     ).toEqual({ hearts: 3, comments: 2 });
     expect(devotionTotals([])).toEqual({ hearts: 0, comments: 0 });
+  });
+});
+
+describe('groupThreadsByQuestion', () => {
+  it('gives every prompt its own list in tab order, counting answers and replies', () => {
+    const threads = threadDevotionShares([
+      share({ id: 'l1', createdAt: '1', question: 'lesson' }),
+      share({ id: 'p1', createdAt: '2', question: 'prayer' }),
+      share({ id: 'l2', createdAt: '3', question: 'lesson' }),
+      share({ id: 'r', createdAt: '4', question: null, parentShareId: 'l1' }),
+    ]);
+    const groups = groupThreadsByQuestion(threads);
+    expect(groups.map((g) => g.question)).toEqual([
+      'who_is_god',
+      'lesson',
+      'application',
+      'prayer',
+    ]);
+    expect(groups.map((g) => g.count)).toEqual([0, 3, 0, 1]);
+    expect(groups[1].threads.map((th) => th.share.id)).toEqual(['l2', 'l1']);
   });
 });

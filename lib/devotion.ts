@@ -75,3 +75,25 @@ export function devotionTotals(shares: DevotionShare[]): { hearts: number; comme
     comments: shares.length,
   };
 }
+
+export interface DevotionQuestionGroup {
+  question: DevotionQuestion;
+  threads: DevotionThread[];
+  /** Answers plus their replies. */
+  count: number;
+}
+
+/**
+ * The shared answers split by prompt, in tab order, so each prompt opens as its own list. Every
+ * prompt is present, empty ones included, so the four headers never shift around.
+ */
+export function groupThreadsByQuestion(threads: DevotionThread[]): DevotionQuestionGroup[] {
+  return DEVOTION_QUESTIONS.map((question) => {
+    const mine = threads.filter((th) => th.share.question === question);
+    return {
+      question,
+      threads: mine,
+      count: mine.reduce((total, th) => total + 1 + th.replies.length, 0),
+    };
+  });
+}

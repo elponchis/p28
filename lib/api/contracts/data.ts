@@ -588,6 +588,16 @@ export interface DataContract {
     userId: string,
     input: CreateDevotionShareInput
   ): Promise<DevotionShare | ApiError>;
+  /** Change the text of the user's own answer or reply. */
+  updateDevotionShare(
+    shareId: string,
+    userId: string,
+    body: string
+  ): Promise<DevotionShare | ApiError>;
+  /** Delete the user's own answer or reply (its replies go with it). */
+  deleteDevotionShare(shareId: string, userId: string): Promise<void | ApiError>;
+  /** Delete a day's passage and everything shared on it. Group leaders only. */
+  deleteGroupDevotion(devotionId: string): Promise<void | ApiError>;
   /** Add (`hearted` true) or remove the user's heart on a share. */
   setDevotionShareHeart(
     shareId: string,
