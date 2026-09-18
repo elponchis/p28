@@ -719,13 +719,7 @@ export default function ChatDetailScreen() {
           void pickDocument();
         },
       },
-      {
-        icon: 'mic-outline' as const,
-        label: t('attachments.voice'),
-        onPress: () => {
-          setVoiceRecorderVisible(true);
-        },
-      },
+      // Voice is not here: it is the mic at the right of the composer, one tap away (KAN-30).
     ],
     [pickPhotos, pickVideo, pickDocument]
   );
