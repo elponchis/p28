@@ -95,6 +95,11 @@ import type {
   UpdateSubmissionFeedbackInput,
   UploadedFile,
   UpsertSubmissionInput,
+  DevotionQuestion,
+  GroupDevotion,
+  SaveGroupDevotionInput,
+  DevotionShare,
+  CreateDevotionShareInput,
 } from '../../contracts/dto';
 
 function toApiError(err: unknown): ApiError {
@@ -539,6 +544,75 @@ async function fetchProfileDisplayByUserIds(
   }
   return profileMap;
 }
+
+type GroupDevotionRow = {
+  id: string;
+  group_id: string;
+  devotion_date: string;
+  reference: string;
+  passage: string;
+  created_by_user_id: string | null;
+  updated_at: string;
+};
+
+const GROUP_DEVOTION_COLUMNS =
+  'id, group_id, devotion_date, reference, passage, created_by_user_id, updated_at';
+
+function mapGroupDevotionRow(row: GroupDevotionRow): GroupDevotion {
+  return {
+    id: row.id,
+    groupId: row.group_id,
+    devotionDate: row.devotion_date,
+    reference: row.reference,
+    passage: row.passage,
+    createdByUserId: row.created_by_user_id ?? undefined,
+    updatedAt: row.updated_at,
+  };
+}
+
+type DevotionShareRow = {
+  id: string;
+  devotion_id: string;
+  user_id: string;
+  parent_share_id: string | null;
+  question: DevotionQuestion | null;
+  body: string;
+  created_at: string;
+  edited_at: string | null;
+  devotion_share_hearts?: { user_id: string }[];
+};
+
+function mapDevotionShareRow(
+  r: DevotionShareRow,
+  viewerUserId: string,
+  author?: { displayName?: string; avatarUrl?: string }
+): DevotionShare {
+  const hearts = r.devotion_share_hearts ?? [];
+  return {
+    id: r.id,
+    devotionId: r.devotion_id,
+    userId: r.user_id,
+    parentShareId: r.parent_share_id,
+    question: r.question,
+    body: r.body,
+    createdAt: r.created_at,
+    editedAt: r.edited_at ?? undefined,
+    authorDisplayName: author?.displayName,
+    authorAvatarUrl: author?.avatarUrl,
+    heartCount: hearts.length,
+    heartedByMe: hearts.some((h) => h.user_id === viewerUserId),
+  };
+}
+
+const DEVOTION_SHARE_COLUMNS =
+  'id, devotion_id, user_id, parent_share_id, question, body, created_at, edited_at, devotion_share_hearts(user_id)';
+
+const DEVOTION_QUESTIONS: readonly DevotionQuestion[] = [
+  'who_is_god',
+  'lesson',
+  'application',
+  'prayer',
+];
 
 function mapNotificationPrefsRow(row: {
   user_id: string;
@@ -6101,6 +6175,213 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
             : { message: 'Invalid badge count response', code: 'INVALID_RESPONSE' };
         }
         return { message: 'Invalid badge count response', code: 'INVALID_RESPONSE' };
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async getCurrentGroupDevotion(
+      groupId: string,
+      onOrBefore: string
+    ): Promise<GroupDevotion | null | ApiError> {
+      try {
+        const { data, error } = await getClient()
+          .from('group_devotions')
+          .select(GROUP_DEVOTION_COLUMNS)
+          .eq('group_id', groupId)
+          .lte('devotion_date', onOrBefore)
+          .order('devotion_date', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (error) return toApiError(error);
+        return data ? mapGroupDevotionRow(data as GroupDevotionRow) : null;
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async saveGroupDevotion(
+      groupId: string,
+      userId: string,
+      input: SaveGroupDevotionInput
+    ): Promise<GroupDevotion | ApiError> {
+      try {
+        const reference = input.reference.trim();
+        const passage = input.passage.trim();
+        if (!reference || reference.length > 120) {
+          return {
+            message: 'Enter a passage reference (up to 120 characters)',
+            code: 'VALIDATION_ERROR',
+          };
+        }
+        if (!passage || passage.length > 2000) {
+          return {
+            message: 'Enter the passage text (up to 2000 characters)',
+            code: 'VALIDATION_ERROR',
+          };
+        }
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(input.devotionDate)) {
+          return { message: 'Invalid devotion date', code: 'VALIDATION_ERROR' };
+        }
+        const { data, error } = await getClient()
+          .from('group_devotions')
+          .upsert(
+            {
+              group_id: groupId,
+              devotion_date: input.devotionDate,
+              reference,
+              passage,
+              created_by_user_id: userId,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'group_id,devotion_date' }
+          )
+          .select(GROUP_DEVOTION_COLUMNS)
+          .single();
+        if (error) return toApiError(error);
+        return mapGroupDevotionRow(data as GroupDevotionRow);
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async getDevotionShares(
+      devotionId: string,
+      viewerUserId: string
+    ): Promise<DevotionShare[] | ApiError> {
+      try {
+        const { data, error } = await getClient()
+          .from('devotion_shares')
+          .select(DEVOTION_SHARE_COLUMNS)
+          .eq('devotion_id', devotionId)
+          .order('created_at', { ascending: true });
+        if (error) return toApiError(error);
+        const rows = (data ?? []) as DevotionShareRow[];
+        const profiles = await fetchProfileDisplayByUserIds(
+          getClient,
+          rows.map((r) => r.user_id)
+        );
+        return rows.map((r) => mapDevotionShareRow(r, viewerUserId, profiles.get(r.user_id)));
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async createDevotionShare(
+      devotionId: string,
+      userId: string,
+      input: CreateDevotionShareInput
+    ): Promise<DevotionShare | ApiError> {
+      try {
+        const body = input.body.trim();
+        if (!body || body.length > 2000) {
+          return {
+            message: 'Write at least one line (up to 2000 characters)',
+            code: 'VALIDATION_ERROR',
+          };
+        }
+        const isReply = !!input.parentShareId;
+        if (isReply === !!input.question) {
+          return {
+            message: 'A share answers a question or replies to one, not both',
+            code: 'VALIDATION_ERROR',
+          };
+        }
+        if (input.question && !DEVOTION_QUESTIONS.includes(input.question)) {
+          return { message: 'Unknown devotion question', code: 'VALIDATION_ERROR' };
+        }
+        const { data, error } = await getClient()
+          .from('devotion_shares')
+          .insert({
+            devotion_id: devotionId,
+            user_id: userId,
+            parent_share_id: input.parentShareId ?? null,
+            question: input.question ?? null,
+            body,
+          })
+          .select(DEVOTION_SHARE_COLUMNS)
+          .single();
+        if (error) return toApiError(error);
+        return mapDevotionShareRow(data as DevotionShareRow, userId);
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async updateDevotionShare(
+      shareId: string,
+      userId: string,
+      body: string
+    ): Promise<DevotionShare | ApiError> {
+      try {
+        const text = body.trim();
+        if (!text || text.length > 2000) {
+          return {
+            message: 'Write at least one line (up to 2000 characters)',
+            code: 'VALIDATION_ERROR',
+          };
+        }
+        const { data, error } = await getClient()
+          .from('devotion_shares')
+          .update({ body: text })
+          .eq('id', shareId)
+          .eq('user_id', userId)
+          .select(DEVOTION_SHARE_COLUMNS)
+          .maybeSingle();
+        if (error) return toApiError(error);
+        if (!data) return { message: 'You can only edit your own share', code: 'FORBIDDEN' };
+        return mapDevotionShareRow(data as DevotionShareRow, userId);
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async deleteDevotionShare(shareId: string, userId: string): Promise<void | ApiError> {
+      try {
+        const { data, error } = await getClient()
+          .from('devotion_shares')
+          .delete()
+          .eq('id', shareId)
+          .eq('user_id', userId)
+          .select('id');
+        if (error) return toApiError(error);
+        if (!data?.length)
+          return { message: 'You can only delete your own share', code: 'FORBIDDEN' };
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async deleteGroupDevotion(devotionId: string): Promise<void | ApiError> {
+      try {
+        const { data, error } = await getClient()
+          .from('group_devotions')
+          .delete()
+          .eq('id', devotionId)
+          .select('id');
+        if (error) return toApiError(error);
+        if (!data?.length) {
+          return { message: 'Only group leaders can delete the devotion', code: 'FORBIDDEN' };
+        }
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async setDevotionShareHeart(
+      shareId: string,
+      userId: string,
+      hearted: boolean
+    ): Promise<void | ApiError> {
+      try {
+        const table = getClient().from('devotion_share_hearts');
+        const { error } = hearted
+          ? await table.upsert(
+              { share_id: shareId, user_id: userId },
+              { onConflict: 'share_id,user_id', ignoreDuplicates: true }
+            )
+          : await table.delete().eq('share_id', shareId).eq('user_id', userId);
+        if (error) return toApiError(error);
       } catch (e) {
         return toApiError(e);
       }

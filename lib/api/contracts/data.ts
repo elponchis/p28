@@ -65,6 +65,10 @@ import type {
   PushToken,
   InAppNotification,
   MarkInAppNotificationsReadInput,
+  GroupDevotion,
+  SaveGroupDevotionInput,
+  DevotionShare,
+  CreateDevotionShareInput,
 } from './dto';
 
 /** Fraction 0..1 of bytes sent so far. Called from an XHR `upload.onprogress` handler. */
@@ -564,4 +568,40 @@ export interface DataContract {
   revokeAdmin(userId: string): Promise<void | ApiError>;
   /** Look up user's UUID by email via RPC. Returns null if no user found. */
   getUserIdByEmail(email: string): Promise<string | null | ApiError>;
+
+  // 오늘의 묵상 (daily devotion)
+  /** The group's passage for `onOrBefore` (YYYY-MM-DD), else its latest earlier one; null if none. */
+  getCurrentGroupDevotion(
+    groupId: string,
+    onOrBefore: string
+  ): Promise<GroupDevotion | null | ApiError>;
+  /** Set (or replace) the group's passage for `input.devotionDate`. Group leaders only. */
+  saveGroupDevotion(
+    groupId: string,
+    userId: string,
+    input: SaveGroupDevotionInput
+  ): Promise<GroupDevotion | ApiError>;
+  /** Every answer and reply on a devotion, oldest first, with hearts as seen by `viewerUserId`. */
+  getDevotionShares(devotionId: string, viewerUserId: string): Promise<DevotionShare[] | ApiError>;
+  createDevotionShare(
+    devotionId: string,
+    userId: string,
+    input: CreateDevotionShareInput
+  ): Promise<DevotionShare | ApiError>;
+  /** Change the text of the user's own answer or reply. */
+  updateDevotionShare(
+    shareId: string,
+    userId: string,
+    body: string
+  ): Promise<DevotionShare | ApiError>;
+  /** Delete the user's own answer or reply (its replies go with it). */
+  deleteDevotionShare(shareId: string, userId: string): Promise<void | ApiError>;
+  /** Delete a day's passage and everything shared on it. Group leaders only. */
+  deleteGroupDevotion(devotionId: string): Promise<void | ApiError>;
+  /** Add (`hearted` true) or remove the user's heart on a share. */
+  setDevotionShareHeart(
+    shareId: string,
+    userId: string,
+    hearted: boolean
+  ): Promise<void | ApiError>;
 }

@@ -2600,3 +2600,152 @@ export function useUploadAssignmentMaterialMutation() {
       ) as Promise<import('@/lib/api').UploadedFile>,
   });
 }
+
+// ---------------------------------------------------------------------------
+// 오늘의 묵상 (daily devotion)
+// ---------------------------------------------------------------------------
+
+export function useCurrentGroupDevotionQuery(
+  groupId: string | undefined,
+  onOrBefore: string,
+  options?: { enabled?: boolean }
+) {
+  return useQuery({
+    queryKey: queryKeys.currentGroupDevotion(groupId ?? '', onOrBefore),
+    queryFn: () =>
+      queryFn(api.data.getCurrentGroupDevotion(groupId!, onOrBefore)) as Promise<
+        import('@/lib/api').GroupDevotion | null
+      >,
+    enabled: !!groupId && (options?.enabled ?? true),
+  });
+}
+
+export function useSaveGroupDevotionMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      groupId,
+      userId,
+      input,
+    }: {
+      groupId: string;
+      userId: string;
+      input: import('@/lib/api').SaveGroupDevotionInput;
+    }) => queryFn(api.data.saveGroupDevotion(groupId, userId, input)),
+    onSuccess: (row) => {
+      qc.invalidateQueries({
+        predicate: (q) =>
+          Array.isArray(q.queryKey) &&
+          q.queryKey[0] === 'currentGroupDevotion' &&
+          q.queryKey[1] === row.groupId,
+      });
+    },
+  });
+}
+
+export function useDevotionSharesQuery(
+  devotionId: string | undefined,
+  viewerUserId: string | undefined,
+  options?: { enabled?: boolean }
+) {
+  return useQuery({
+    queryKey: queryKeys.devotionShares(devotionId ?? '', viewerUserId ?? ''),
+    queryFn: () =>
+      queryFn(api.data.getDevotionShares(devotionId!, viewerUserId!)) as Promise<
+        import('@/lib/api').DevotionShare[]
+      >,
+    enabled: !!devotionId && !!viewerUserId && (options?.enabled ?? true),
+  });
+}
+
+export function useCreateDevotionShareMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      devotionId,
+      userId,
+      input,
+    }: {
+      devotionId: string;
+      userId: string;
+      input: import('@/lib/api').CreateDevotionShareInput;
+    }) => queryFn(api.data.createDevotionShare(devotionId, userId, input)),
+    onSuccess: (row) => {
+      qc.invalidateQueries({ queryKey: ['devotionShares', row.devotionId] });
+    },
+  });
+}
+
+export function useSetDevotionShareHeartMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      shareId,
+      userId,
+      hearted,
+    }: {
+      devotionId: string;
+      shareId: string;
+      userId: string;
+      hearted: boolean;
+    }) => queryFn(api.data.setDevotionShareHeart(shareId, userId, hearted)),
+    // Count the heart before the round trip, so the number moves the moment it is tapped.
+    onMutate: async ({ devotionId, shareId, userId, hearted }) => {
+      const key = queryKeys.devotionShares(devotionId, userId);
+      await qc.cancelQueries({ queryKey: key });
+      const previous = qc.getQueryData<import('@/lib/api').DevotionShare[]>(key);
+      qc.setQueryData<import('@/lib/api').DevotionShare[]>(key, (list) =>
+        list?.map((s) =>
+          s.id === shareId && s.heartedByMe !== hearted
+            ? { ...s, heartedByMe: hearted, heartCount: s.heartCount + (hearted ? 1 : -1) }
+            : s
+        )
+      );
+      return { key, previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) qc.setQueryData(context.key, context.previous);
+    },
+    onSettled: (_data, _err, { devotionId }) => {
+      qc.invalidateQueries({ queryKey: ['devotionShares', devotionId] });
+    },
+  });
+}
+
+export function useUpdateDevotionShareMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ shareId, userId, body }: { shareId: string; userId: string; body: string }) =>
+      queryFn(api.data.updateDevotionShare(shareId, userId, body)),
+    onSuccess: (row) => {
+      qc.invalidateQueries({ queryKey: ['devotionShares', row.devotionId] });
+    },
+  });
+}
+
+export function useDeleteDevotionShareMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ shareId, userId }: { devotionId: string; shareId: string; userId: string }) =>
+      queryFn(api.data.deleteDevotionShare(shareId, userId)),
+    onSuccess: (_data, { devotionId }) => {
+      qc.invalidateQueries({ queryKey: ['devotionShares', devotionId] });
+    },
+  });
+}
+
+export function useDeleteGroupDevotionMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ devotionId }: { devotionId: string; groupId: string }) =>
+      queryFn(api.data.deleteGroupDevotion(devotionId)),
+    onSuccess: (_data, { groupId }) => {
+      qc.invalidateQueries({
+        predicate: (q) =>
+          Array.isArray(q.queryKey) &&
+          q.queryKey[0] === 'currentGroupDevotion' &&
+          q.queryKey[1] === groupId,
+      });
+    },
+  });
+}

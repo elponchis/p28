@@ -89,4 +89,9 @@ export type {
   UpsertSubmissionInput,
   User,
   Session,
+  DevotionQuestion,
+  GroupDevotion,
+  SaveGroupDevotionInput,
+  DevotionShare,
+  CreateDevotionShareInput,
 } from './dto';

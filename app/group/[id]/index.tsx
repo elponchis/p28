@@ -22,7 +22,7 @@ import {
 } from '@/components/primitives';
 import { EmptyState } from '@/components/patterns/EmptyState';
 import { LatestAnnouncementRow } from '@/components/patterns/LatestAnnouncementRow';
-import { GroupLeaderRows } from '@/components/patterns/GroupLeaderRows';
+import { DailyDevotionCard } from '@/components/patterns/DailyDevotionCard';
 import { FadeActionSheet } from '@/components/patterns/FadeActionSheet';
 import { GroupEventFormSheet } from '@/components/patterns/GroupEventFormSheet';
 import { GroupRecurringMeetingFormSheet } from '@/components/patterns/GroupRecurringMeetingFormSheet';
@@ -216,13 +216,6 @@ export default function GroupDetailScreen() {
     router.push(`/group/members?groupId=${id}`);
   }, [router, id]);
 
-  const handleLeaderProfilePress = useCallback(
-    (memberId: string) => {
-      router.push(`/profile/${memberId}`);
-    },
-    [router]
-  );
-
   const [joinedSheetVisible, setJoinedSheetVisible] = useState(false);
 
   const handleOpenJoinedSheet = useCallback(() => {
@@ -235,6 +228,10 @@ export default function GroupDetailScreen() {
 
   const handleManageSettings = useCallback(() => {
     router.push(`/group/settings?groupId=${id}`);
+  }, [router, id]);
+
+  const handleDevotionSettings = useCallback(() => {
+    router.push(`/group/devotion-settings?groupId=${id}`);
   }, [router, id]);
 
   const handleCreateAnnouncement = useCallback(() => {
@@ -644,39 +641,17 @@ export default function GroupDetailScreen() {
           </View>
         ) : null}
 
-        {/* ── Leaders (group admins) — Stitch: Ministry leaders editorial block ── */}
-        <View style={styles.leadersSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>
-              {group.type === 'ministry'
-                ? t('groups.ministryLeadersTitle')
-                : t('groups.forumLeadersTitle')}
-            </Text>
-          </View>
-          {groupAdmins.length === 0 ? (
-            <Text style={styles.leadersEmptyInline} accessibilityRole="text">
-              {t('groups.noLeadersYet')}
-            </Text>
-          ) : (
-            <GroupLeaderRows
-              items={groupAdmins.map((a) => ({
-                userId: a.userId,
-                displayName: a.displayName,
-                avatarUrl: a.avatarUrl ?? null,
-              }))}
-              currentUserId={userId ?? ''}
-              leaderSubtitle={t('groups.leaderListSubtitle')}
-              yourselfSubtitle={t('groups.yourself')}
-              onLeaderPress={handleLeaderProfilePress}
-              edgeToEdge
-              listAccessibilityLabel={
-                group.type === 'ministry'
-                  ? t('groups.ministryLeadersTitle')
-                  : t('groups.forumLeadersTitle')
-              }
+        {/* ── 오늘의 묵상 (in place of the leaders block) — members and leaders only ── */}
+        {id && userId && (isMember || canModerateAsAdmin) ? (
+          <View style={styles.section}>
+            <DailyDevotionCard
+              groupId={id}
+              groupName={group.name}
+              userId={userId}
+              canManage={canModerateAsAdmin}
             />
-          )}
-        </View>
+          </View>
+        ) : null}
 
         {/* ── Recurring meetings (ministry only) ── */}
         {group.type === 'ministry' ? (
@@ -1150,6 +1125,16 @@ export default function GroupDetailScreen() {
             onPress: handleManageSettings,
             accessibilityHint: t('groups.opensGroupSettings'),
           },
+          ...(canModerateAsAdmin
+            ? [
+                {
+                  icon: 'book-outline' as const,
+                  label: t('devotion.settingsTitle'),
+                  onPress: handleDevotionSettings,
+                  accessibilityHint: t('devotion.settingsHint'),
+                },
+              ]
+            : []),
           {
             icon: 'exit-outline',
             label: t('groups.leaveGroup'),
@@ -1364,14 +1349,6 @@ const styles = StyleSheet.create({
   /* ── Section pattern ── */
   section: {
     marginBottom: spacing.sectionGap,
-  },
-  leadersSection: {
-    marginBottom: spacing.sectionGap,
-  },
-  leadersEmptyInline: {
-    ...typography.bodyMd,
-    color: colors.onSurfaceVariant,
-    paddingVertical: spacing.sm,
   },
   sectionHeader: {
     flexDirection: 'row',
