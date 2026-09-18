@@ -130,17 +130,27 @@ export function MessageRow({
     reactionMetrics
   );
 
+  // Floats beside the bubble instead of taking a place in the row: laid out, the toolbar was
+  // taller than a one-line bubble and wider than the room beside a long one, so hovering grew the
+  // row or squeezed the bubble and everything below jumped (KAN-32). The slot is zero-sized; the
+  // toolbar hangs from it toward the empty side.
   const hoverActions = showHoverActions ? (
-    <MessageHoverActions
-      isOwnMessage={isOwnMessage}
-      userReactionTypes={userReactions}
-      onAddReaction={onAddReaction}
-      onRemoveReaction={onRemoveReaction}
-      onMore={onLongPress}
-      onReply={onReply}
-      onEdit={onEdit}
-      onDelete={onDelete}
-    />
+    <View style={styles.hoverSlot} pointerEvents="box-none">
+      <View
+        style={[styles.hoverFloat, isOwnMessage ? styles.hoverFloatOwn : styles.hoverFloatOther]}
+      >
+        <MessageHoverActions
+          isOwnMessage={isOwnMessage}
+          userReactionTypes={userReactions}
+          onAddReaction={onAddReaction}
+          onRemoveReaction={onRemoveReaction}
+          onMore={onLongPress}
+          onReply={onReply}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
+      </View>
+    </View>
   ) : null;
 
   return (
@@ -665,6 +675,21 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.7)',
   },
 
+  hoverSlot: {
+    width: 0,
+    alignSelf: 'stretch',
+    zIndex: 2,
+  },
+  hoverFloat: {
+    position: 'absolute',
+    bottom: 0,
+  },
+  hoverFloatOwn: {
+    right: spacing.xs,
+  },
+  hoverFloatOther: {
+    left: spacing.xs,
+  },
   reactionBadges: {
     flexDirection: 'row',
     flexWrap: 'wrap',

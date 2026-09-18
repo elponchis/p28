@@ -220,17 +220,21 @@ function ReplyRow({
       {...hoverProps}
     >
       <View style={styles.replyRowMain}>
+        {/* Floats over the card's top edge, Slack-style. In the flow it sat above the card and
+            pushed the reply — and every reply below it — down on each hover (KAN-32). */}
         {showHoverActions ? (
-          <MessageHoverActions
-            isOwnMessage={isOwnPost}
-            userReactionTypes={userReactions}
-            onAddReaction={onAddReaction}
-            onRemoveReaction={onRemoveReaction}
-            onMore={onLongPress}
-            onReply={onReply}
-            onEdit={onEdit}
-            onDelete={onDelete}
-          />
+          <View style={styles.replyHoverFloat} pointerEvents="box-none">
+            <MessageHoverActions
+              isOwnMessage={isOwnPost}
+              userReactionTypes={userReactions}
+              onAddReaction={onAddReaction}
+              onRemoveReaction={onRemoveReaction}
+              onMore={onLongPress}
+              onReply={onReply}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+          </View>
         ) : null}
         <View style={styles.replyCardWrapper}>
           <View style={styles.replyCardSliding}>
@@ -1408,6 +1412,12 @@ const styles = StyleSheet.create({
   replyRowMain: {
     flex: 1,
     minWidth: 0,
+  },
+  replyHoverFloat: {
+    position: 'absolute',
+    top: -spacing.md,
+    right: spacing.md,
+    zIndex: 2,
   },
   replyToPreviewPressed: {
     opacity: 0.6,
