@@ -107,4 +107,9 @@ export type {
   MarkInAppNotificationsReadInput,
   MessageAttachment,
   MessageAttachmentKind,
+  DevotionQuestion,
+  GroupDevotion,
+  SaveGroupDevotionInput,
+  DevotionShare,
+  CreateDevotionShareInput,
 } from './contracts';

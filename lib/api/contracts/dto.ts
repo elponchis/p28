@@ -936,3 +936,53 @@ export interface ChatFolderItem {
   chatId: string;
   createdAt?: string;
 }
+
+// ---------------------------------------------------------------------------
+// 오늘의 묵상 (daily devotion)
+// ---------------------------------------------------------------------------
+
+/** The four prompts a member can answer. */
+export type DevotionQuestion = 'who_is_god' | 'lesson' | 'application' | 'prayer';
+
+/** The passage a group's leader set for a day. */
+export interface GroupDevotion {
+  id: string;
+  groupId: string;
+  /** Local calendar day, YYYY-MM-DD. */
+  devotionDate: string;
+  /** e.g. "시편 27:1" */
+  reference: string;
+  passage: string;
+  createdByUserId?: string;
+  updatedAt: string;
+}
+
+export interface SaveGroupDevotionInput {
+  devotionDate: string;
+  reference: string;
+  passage: string;
+}
+
+/** A member's answer to a prompt, or a reply to someone's answer. */
+export interface DevotionShare {
+  id: string;
+  devotionId: string;
+  userId: string;
+  /** Set on replies; null on answers. */
+  parentShareId: string | null;
+  /** Set on answers; null on replies. */
+  question: DevotionQuestion | null;
+  body: string;
+  createdAt: string;
+  authorDisplayName?: string;
+  authorAvatarUrl?: string;
+  heartCount: number;
+  heartedByMe: boolean;
+}
+
+/** An answer passes `question`; a reply passes `parentShareId`. */
+export interface CreateDevotionShareInput {
+  body: string;
+  question?: DevotionQuestion;
+  parentShareId?: string;
+}

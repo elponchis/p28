@@ -88,4 +88,8 @@ export const queryKeys = {
     ['submissionsByAssignment', assignmentId] as const,
   mySubmission: (assignmentId: string, userId: string) =>
     ['mySubmission', assignmentId, userId] as const,
+  currentGroupDevotion: (groupId: string, onOrBefore: string) =>
+    ['currentGroupDevotion', groupId, onOrBefore] as const,
+  devotionShares: (devotionId: string, viewerUserId: string) =>
+    ['devotionShares', devotionId, viewerUserId] as const,
 };
