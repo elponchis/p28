@@ -1190,6 +1190,7 @@ export default function ChatDetailScreen() {
             variant="chat"
             submitOnEnter
             onPasteFiles={handlePasteFiles}
+            onRecordVoice={() => setVoiceRecorderVisible(true)}
           />
         </View>
       </KeyboardAvoidingView>
