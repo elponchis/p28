@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Avatar } from '@/components/primitives';
 import { t } from '@/lib/i18n';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { colors, radius, space, spacing, typography } from '@/theme/tokens';
 
 export interface GroupMemberRowListItem {
   userId: string;
@@ -125,6 +125,6 @@ const styles = StyleSheet.create({
   friendLabel: {
     ...typography.caption,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: space.s0,
   },
 });

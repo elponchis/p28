@@ -19,7 +19,7 @@ import { getUserFacingError } from '@/lib/api';
 import { MEETING_LINK_MAX_LENGTH, parseMeetingLinkInput } from '@/lib/meetingLink';
 import { t } from '@/lib/i18n';
 import { confirm } from '@/lib/dialogs';
-import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, fontSize, radius, spacing, typography } from '@/theme/tokens';
 
 export default function CreateAnnouncementScreen() {
   const { groupId } = useLocalSearchParams<{ groupId: string }>();
@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
   },
   groupName: {
     fontFamily: fontFamily.serif,
-    fontSize: 22,
+    fontSize: fontSize.verseSm,
     color: colors.primary,
     marginBottom: spacing.sm,
   },

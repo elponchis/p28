@@ -12,7 +12,7 @@ import {
 } from '@/hooks/useApiQueries';
 import { formatRelativeTime } from '@/lib/dates';
 import { t } from '@/lib/i18n';
-import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, fontSize, radius, space, spacing, typography } from '@/theme/tokens';
 
 export default function AssignmentSubmissionsListScreen() {
   const { id: groupId, assignmentId } = useLocalSearchParams<{
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: fontFamily.serif,
-    fontSize: 22,
+    fontSize: fontSize.verseSm,
     color: colors.primary,
     marginBottom: spacing.md,
   },
@@ -204,12 +204,12 @@ const styles = StyleSheet.create({
   fileName: {
     ...typography.caption,
     color: colors.onSurfaceVariant,
-    marginTop: 2,
+    marginTop: space.s0,
   },
   meta: {
     ...typography.caption,
     color: colors.onSurfaceVariant,
-    marginTop: 2,
+    marginTop: space.s0,
   },
   statusBadge: {
     paddingHorizontal: spacing.sm,

@@ -30,7 +30,7 @@ import { formatRelativeTime } from '@/lib/dates';
 import { answersById } from '@/lib/quiz';
 import { parseScoreInput } from '@/lib/assignmentScore';
 import { t } from '@/lib/i18n';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { colors, radius, space, spacing, typography } from '@/theme/tokens';
 
 export default function SubmissionReviewScreen() {
   const {
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
   submittedAt: {
     ...typography.caption,
     color: colors.onSurfaceVariant,
-    marginTop: 2,
+    marginTop: space.s0,
   },
   fileCard: {
     flexDirection: 'row',

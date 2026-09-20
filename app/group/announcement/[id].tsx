@@ -15,7 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { getUserFacingError, isApiError, type Announcement } from '@/lib/api';
 import { formatRelativeTime } from '@/lib/dates';
 import { t } from '@/lib/i18n';
-import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
+import { color, colors, fontFamily, fontSize, radius, spacing, typography } from '@/theme/tokens';
 
 function statusLabel(status: Announcement['status']): string {
   if (status === 'cancelled') return t('announcements.cancelled');
@@ -145,7 +145,7 @@ export default function AnnouncementDetailScreen() {
 }
 
 const editorialShadow = {
-  shadowColor: '#151c27',
+  shadowColor: color.ink,
   shadowOpacity: 0.06,
   shadowRadius: 30,
   shadowOffset: { width: 0, height: 15 },
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
   },
   screenTitle: {
     fontFamily: fontFamily.serif,
-    fontSize: 20,
+    fontSize: fontSize.title,
     color: colors.primary,
     marginBottom: spacing.md,
   },
@@ -215,12 +215,12 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontFamily: fontFamily.sansBold,
-    fontSize: 10,
+    fontSize: fontSize.caption,
     color: colors.onSecondaryContainer,
   },
   title: {
     fontFamily: fontFamily.serif,
-    fontSize: 22,
+    fontSize: fontSize.verseSm,
     color: colors.primary,
     marginBottom: spacing.sm,
   },

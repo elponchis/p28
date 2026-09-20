@@ -81,7 +81,7 @@ import { reactionRowMetrics, splitVisibleReactions } from '@/lib/reactionLayout'
 import { postDeletionRight, wasRemovedByModerator } from '@/lib/moderation';
 import { confirm, notify } from '@/lib/dialogs';
 import { downloadFileInBrowser } from '@/lib/downloadFile';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { colors, fontSize, radius, space, spacing, typography } from '@/theme/tokens';
 
 function OriginalPostRow({
   discussion,
@@ -1453,7 +1453,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     marginBottom: spacing.md,
     overflow: 'hidden',
-    paddingBottom: 14,
+    paddingBottom: space.s12,
   },
   replyCardSliding: {
     position: 'relative',
@@ -1486,9 +1486,9 @@ const styles = StyleSheet.create({
   reactionBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
-    paddingHorizontal: 5,
-    paddingVertical: 2,
+    gap: space.s0,
+    paddingHorizontal: space.s4,
+    paddingVertical: space.s0,
     borderRadius: 12,
     borderWidth: 2,
     borderColor: colors.background,
@@ -1540,7 +1540,7 @@ const styles = StyleSheet.create({
   },
   replySentClockTime: {
     ...typography.caption,
-    fontSize: 11,
+    fontSize: fontSize.caption,
     color: colors.textSecondary,
     alignSelf: 'flex-end',
     marginTop: spacing.xxs,
@@ -1556,7 +1556,7 @@ const styles = StyleSheet.create({
   replyToAuthor: {
     ...typography.caption,
     color: colors.primary,
-    marginBottom: 2,
+    marginBottom: space.s0,
   },
   replyToBody: {
     ...typography.caption,

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, fontSize, radius, spacing, typography } from '@/theme/tokens';
 
 export interface ReflectionPlateProps {
   quote: string;
@@ -75,7 +75,7 @@ const darkStyles = StyleSheet.create({
   },
   quote: {
     fontFamily: fontFamily.serif,
-    fontSize: 22,
+    fontSize: fontSize.verseSm,
     fontWeight: '400',
     lineHeight: 32,
     color: '#ffffff',

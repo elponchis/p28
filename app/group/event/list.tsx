@@ -7,7 +7,7 @@ import { useGroupEventsQuery, useGroupQuery, useGroupsForUserQuery } from '@/hoo
 import { useAuth } from '@/hooks/useAuth';
 import { t } from '@/lib/i18n';
 import { formatGroupEventDateTime, isGroupEventPast } from '@/lib/dates';
-import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, fontSize, radius, spacing, typography } from '@/theme/tokens';
 import type { GroupEvent } from '@/lib/api';
 import { sortGroupEventsForList } from '@/lib/groupEventsSort';
 
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
   },
   screenTitle: {
     fontFamily: fontFamily.serif,
-    fontSize: 20,
+    fontSize: fontSize.title,
     color: colors.primary,
     marginBottom: spacing.xs,
   },
@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: fontFamily.serif,
-    fontSize: 18,
+    fontSize: fontSize.title,
     color: colors.primary,
     flex: 1,
   },

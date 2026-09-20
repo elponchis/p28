@@ -31,7 +31,7 @@ import {
 } from '@/lib/devotion';
 import { confirm, notify } from '@/lib/dialogs';
 import { t } from '@/lib/i18n';
-import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, fontSize, radius, space, spacing, typography } from '@/theme/tokens';
 
 export interface DailyDevotionCardProps {
   groupId: string;
@@ -698,7 +698,7 @@ const styles = StyleSheet.create({
   },
   bannerPassage: {
     fontFamily: fontFamily.serifBold,
-    fontSize: 20,
+    fontSize: fontSize.title,
     lineHeight: 30,
     color: colors.onPrimary,
   },
@@ -880,7 +880,7 @@ const styles = StyleSheet.create({
   },
   questionTag: {
     paddingHorizontal: spacing.xs,
-    paddingVertical: 2,
+    paddingVertical: space.s0,
     borderRadius: radius.chip,
     backgroundColor: colors.primaryFixed,
   },
@@ -930,7 +930,7 @@ const styles = StyleSheet.create({
     color: colors.onSecondaryContainer,
   },
   linkButton: {
-    paddingVertical: 2,
+    paddingVertical: space.s0,
   },
   linkText: {
     ...typography.labelMd,

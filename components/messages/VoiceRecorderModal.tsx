@@ -11,7 +11,7 @@ import {
 
 import { t } from '@/lib/i18n';
 import { notify } from '@/lib/dialogs';
-import { colors, radius, spacing, typography, fontFamily } from '@/theme/tokens';
+import { colors, fontFamily, fontSize, radius, spacing, typography } from '@/theme/tokens';
 
 const MAX_RECORDING_SEC = 5 * 60;
 
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   recDot: {
     width: 10,
     height: 10,
-    borderRadius: 5,
+    borderRadius: radius.xs,
     backgroundColor: colors.error,
   },
   recLabel: {
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
   },
   timer: {
     fontFamily: fontFamily.serif,
-    fontSize: 40,
+    fontSize: fontSize.display,
     color: colors.primary,
   },
   actionsRow: {
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
   actionButton: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: radius.feature,
     alignItems: 'center',
     justifyContent: 'center',
   },

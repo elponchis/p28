@@ -1,6 +1,16 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TextInputProps, TextStyle } from 'react-native';
-import { colors, spacing, radius, typography, fontFamily, minTouchTarget } from '@/theme/tokens';
+import {
+  color,
+  colors,
+  fontFamily,
+  fontSize,
+  minTouchTarget,
+  radius,
+  space,
+  spacing,
+  typography,
+} from '@/theme/tokens';
 
 export interface InputProps extends Omit<TextInputProps, 'style'> {
   label: string;
@@ -56,13 +66,13 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: fontFamily.sansBold,
-    fontSize: 11,
+    fontSize: fontSize.caption,
     fontWeight: '700',
     letterSpacing: 1.8,
     textTransform: 'uppercase',
     color: colors.onSurfaceVariant,
     marginBottom: spacing.xs,
-    paddingHorizontal: 2,
+    paddingHorizontal: space.s0,
   },
   input: {
     fontFamily: fontFamily.sans,
@@ -79,7 +89,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryFixed,
   },
   inputError: {
-    backgroundColor: '#fce8e8',
+    backgroundColor: color.sandSoft,
   },
   errorText: {
     ...typography.caption,

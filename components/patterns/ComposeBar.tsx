@@ -15,7 +15,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { composeAction } from '@/lib/composeAction';
 import { t } from '@/lib/i18n';
-import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, fontSize, radius, space, spacing, typography } from '@/theme/tokens';
 
 export interface PendingComposeAttachment {
   id: string;
@@ -529,7 +529,7 @@ const styles = StyleSheet.create({
   contextBannerLabel: {
     ...typography.caption,
     color: colors.textSecondary,
-    marginBottom: 2,
+    marginBottom: space.s0,
   },
   contextBannerAuthor: {
     ...typography.label,
@@ -585,7 +585,7 @@ const styles = StyleSheet.create({
   filePreviewName: {
     ...typography.caption,
     color: colors.textPrimary,
-    fontSize: 10,
+    fontSize: fontSize.caption,
     lineHeight: 13,
   },
   previewSpinner: {
@@ -593,7 +593,7 @@ const styles = StyleSheet.create({
   },
   retryLabel: {
     ...typography.caption,
-    fontSize: 10,
+    fontSize: fontSize.caption,
     color: colors.error,
     marginTop: spacing.xxs,
   },
@@ -673,7 +673,7 @@ const chatStyles = StyleSheet.create({
   contextBannerLabel: {
     ...typography.caption,
     color: colors.onSurfaceVariant,
-    marginBottom: 2,
+    marginBottom: space.s0,
   },
   contextBannerAuthor: {
     fontFamily: fontFamily.sansSemiBold,
@@ -723,7 +723,7 @@ const chatStyles = StyleSheet.create({
   },
   filePreviewName: {
     fontFamily: fontFamily.sans,
-    fontSize: 10,
+    fontSize: fontSize.caption,
     lineHeight: 13,
     color: colors.onSurface,
   },
@@ -749,11 +749,11 @@ const chatStyles = StyleSheet.create({
     fontSize: 15,
     color: colors.onSurface,
     backgroundColor: colors.surfaceContainerHighest,
-    borderRadius: 22,
+    borderRadius: radius.feature,
     borderCurve: 'continuous',
     paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-    paddingTop: 10,
+    paddingVertical: space.s8,
+    paddingTop: space.s8,
     minHeight: 40,
     maxHeight: 120,
   },

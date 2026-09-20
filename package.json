@@ -16,7 +16,8 @@
     "lint:fix": "expo lint --fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package",
+    "check:theme": "node scripts/check-theme.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/noto-serif": "^0.4.2",

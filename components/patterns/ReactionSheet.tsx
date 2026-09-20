@@ -23,7 +23,7 @@ import {
 import { useFadeSheetAnimation } from '@/hooks/useFadeSheetAnimation';
 import type { PostReactionType } from '@/lib/api';
 import { t } from '@/lib/i18n';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { colors, fontSize, radius, spacing, typography } from '@/theme/tokens';
 
 export interface ReactionSheetPrimaryAction {
   key: string;
@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
     // rather than stretching to the full width and pushing the next chunk down.
     maxWidth: '100%',
   },
-  groupEmoji: { fontSize: 20 },
+  groupEmoji: { fontSize: fontSize.title },
   groupCount: {
     ...typography.caption,
     color: colors.textSecondary,
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
   addOption: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: radius.feature,
     backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',

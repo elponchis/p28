@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { colors, radius, shadow, spacing, typography } from '@/theme/tokens';
+import { colors, radius, shadow, space, spacing, typography } from '@/theme/tokens';
 
 export type OrgStructureType = 'org' | 'ministry' | 'group';
 
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   iconWrap: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radius.feature,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: spacing.md,
@@ -108,11 +108,11 @@ const styles = StyleSheet.create({
   typeLabel: {
     ...typography.caption,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: space.s0,
   },
   subtitle: {
     ...typography.caption,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: space.s0,
   },
 });

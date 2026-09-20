@@ -18,7 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/primitives';
 import { useFadeSheetAnimation } from '@/hooks/useFadeSheetAnimation';
 import { t } from '@/lib/i18n';
-import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, fontSize, radius, spacing, typography } from '@/theme/tokens';
 
 const TITLE_MAX = 200;
 const DESCRIPTION_MAX = 4000;
@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
   handle: {
     width: 36,
     height: 4,
-    borderRadius: 2,
+    borderRadius: radius.xs,
     backgroundColor: colors.outlineVariant,
     alignSelf: 'center',
     marginBottom: spacing.md,
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
   },
   sheetTitle: {
     fontFamily: fontFamily.serif,
-    fontSize: 22,
+    fontSize: fontSize.verseSm,
     color: colors.primary,
     flex: 1,
     marginRight: spacing.sm,

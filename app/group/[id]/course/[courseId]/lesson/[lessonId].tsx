@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useDiscussionsQuery, useLessonQuery } from '@/hooks/useApiQueries';
 import type { Discussion } from '@/lib/api';
 import { t } from '@/lib/i18n';
-import { colors, fontFamily, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, fontSize, spacing, typography } from '@/theme/tokens';
 
 export default function LessonPlayerScreen() {
   const {
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: fontFamily.serif,
-    fontSize: 22,
+    fontSize: fontSize.verseSm,
     color: colors.primary,
     marginTop: spacing.lg,
     marginBottom: spacing.xs,

@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { t } from '@/lib/i18n';
-import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, fontSize, radius, spacing, typography } from '@/theme/tokens';
 
 export interface GlobalAnnouncementCardProps {
   title: string;
@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
   },
   eyebrow: {
     fontFamily: fontFamily.sansBold,
-    fontSize: 11,
+    fontSize: fontSize.caption,
     fontWeight: '700',
     letterSpacing: 0.6,
     textTransform: 'uppercase',
@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: fontFamily.serifBold,
-    fontSize: 20,
+    fontSize: fontSize.title,
     fontWeight: '700',
     color: colors.primary,
     letterSpacing: -0.2,

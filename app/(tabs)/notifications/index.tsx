@@ -14,7 +14,15 @@ import type { InAppNotification } from '@/lib/api';
 import { formatRelativeTime } from '@/lib/dates';
 import { inAppNotificationPresentation } from '@/lib/inAppNotifications';
 import { t } from '@/lib/i18n';
-import { colors, radius, shadow, spacing, typography, tabScreenContent } from '@/theme/tokens';
+import {
+  colors,
+  radius,
+  shadow,
+  space,
+  spacing,
+  tabScreenContent,
+  typography,
+} from '@/theme/tokens';
 
 export default function NotificationsScreen() {
   const { session } = useAuth();
@@ -218,7 +226,7 @@ const styles = StyleSheet.create({
   cardIconWrap: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radius.feature,
     backgroundColor: colors.accentSoft,
     alignItems: 'center',
     justifyContent: 'center',
@@ -234,9 +242,9 @@ const styles = StyleSheet.create({
   unreadDot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
+    borderRadius: radius.xs,
     backgroundColor: colors.primary,
-    marginTop: 6,
+    marginTop: space.s4,
   },
   cardTitle: {
     ...typography.body,
@@ -250,7 +258,7 @@ const styles = StyleSheet.create({
   kindRow: {
     ...typography.caption,
     color: colors.primary,
-    marginTop: 2,
+    marginTop: space.s0,
   },
   summaryText: {
     ...typography.caption,
@@ -265,7 +273,7 @@ const styles = StyleSheet.create({
   cardSubtitle: {
     ...typography.caption,
     color: colors.primary,
-    marginTop: 2,
+    marginTop: space.s0,
   },
   loadingRow: {
     flexDirection: 'row',

@@ -24,7 +24,7 @@ import {
 import { friendDisplayName as getDisplayName, friendRows, type FriendRow } from '@/lib/friendsList';
 import { t } from '@/lib/i18n';
 import type { Profile } from '@/lib/api';
-import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, fontSize, radius, space, spacing, typography } from '@/theme/tokens';
 
 const SEARCH_DEBOUNCE_MS = 200;
 
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
   },
   heading: {
     fontFamily: fontFamily.serifBold,
-    fontSize: 30,
+    fontSize: fontSize.display,
     color: colors.primary,
     letterSpacing: -0.3,
   },
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.sans,
     fontSize: 15,
     color: colors.onSurface,
-    paddingVertical: 14,
+    paddingVertical: space.s12,
   },
 
   sectionHeader: {

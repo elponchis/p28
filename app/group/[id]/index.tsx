@@ -56,7 +56,17 @@ import { upcomingGroupEvents } from '@/lib/groupEventsSort';
 import { t } from '@/lib/i18n';
 import { formatRecurringMeetingSummary } from '@/lib/recurringMeetingSummary';
 import { confirm } from '@/lib/dialogs';
-import { colors, fontFamily, radius, shadow, spacing, typography } from '@/theme/tokens';
+import {
+  color,
+  colors,
+  fontFamily,
+  fontSize,
+  radius,
+  shadow,
+  space,
+  spacing,
+  typography,
+} from '@/theme/tokens';
 
 function getLanguageName(code: string): string {
   const map: Record<string, string> = {
@@ -1172,7 +1182,7 @@ export default function GroupDetailScreen() {
 const HERO_HEIGHT = 480;
 
 const editorialShadow = {
-  shadowColor: '#151c27',
+  shadowColor: color.ink,
   shadowOpacity: 0.06,
   shadowRadius: 30,
   shadowOffset: { width: 0, height: 15 },
@@ -1219,14 +1229,14 @@ const styles = StyleSheet.create({
   },
   typeBadgeText: {
     fontFamily: fontFamily.sansSemiBold,
-    fontSize: 10,
+    fontSize: fontSize.caption,
     fontWeight: '700',
     color: colors.onSecondaryContainer,
     letterSpacing: 1.5,
   },
   heroTitle: {
     fontFamily: fontFamily.serif,
-    fontSize: 34,
+    fontSize: fontSize.display,
     fontWeight: '400',
     color: '#ffffff',
     lineHeight: 40,
@@ -1325,7 +1335,7 @@ const styles = StyleSheet.create({
   heroAnnounceBtn: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radius.feature,
     backgroundColor: colors.secondaryContainer,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1392,7 +1402,7 @@ const styles = StyleSheet.create({
   },
   recurringSacredTitle: {
     fontFamily: fontFamily.serifBold,
-    fontSize: 26,
+    fontSize: fontSize.verse,
     fontWeight: '700',
     lineHeight: 32,
     letterSpacing: -0.35,
@@ -1410,11 +1420,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xxs,
-    paddingBottom: 2,
+    paddingBottom: space.s0,
   },
   recurringSacredAddLabel: {
     fontFamily: fontFamily.sansBold,
-    fontSize: 11,
+    fontSize: fontSize.caption,
     fontWeight: '700',
     color: colors.secondary,
     textTransform: 'uppercase',
@@ -1478,7 +1488,7 @@ const styles = StyleSheet.create({
   },
   recurringFreqBadge: {
     fontFamily: fontFamily.sansBold,
-    fontSize: 10,
+    fontSize: fontSize.caption,
     fontWeight: '700',
     letterSpacing: 1.4,
     textTransform: 'uppercase',
@@ -1491,7 +1501,7 @@ const styles = StyleSheet.create({
   },
   recurringCardTitleLight: {
     fontFamily: fontFamily.serifBold,
-    fontSize: 18,
+    fontSize: fontSize.title,
     fontWeight: '700',
     lineHeight: 24,
     letterSpacing: -0.15,
@@ -1500,7 +1510,7 @@ const styles = StyleSheet.create({
   },
   recurringCardTitleDark: {
     fontFamily: fontFamily.serifBold,
-    fontSize: 18,
+    fontSize: fontSize.title,
     fontWeight: '700',
     lineHeight: 24,
     letterSpacing: -0.15,
@@ -1589,7 +1599,7 @@ const styles = StyleSheet.create({
   },
   addTopicText: {
     fontFamily: fontFamily.sansBold,
-    fontSize: 11,
+    fontSize: fontSize.caption,
     fontWeight: '700',
     color: colors.secondary,
     textTransform: 'uppercase',
@@ -1628,7 +1638,7 @@ const styles = StyleSheet.create({
   },
   eventCardTitle: {
     fontFamily: fontFamily.serif,
-    fontSize: 18,
+    fontSize: fontSize.title,
     fontWeight: '400',
     color: colors.primary,
     marginBottom: spacing.xs,
@@ -1718,7 +1728,7 @@ const styles = StyleSheet.create({
   courseCardTitle: {
     ...typography.bodyStrong,
     color: colors.textPrimary,
-    marginBottom: 2,
+    marginBottom: space.s0,
   },
   courseCardDescription: {
     ...typography.caption,
@@ -1824,7 +1834,7 @@ const styles = StyleSheet.create({
   },
   ctaHeading: {
     fontFamily: fontFamily.serif,
-    fontSize: 22,
+    fontSize: fontSize.verseSm,
     fontWeight: '400',
     color: '#ffffff',
     textAlign: 'center',

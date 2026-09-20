@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { colors, radius, typography } from '@/theme/tokens';
+import { colors, radius, space, typography } from '@/theme/tokens';
 
 export interface BadgeProps {
   label: string;
@@ -32,7 +32,7 @@ export function Badge({ label, variant = 'primary' }: BadgeProps) {
 const styles = StyleSheet.create({
   badge: {
     height: 24,
-    paddingHorizontal: 10,
+    paddingHorizontal: space.s8,
     borderRadius: radius.chip,
     alignSelf: 'flex-start',
     justifyContent: 'center',

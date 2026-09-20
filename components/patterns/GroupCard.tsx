@@ -9,7 +9,7 @@ import { Badge } from '@/components/primitives/Badge';
 import { COUNTRIES } from '@/constants/countries';
 import type { Group } from '@/lib/api';
 import { t } from '@/lib/i18n';
-import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, fontSize, radius, spacing, typography } from '@/theme/tokens';
 
 function getCountryDisplayName(code: string): string {
   const found = COUNTRIES.find((c) => c.code === code);
@@ -294,7 +294,7 @@ const featuredStyles = StyleSheet.create({
   },
   title: {
     fontFamily: fontFamily.serif,
-    fontSize: 28,
+    fontSize: fontSize.verse,
     fontWeight: '400',
     lineHeight: 36,
     letterSpacing: -0.2,

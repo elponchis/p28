@@ -15,7 +15,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { t } from '@/lib/i18n';
 import { isDesktopWebPointer } from '@/lib/pointer';
 import type { PostReactionType } from '@/lib/api';
-import { colors, radius, shadow, spacing } from '@/theme/tokens';
+import { colors, radius, shadow, space, spacing } from '@/theme/tokens';
 
 import { REACTION_OPTIONS } from './constants';
 
@@ -137,9 +137,9 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: space.s0,
     alignSelf: 'flex-end',
-    marginBottom: 2,
+    marginBottom: space.s0,
     paddingHorizontal: spacing.xxs,
     paddingVertical: spacing.xxs,
     borderRadius: radius.chip,

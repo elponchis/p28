@@ -31,7 +31,7 @@ import { notify } from '@/lib/dialogs';
 import { formatDateHeader, isIsoDate } from '@/lib/dates';
 import { groupTypeLabel } from '@/lib/groupTypes';
 import { t } from '@/lib/i18n';
-import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, fontSize, radius, space, spacing, typography } from '@/theme/tokens';
 
 /** A course's settings, as the form holds them while being edited. */
 interface CourseDraft {
@@ -403,16 +403,20 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.sansSemiBold,
   },
   cardMeta: { ...typography.caption, color: colors.onSurfaceVariant },
-  pill: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.sm },
+  pill: { paddingHorizontal: spacing.sm, paddingVertical: space.s0, borderRadius: radius.sm },
   pillOpen: { backgroundColor: colors.secondaryContainer },
   pillClosed: { backgroundColor: colors.surfaceContainerHigh },
   pillOpenText: {
     ...typography.caption,
-    fontSize: 11,
+    fontSize: fontSize.caption,
     color: colors.onSecondaryContainer,
     fontFamily: fontFamily.sansSemiBold,
   },
-  pillClosedText: { ...typography.caption, fontSize: 11, color: colors.onSurfaceVariant },
+  pillClosedText: {
+    ...typography.caption,
+    fontSize: fontSize.caption,
+    color: colors.onSurfaceVariant,
+  },
   editTitle: { ...typography.h2, color: colors.onSurface },
   editSub: { ...typography.caption, color: colors.onSurfaceVariant, marginBottom: spacing.md },
   label: { ...typography.caption, color: colors.onSurfaceVariant, marginBottom: spacing.xs },
@@ -437,7 +441,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginVertical: spacing.lg,
   },
-  toggleText: { flex: 1, gap: 2 },
+  toggleText: { flex: 1, gap: space.s0 },
   toggleLabel: { ...typography.body, color: colors.onSurface },
   error: { ...typography.caption, color: colors.error, marginBottom: spacing.sm },
   saveButton: { marginTop: spacing.sm },

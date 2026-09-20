@@ -5,7 +5,7 @@ import { ExternalLink } from './ExternalLink';
 import { MonoText } from './StyledText';
 import { Text, View } from './Themed';
 
-import { colors } from '@/theme/tokens';
+import { colors, fontSize, radius, space } from '@/theme/tokens';
 
 export default function EditScreenInfo({ path }: { path: string }) {
   return (
@@ -39,29 +39,29 @@ export default function EditScreenInfo({ path }: { path: string }) {
 const styles = StyleSheet.create({
   getStartedContainer: {
     alignItems: 'center',
-    marginHorizontal: 50,
+    marginHorizontal: space.s48,
   },
   homeScreenFilename: {
-    marginVertical: 7,
+    marginVertical: space.s8,
   },
   codeHighlightContainer: {
-    borderRadius: 3,
+    borderRadius: radius.xs,
     paddingHorizontal: 4,
     backgroundColor: colors.surfaceHighlight,
   },
   getStartedText: {
-    fontSize: 17,
+    fontSize: fontSize.bodyLarge,
     lineHeight: 24,
     textAlign: 'center',
     color: colors.textSecondary,
   },
   helpContainer: {
-    marginTop: 15,
+    marginTop: space.s16,
     marginHorizontal: 20,
     alignItems: 'center',
   },
   helpLink: {
-    paddingVertical: 15,
+    paddingVertical: space.s16,
   },
   helpLinkText: {
     textAlign: 'center',

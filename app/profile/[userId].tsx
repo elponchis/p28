@@ -19,7 +19,7 @@ import { api, getUserFacingError } from '@/lib/api';
 import type { ApiError } from '@/lib/api';
 import { preferredLanguageDisplayLabel, t } from '@/lib/i18n';
 import { notify } from '@/lib/dialogs';
-import { avatarSizes, colors, radius, spacing, typography } from '@/theme/tokens';
+import { avatarSizes, colors, radius, space, spacing, typography } from '@/theme/tokens';
 
 const cardStyle = {
   backgroundColor: colors.surfaceContainerLow,
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
-    gap: 6,
+    gap: space.s4,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     backgroundColor: colors.surfaceContainerLow,
@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     flexShrink: 1,
     minWidth: 0,
-    gap: 6,
+    gap: space.s4,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     backgroundColor: colors.primary,

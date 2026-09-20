@@ -3,7 +3,7 @@ import { Platform, StyleSheet, Text, View } from 'react-native';
 
 import { parseVideoEmbedUrl } from '@/lib/videoEmbed';
 import { t } from '@/lib/i18n';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { color, colors, radius, spacing, typography } from '@/theme/tokens';
 
 // react-native-webview has no web target; guarding the require behind a runtime check
 // (rather than `import`) means it's never invoked on web, so Metro's web bundle never
@@ -22,10 +22,7 @@ export function VideoEmbedPlayer({ videoUrl, accessibilityLabel }: VideoEmbedPla
 
   if (!embed) {
     return (
-      <View
-        style={[styles.container, styles.unsupported]}
-        accessibilityLabel={accessibilityLabel}
-      >
+      <View style={[styles.container, styles.unsupported]} accessibilityLabel={accessibilityLabel}>
         <Text style={styles.unsupportedText}>{t('lessons.unsupportedVideoUrl')}</Text>
       </View>
     );
@@ -65,13 +62,13 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     aspectRatio: 16 / 9,
-    backgroundColor: '#000000',
+    backgroundColor: color.ink,
     borderRadius: radius.lg,
     overflow: 'hidden',
   },
   webview: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: color.ink,
   },
   unsupported: {
     alignItems: 'center',

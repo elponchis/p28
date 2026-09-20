@@ -9,7 +9,16 @@ import { OpenChatsList } from '@/components/messages';
 import { Avatar } from '@/components/primitives';
 import { useAuth } from '@/hooks/useAuth';
 import { t } from '@/lib/i18n';
-import { breakpoints, colors, fontFamily, spacing } from '@/theme/tokens';
+import {
+  breakpoints,
+  color,
+  colors,
+  fontFamily,
+  fontSize,
+  radius,
+  space,
+  spacing,
+} from '@/theme/tokens';
 
 /** Routes that never get a nav icon — surfaced elsewhere (notifications: header bell). */
 const HIDDEN_FROM_NAV = new Set(['notifications']);
@@ -325,7 +334,7 @@ const styles = StyleSheet.create({
   tabPressable: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 3,
+    gap: space.s4,
   },
   iconWrap: {
     position: 'relative',
@@ -340,17 +349,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.error,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 3,
+    paddingHorizontal: space.s4,
   },
   badgeText: {
-    color: '#fff',
-    fontSize: 9,
+    color: color.surface,
+    fontSize: fontSize.caption,
     fontWeight: '700',
     lineHeight: 12,
   },
   tabLabel: {
     fontFamily: fontFamily.sansMedium,
-    fontSize: 9,
+    fontSize: fontSize.caption,
     fontWeight: '500',
     letterSpacing: 0.2,
   },
@@ -396,7 +405,7 @@ const styles = StyleSheet.create({
   sidebarBadge: {
     minWidth: 18,
     height: 18,
-    borderRadius: 9,
+    borderRadius: radius.control,
     backgroundColor: colors.error,
     alignItems: 'center',
     justifyContent: 'center',

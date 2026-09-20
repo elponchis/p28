@@ -4,7 +4,7 @@ import { Pressable, StyleSheet } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { t } from '@/lib/i18n';
-import { colors } from '@/theme/tokens';
+import { colors, radius } from '@/theme/tokens';
 
 export interface StackHeaderBackProps {
   iconColor?: string;
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
     // Sized to the 22px icon plus its padding, so the disc is a circle rather than a lozenge.
     width: 38,
     height: 38,
-    borderRadius: 19,
+    borderRadius: radius.feature,
     alignItems: 'center',
     justifyContent: 'center',
     // Dark enough for a white chevron to read against a white page, light enough not to blot

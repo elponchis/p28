@@ -39,11 +39,12 @@ import type { JoinedGroupUpcomingEventRow } from '@/lib/upcomingJoinedGroupEvent
 import {
   colors,
   fontFamily,
+  fontSize,
   radius,
-  spacing,
-  typography,
   shadow,
+  spacing,
   tabScreenContent,
+  typography,
 } from '@/theme/tokens';
 
 const GROUP_CARD_WIDTH = 200;
@@ -414,7 +415,7 @@ const styles = StyleSheet.create({
   },
   welcomeText: {
     fontFamily: fontFamily.serif,
-    fontSize: 28,
+    fontSize: fontSize.verse,
     fontWeight: '400',
     lineHeight: 36,
     letterSpacing: -0.2,
@@ -422,7 +423,7 @@ const styles = StyleSheet.create({
   },
   nameText: {
     fontFamily: fontFamily.serifItalic,
-    fontSize: 28,
+    fontSize: fontSize.verse,
     fontWeight: '400',
     lineHeight: 36,
     letterSpacing: -0.2,

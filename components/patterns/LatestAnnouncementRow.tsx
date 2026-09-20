@@ -5,7 +5,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { TagChip } from '@/components/patterns/TagChip';
 import { formatGroupEventCalendarBlock } from '@/lib/dates';
 import { t } from '@/lib/i18n';
-import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, fontSize, radius, spacing, typography } from '@/theme/tokens';
 
 export interface LatestAnnouncementRowProps {
   title: string;
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
   },
   month: {
     fontFamily: fontFamily.sansBold,
-    fontSize: 10,
+    fontSize: fontSize.caption,
     fontWeight: '700',
     color: colors.onSurfaceVariant,
     letterSpacing: 0.2,
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   },
   statusBadgeText: {
     fontFamily: fontFamily.sansBold,
-    fontSize: 10,
+    fontSize: fontSize.caption,
     color: colors.onSecondaryContainer,
   },
   meetingLinkFooter: {

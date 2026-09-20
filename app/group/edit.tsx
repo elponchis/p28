@@ -32,7 +32,7 @@ import {
 } from '@/hooks/useApiQueries';
 import { getUserFacingError } from '@/lib/api';
 import { t } from '@/lib/i18n';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { colors, radius, space, spacing, typography } from '@/theme/tokens';
 
 const LANGUAGES = [
   { code: 'en', nameKey: 'language.english' as const },
@@ -553,7 +553,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: colors.surfaceContainerHighest,
     borderRadius: radius.input,
-    paddingHorizontal: 14,
+    paddingHorizontal: space.s12,
     paddingVertical: 12,
     minHeight: 48,
     marginBottom: spacing.lg,

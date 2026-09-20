@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, View, Text, StyleSheet } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { colors, spacing, typography } from '@/theme/tokens';
+import { colors, space, spacing, typography } from '@/theme/tokens';
 
 export interface ListItemProps {
   title: string;
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
   subtitle: {
     ...typography.caption,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: space.s0,
   },
   rightGroup: {
     flexDirection: 'row',

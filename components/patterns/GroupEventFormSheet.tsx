@@ -23,7 +23,7 @@ import type { GroupEvent } from '@/lib/api';
 import { formatGroupEventDateTime, toDatetimeLocalValue } from '@/lib/dates';
 import { MEETING_LINK_MAX_LENGTH, parseMeetingLinkInput } from '@/lib/meetingLink';
 import { t } from '@/lib/i18n';
-import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, fontSize, radius, spacing, typography } from '@/theme/tokens';
 
 export interface GroupEventFormSheetProps {
   visible: boolean;
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
   handle: {
     width: 36,
     height: 4,
-    borderRadius: 2,
+    borderRadius: radius.xs,
     backgroundColor: colors.outlineVariant,
     alignSelf: 'center',
     marginBottom: spacing.md,
@@ -453,7 +453,7 @@ const styles = StyleSheet.create({
   },
   sheetTitle: {
     fontFamily: fontFamily.serif,
-    fontSize: 22,
+    fontSize: fontSize.verseSm,
     color: colors.primary,
   },
   scrollContent: {

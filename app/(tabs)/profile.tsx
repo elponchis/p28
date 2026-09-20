@@ -25,11 +25,13 @@ import { TAB_BAR_HEIGHT } from '@/components/navigation/FloatingTabBar';
 import {
   breakpoints,
   colors,
-  spacing,
-  typography,
-  radius,
   fontFamily,
+  fontSize,
+  radius,
+  space,
+  spacing,
   tabScreenContent,
+  typography,
 } from '@/theme/tokens';
 
 export default function ProfileScreen() {
@@ -392,11 +394,11 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontFamily: fontFamily.sansMedium,
-    fontSize: 10,
+    fontSize: fontSize.caption,
     fontWeight: '500',
     letterSpacing: 0.8,
     color: colors.onSurfaceVariant,
-    marginBottom: 2,
+    marginBottom: space.s0,
   },
   infoValue: {
     ...typography.bodyMd,
@@ -427,7 +429,7 @@ const styles = StyleSheet.create({
   },
   quoteIcon: {
     fontFamily: fontFamily.serif,
-    fontSize: 28,
+    fontSize: fontSize.verse,
     lineHeight: 28,
     color: colors.primary,
     marginTop: -2,
@@ -451,7 +453,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: fontFamily.sansMedium,
-    fontSize: 11,
+    fontSize: fontSize.caption,
     fontWeight: '500',
     letterSpacing: 0.8,
     color: colors.onSurfaceVariant,
@@ -464,7 +466,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceContainerLow,
     borderRadius: radius.lg,
     paddingHorizontal: spacing.md,
-    paddingVertical: 14,
+    paddingVertical: space.s12,
     marginBottom: spacing.xs,
     gap: spacing.sm,
   },

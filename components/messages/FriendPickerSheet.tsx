@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
   handle: {
     width: 36,
     height: 4,
-    borderRadius: 2,
+    borderRadius: radius.xs,
     backgroundColor: colors.ink300,
     alignSelf: 'center',
     marginBottom: spacing.md,

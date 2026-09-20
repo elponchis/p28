@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { Button } from '@/components/primitives';
-import { colors, radius, spacing, typography, shadow } from '@/theme/tokens';
+import { colors, radius, shadow, space, spacing, typography } from '@/theme/tokens';
 import { USE_NATIVE_DRIVER } from '@/lib/animation';
 
 export interface AddSheetProps {
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
   handle: {
     width: 36,
     height: 4,
-    borderRadius: 2,
+    borderRadius: radius.xs,
     backgroundColor: colors.outlineVariant,
     alignSelf: 'center',
     marginBottom: spacing.md,
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: radius.input,
     backgroundColor: colors.surfaceContainerHighest,
-    paddingHorizontal: 14,
+    paddingHorizontal: space.s12,
     fontSize: typography.body.fontSize,
     fontWeight: typography.body.fontWeight,
     color: colors.onSurface,
