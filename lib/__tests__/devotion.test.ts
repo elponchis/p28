@@ -2,6 +2,7 @@ import type { DevotionShare } from '@/lib/api';
 import {
   DEVOTION_QUESTIONS,
   DEVOTION_QUESTION_KEYS,
+  devotionDraftKey,
   devotionTotals,
   groupThreadsByQuestion,
   localDateKey,
@@ -113,5 +114,13 @@ describe('groupThreadsByQuestion', () => {
     ]);
     expect(groups.map((g) => g.count)).toEqual([0, 3, 0, 1]);
     expect(groups[1].threads.map((th) => th.share.id)).toEqual(['l2', 'l1']);
+  });
+});
+
+describe('devotionDraftKey', () => {
+  it('keeps one draft per devotion and prompt', () => {
+    expect(devotionDraftKey('d1', 'lesson')).toBe('devotion-draft:d1:lesson');
+    expect(devotionDraftKey('d1', 'prayer')).not.toBe(devotionDraftKey('d1', 'lesson'));
+    expect(devotionDraftKey('d2', 'lesson')).not.toBe(devotionDraftKey('d1', 'lesson'));
   });
 });

@@ -1164,6 +1164,10 @@ export const km: TranslationShape = {
     editDevotion: 'កែបទគម្ពីរ',
     deleteDevotion: 'លុបការរំពឹងគិត',
     deleteDevotionConfirm: 'លុបការរំពឹងគិតថ្ងៃនេះ? អ្វីដែលបានចែករំលែកទាំងអស់នឹងត្រូវលុបដែរ។',
-    questionSectionHint: 'បង្ហាញការចែករំលែកសម្រាប់សំណួរនេះ',
+    oneIsEnough: 'ឆ្លើយតែមួយក្នុងចំណោមបួនក៏បានដែរ។',
+    draftSave: 'រក្សាទុកព្រាង',
+    draftSaveHint: 'រក្សាទុកអ្វីដែលអ្នកកំពុងសរសេរនៅលើឧបករណ៍នេះ',
+    draftSaved: 'បានរក្សាទុកព្រាងនៅលើឧបករណ៍នេះ',
+    moreShares: 'មើលការចែករំលែក {{count}} ទៀត',
   },
 };

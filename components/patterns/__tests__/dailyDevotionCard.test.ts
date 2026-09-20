@@ -1,6 +1,6 @@
 /**
- * 오늘의 묵상 card contracts: shares open per prompt, authors manage their own shares, and only
- * leaders get the passage's edit and delete controls.
+ * 오늘의 묵상 card contracts: the passage sits on its own banner, shared answers read as one list
+ * tagged by prompt, authors manage their own shares, and only leaders get the passage's controls.
  */
 import fs from 'fs';
 import path from 'path';
@@ -12,10 +12,25 @@ const settings = fs.readFileSync(
 );
 
 describe('DailyDevotionCard', () => {
-  it('lists shares in one collapsible section per prompt', () => {
-    expect(source).toMatch(/groupThreadsByQuestion\(threadDevotionShares\(shares\)\)/);
-    expect(source).toMatch(/sections\.map\(\(\{ question: q, threads, count \}\)/);
-    expect(source).toMatch(/const open = openQuestions\.has\(q\)/);
+  it('puts the passage on the banner, not in the body', () => {
+    expect(source).toMatch(/styles\.bannerPassage/);
+    expect(source).toMatch(/banner: \{\s*backgroundColor: colors\.primaryContainer/);
+  });
+
+  it('lists the shared answers as one thread list, newest first', () => {
+    expect(source).toMatch(/threadDevotionShares\(shares\)/);
+    expect(source).toMatch(/const visibleThreads = threads\.slice\(0, visibleCount\)/);
+    expect(source).toMatch(/setVisibleCount\(\(n\) => n \+ VISIBLE_SHARES_STEP\)/);
+  });
+
+  it('tags each answer with the prompt it answers', () => {
+    expect(source).toMatch(/share\.question \? \(\s*<View style=\{styles\.questionTag\}>/);
+  });
+
+  it('keeps a draft per prompt on the device', () => {
+    expect(source).toMatch(/devotionDraftKey\(devotion\.id, question\)/);
+    expect(source).toMatch(/AsyncStorage\.setItem\(draftKey, draft\)/);
+    expect(source).toMatch(/AsyncStorage\.removeItem\(draftKey\)/);
   });
 
   it('gives edit and delete only to the author of a share', () => {
