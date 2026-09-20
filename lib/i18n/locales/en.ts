@@ -658,6 +658,7 @@ export const en = {
     voiceRecorderRecording: 'Recording…',
     voiceRecorderSend: 'Send voice message',
     voiceRecorderSendHint: 'Stops recording and attaches the voice message',
+    recordVoiceHint: 'Starts recording right away',
   },
   message: {
     reply: 'reply',
@@ -1165,7 +1166,11 @@ export const en = {
     editDevotion: 'Edit passage',
     deleteDevotion: 'Delete devotion',
     deleteDevotionConfirm: 'Delete today’s devotion? Everything shared on it will be deleted too.',
-    questionSectionHint: 'Shows the shares for this question',
+    oneIsEnough: 'Answering just one of the four is enough.',
+    draftSave: 'Save draft',
+    draftSaveHint: 'Keeps what you wrote on this device',
+    draftSaved: 'Draft saved on this device',
+    moreShares: 'See {{count}} more shares',
   },
 } as const;
 

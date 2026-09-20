@@ -22,6 +22,14 @@ export const DEVOTION_QUESTION_KEYS: Record<DevotionQuestion, { tab: string; que
 
 export const DEVOTION_BODY_MAX = 2000;
 
+/** How many answers the list shows before the "see more shares" button. */
+export const VISIBLE_SHARES_STEP = 3;
+
+/** Where a half-written answer waits on this device, one draft per prompt. */
+export function devotionDraftKey(devotionId: string, question: DevotionQuestion): string {
+  return `devotion-draft:${devotionId}:${question}`;
+}
+
 /**
  * The viewer's local calendar day as YYYY-MM-DD. A devotion is "today's" in the reader's day, not
  * the server's UTC one, which in Korea would change at 9am.

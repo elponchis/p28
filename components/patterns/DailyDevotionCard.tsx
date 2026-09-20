@@ -1,6 +1,7 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { Avatar, Button } from '@/components/primitives';
@@ -10,20 +11,23 @@ import {
   useDeleteDevotionShareMutation,
   useDeleteGroupDevotionMutation,
   useDevotionSharesQuery,
+  useProfileQuery,
   useSetDevotionShareHeartMutation,
   useUpdateDevotionShareMutation,
 } from '@/hooks/useApiQueries';
 import type { DevotionQuestion, DevotionShare } from '@/lib/api';
 import { getUserFacingError, isApiError } from '@/lib/api';
+import { formatMessageSentClockTime } from '@/lib/dates';
 import {
   DEVOTION_BODY_MAX,
   DEVOTION_QUESTION_KEYS,
   DEVOTION_QUESTIONS,
+  devotionDraftKey,
   devotionTotals,
-  groupThreadsByQuestion,
   localDateKey,
   threadDevotionShares,
   validateShareBody,
+  VISIBLE_SHARES_STEP,
 } from '@/lib/devotion';
 import { confirm, notify } from '@/lib/dialogs';
 import { t } from '@/lib/i18n';
@@ -44,8 +48,9 @@ const bodyErrorText = (problem: 'empty' | 'tooLong') =>
   problem === 'empty' ? t('devotion.emptyError') : t('devotion.tooLongError');
 
 /**
- * 오늘의 묵상: the day's passage, folded to one line with the group's hearts and comments, and
- * opened into four prompts, an answer box and what the group has shared — one list per prompt.
+ * 오늘의 묵상: the day's passage on a navy banner, the four prompts and an answer box under it,
+ * then what the group shared — one list, each answer tagged with the prompt it answers and
+ * carrying its own thread.
  */
 export function DailyDevotionCard({
   groupId,
@@ -69,13 +74,40 @@ export function DailyDevotionCard({
   const [question, setQuestion] = useState<DevotionQuestion>('who_is_god');
   const [draft, setDraft] = useState('');
   const [draftError, setDraftError] = useState<string | null>(null);
-  // Each prompt's shares open on their own; the one being answered starts open.
-  const [openQuestions, setOpenQuestions] = useState<Set<DevotionQuestion>>(
-    () => new Set<DevotionQuestion>(['who_is_god'])
-  );
+  const [draftSaved, setDraftSaved] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(VISIBLE_SHARES_STEP);
 
   const totals = useMemo(() => devotionTotals(shares), [shares]);
-  const sections = useMemo(() => groupThreadsByQuestion(threadDevotionShares(shares)), [shares]);
+  const threads = useMemo(() => threadDevotionShares(shares), [shares]);
+  const visibleThreads = threads.slice(0, visibleCount);
+  const hiddenThreads = threads.length - visibleThreads.length;
+
+  // A half-written answer survives switching prompts, folding the card and leaving the screen.
+  const draftKey = devotion ? devotionDraftKey(devotion.id, question) : null;
+  useEffect(() => {
+    if (!draftKey) return;
+    let current = true;
+    AsyncStorage.getItem(draftKey)
+      .then((saved) => {
+        if (current) setDraft(saved ?? '');
+      })
+      .catch(() => {
+        // A draft that cannot be read is not worth interrupting the reader for.
+      });
+    return () => {
+      current = false;
+    };
+  }, [draftKey]);
+
+  const saveDraft = useCallback(async () => {
+    if (!draftKey) return;
+    try {
+      await AsyncStorage.setItem(draftKey, draft);
+      setDraftSaved(true);
+    } catch (e) {
+      setDraftError(errorText(e));
+    }
+  }, [draftKey, draft]);
 
   const openSettings = () => router.push(`/group/devotion-settings?groupId=${groupId}`);
 
@@ -95,44 +127,50 @@ export function DailyDevotionCard({
     );
   };
 
-  const header = (
-    <View style={styles.headerRow}>
-      <Ionicons name="book-outline" size={18} color={colors.secondary} />
-      <Text style={styles.headerText} numberOfLines={1}>
-        {t('devotion.title', { group: groupName })}
-      </Text>
-      {canManage && devotion ? (
-        <View style={styles.leaderActions}>
-          <Pressable
-            onPress={openSettings}
-            style={styles.iconButton}
-            accessibilityRole="button"
-            accessibilityLabel={t('devotion.editDevotion')}
-            accessibilityHint={t('devotion.settingsHint')}
-            hitSlop={6}
-          >
-            <Ionicons name="create-outline" size={18} color={colors.onSurfaceVariant} />
-          </Pressable>
-          <Pressable
-            onPress={handleDeleteDevotion}
-            disabled={deleteDevotion.isPending}
-            style={styles.iconButton}
-            accessibilityRole="button"
-            accessibilityLabel={t('devotion.deleteDevotion')}
-            hitSlop={6}
-          >
-            <Ionicons name="trash-outline" size={18} color={colors.error} />
-          </Pressable>
-        </View>
-      ) : null}
+  // The passage is what the card is for, so it gets a navy band of its own at the top.
+  const banner = (label: string, passage?: string) => (
+    <View style={styles.banner}>
+      <View style={styles.bannerLabelRow}>
+        <Ionicons name="book-outline" size={15} color={colors.onPrimaryContainer} />
+        <Text style={styles.bannerLabel} numberOfLines={1}>
+          {label}
+        </Text>
+        {canManage && devotion ? (
+          <View style={styles.leaderActions}>
+            <Pressable
+              onPress={openSettings}
+              style={styles.iconButton}
+              accessibilityRole="button"
+              accessibilityLabel={t('devotion.editDevotion')}
+              accessibilityHint={t('devotion.settingsHint')}
+              hitSlop={6}
+            >
+              <Ionicons name="create-outline" size={17} color={colors.onPrimaryContainer} />
+            </Pressable>
+            <Pressable
+              onPress={handleDeleteDevotion}
+              disabled={deleteDevotion.isPending}
+              style={styles.iconButton}
+              accessibilityRole="button"
+              accessibilityLabel={t('devotion.deleteDevotion')}
+              hitSlop={6}
+            >
+              <Ionicons name="trash-outline" size={17} color={colors.onPrimaryContainer} />
+            </Pressable>
+          </View>
+        ) : null}
+      </View>
+      {passage ? <Text style={styles.bannerPassage}>{passage}</Text> : null}
     </View>
   );
 
   if (isLoading) {
     return (
       <View style={styles.card}>
-        {header}
-        <ActivityIndicator size="small" color={colors.primary} style={styles.loading} />
+        {banner(t('devotion.title', { group: groupName }))}
+        <View style={styles.body}>
+          <ActivityIndicator size="small" color={colors.primary} style={styles.loading} />
+        </View>
       </View>
     );
   }
@@ -140,8 +178,10 @@ export function DailyDevotionCard({
   if (isError) {
     return (
       <View style={styles.card}>
-        {header}
-        <Text style={styles.errorText}>{errorText(error)}</Text>
+        {banner(t('devotion.title', { group: groupName }))}
+        <View style={styles.body}>
+          <Text style={styles.errorText}>{errorText(error)}</Text>
+        </View>
       </View>
     );
   }
@@ -149,30 +189,24 @@ export function DailyDevotionCard({
   if (!devotion) {
     return (
       <View style={styles.card}>
-        {header}
-        <Text style={styles.emptyText}>
-          {canManage ? t('devotion.noDevotionLeader') : t('devotion.noDevotionMember')}
-        </Text>
-        {canManage ? (
-          <Button
-            title={t('devotion.setPassage')}
-            variant="secondary"
-            onPress={openSettings}
-            accessibilityLabel={t('devotion.setPassage')}
-            accessibilityHint={t('devotion.settingsHint')}
-          />
-        ) : null}
+        {banner(t('devotion.title', { group: groupName }))}
+        <View style={styles.body}>
+          <Text style={styles.emptyText}>
+            {canManage ? t('devotion.noDevotionLeader') : t('devotion.noDevotionMember')}
+          </Text>
+          {canManage ? (
+            <Button
+              title={t('devotion.setPassage')}
+              variant="secondary"
+              onPress={openSettings}
+              accessibilityLabel={t('devotion.setPassage')}
+              accessibilityHint={t('devotion.settingsHint')}
+            />
+          ) : null}
+        </View>
       </View>
     );
   }
-
-  const toggleSection = (q: DevotionQuestion) =>
-    setOpenQuestions((prev) => {
-      const next = new Set(prev);
-      if (next.has(q)) next.delete(q);
-      else next.add(q);
-      return next;
-    });
 
   const handleSubmit = () => {
     const problem = validateShareBody(draft);
@@ -186,8 +220,8 @@ export function DailyDevotionCard({
       {
         onSuccess: () => {
           setDraft('');
-          // Show the answer where it landed.
-          setOpenQuestions((prev) => new Set(prev).add(question));
+          setDraftSaved(false);
+          if (draftKey) void AsyncStorage.removeItem(draftKey).catch(() => {});
         },
         onError: (e) => setDraftError(errorText(e)),
       }
@@ -196,136 +230,165 @@ export function DailyDevotionCard({
 
   return (
     <View style={styles.card}>
-      {header}
-      <Text style={styles.reference}>{devotion.reference}</Text>
-      <Text style={styles.passage} numberOfLines={expanded ? undefined : 1}>
-        {devotion.passage}
-      </Text>
-
-      <View style={styles.countsRow}>
-        <View
-          style={styles.count}
-          accessibilityLabel={t('devotion.heartsCount', { count: String(totals.hearts) })}
-        >
-          <Ionicons name="heart-outline" size={16} color={colors.onSurfaceVariant} />
-          <Text style={styles.countText}>{totals.hearts}</Text>
-        </View>
-        <View
-          style={styles.count}
-          accessibilityLabel={t('devotion.commentsCount', { count: String(totals.comments) })}
-        >
-          <Ionicons name="chatbubble-outline" size={15} color={colors.onSurfaceVariant} />
-          <Text style={styles.countText}>{totals.comments}</Text>
-        </View>
-      </View>
-
-      <Button
-        title={expanded ? t('devotion.collapse') : t('devotion.shareButton')}
-        variant={expanded ? 'secondary' : 'primary'}
-        fullWidth
-        onPress={() => setExpanded((v) => !v)}
-        accessibilityLabel={expanded ? t('devotion.collapse') : t('devotion.shareButton')}
-        accessibilityHint={t('devotion.shareButtonHint')}
-      />
+      {banner(
+        `${t('devotion.title', { group: groupName })} · ${devotion.reference}`,
+        devotion.passage
+      )}
 
       {expanded ? (
-        <View style={styles.expanded}>
-          <View style={styles.tabs} accessibilityRole="tablist">
-            {DEVOTION_QUESTIONS.map((q) => {
-              const active = q === question;
-              return (
+        <>
+          <View style={styles.composer}>
+            <View style={styles.tabs} accessibilityRole="tablist">
+              {DEVOTION_QUESTIONS.map((q) => {
+                const active = q === question;
+                return (
+                  <Pressable
+                    key={q}
+                    onPress={() => {
+                      setQuestion(q);
+                      setDraftError(null);
+                      setDraftSaved(false);
+                    }}
+                    style={({ pressed }) => [
+                      styles.tab,
+                      active && styles.tabActive,
+                      pressed && styles.pressed,
+                    ]}
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected: active }}
+                    accessibilityLabel={t(DEVOTION_QUESTION_KEYS[q].tab)}
+                  >
+                    <Text
+                      style={[styles.tabText, active && styles.tabTextActive]}
+                      numberOfLines={1}
+                    >
+                      {t(DEVOTION_QUESTION_KEYS[q].tab)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Text style={styles.question}>{t(DEVOTION_QUESTION_KEYS[question].question)}</Text>
+            <TextInput
+              value={draft}
+              onChangeText={(v) => {
+                setDraft(v);
+                if (draftError) setDraftError(null);
+                if (draftSaved) setDraftSaved(false);
+              }}
+              placeholder={t('devotion.placeholder')}
+              placeholderTextColor={colors.textMuted}
+              multiline
+              maxLength={DEVOTION_BODY_MAX}
+              style={styles.input}
+              accessibilityLabel={t(DEVOTION_QUESTION_KEYS[question].question)}
+            />
+            {draftError ? (
+              <Text style={styles.errorText} accessibilityLiveRegion="polite">
+                {draftError}
+              </Text>
+            ) : null}
+
+            <View style={styles.composerFooter}>
+              <Text style={styles.hint}>
+                {draftSaved ? t('devotion.draftSaved') : t('devotion.oneIsEnough')}
+              </Text>
+              <View style={styles.composerButtons}>
                 <Pressable
-                  key={q}
-                  onPress={() => {
-                    setQuestion(q);
-                    setDraftError(null);
-                  }}
-                  style={[styles.tab, active && styles.tabActive]}
-                  accessibilityRole="tab"
-                  accessibilityState={{ selected: active }}
-                  accessibilityLabel={t(DEVOTION_QUESTION_KEYS[q].tab)}
+                  onPress={() => void saveDraft()}
+                  style={({ pressed }) => [styles.outlineButton, pressed && styles.pressed]}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('devotion.draftSave')}
+                  accessibilityHint={t('devotion.draftSaveHint')}
                 >
-                  <Text style={[styles.tabText, active && styles.tabTextActive]}>
-                    {t(DEVOTION_QUESTION_KEYS[q].tab)}
-                  </Text>
+                  <Text style={styles.outlineButtonText}>{t('devotion.draftSave')}</Text>
                 </Pressable>
-              );
-            })}
+                <Pressable
+                  onPress={handleSubmit}
+                  disabled={createShare.isPending}
+                  style={({ pressed }) => [styles.filledButton, pressed && styles.pressed]}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('devotion.submit')}
+                  accessibilityHint={t('devotion.submitHint')}
+                >
+                  <Text style={styles.filledButtonText}>{t('devotion.submit')}</Text>
+                </Pressable>
+              </View>
+            </View>
           </View>
 
-          <Text style={styles.question}>{t(DEVOTION_QUESTION_KEYS[question].question)}</Text>
-          <TextInput
-            value={draft}
-            onChangeText={(v) => {
-              setDraft(v);
-              if (draftError) setDraftError(null);
-            }}
-            placeholder={t('devotion.placeholder')}
-            placeholderTextColor={colors.onSurfaceVariant}
-            multiline
-            maxLength={DEVOTION_BODY_MAX}
-            style={styles.input}
-            accessibilityLabel={t(DEVOTION_QUESTION_KEYS[question].question)}
-          />
-          {draftError ? (
-            <Text style={styles.errorText} accessibilityLiveRegion="polite">
-              {draftError}
-            </Text>
-          ) : null}
-          <Button
-            title={t('devotion.submit')}
-            onPress={handleSubmit}
-            disabled={createShare.isPending}
-            accessibilityLabel={t('devotion.submit')}
-            accessibilityHint={t('devotion.submitHint')}
-            style={styles.submit}
-          />
+          <View style={styles.shares}>
+            <View style={styles.sharesHeader}>
+              <Text style={styles.sharesTitle}>{t('devotion.sharesTitle')}</Text>
+              <Text style={styles.sharesCount}>{threads.length}</Text>
+              <Pressable
+                onPress={() => setExpanded(false)}
+                style={styles.linkButton}
+                accessibilityRole="button"
+                accessibilityLabel={t('devotion.collapse')}
+                hitSlop={6}
+              >
+                <Text style={styles.linkText}>{t('devotion.collapse')}</Text>
+              </Pressable>
+            </View>
 
-          <Text style={styles.sharesTitle}>{t('devotion.sharesTitle')}</Text>
-          {sections.map(({ question: q, threads, count }) => {
-            const open = openQuestions.has(q);
-            return (
-              <View key={q} style={styles.section}>
-                <Pressable
-                  onPress={() => toggleSection(q)}
-                  style={({ pressed }) => [styles.sectionHeader, pressed && { opacity: 0.8 }]}
-                  accessibilityRole="button"
-                  accessibilityState={{ expanded: open }}
-                  accessibilityLabel={`${t(DEVOTION_QUESTION_KEYS[q].tab)}, ${count}`}
-                  accessibilityHint={t('devotion.questionSectionHint')}
-                >
-                  <View style={styles.questionTag}>
-                    <Text style={styles.questionTagText}>{t(DEVOTION_QUESTION_KEYS[q].tab)}</Text>
-                  </View>
-                  <Text style={styles.sectionCount}>{count}</Text>
-                  <Ionicons
-                    name={open ? 'chevron-up' : 'chevron-down'}
-                    size={16}
-                    color={colors.onSurfaceVariant}
-                  />
-                </Pressable>
-                {open ? (
-                  threads.length === 0 ? (
-                    <Text style={[styles.emptyText, styles.sectionEmpty]}>
-                      {t('devotion.noShares')}
-                    </Text>
-                  ) : (
-                    threads.map(({ share, replies }) => (
-                      <ShareThread
-                        key={share.id}
-                        share={share}
-                        replies={replies}
-                        devotionId={devotion.id}
-                        userId={userId}
-                      />
-                    ))
-                  )
-                ) : null}
-              </View>
-            );
-          })}
+            {threads.length === 0 ? (
+              <Text style={styles.emptyText}>{t('devotion.noShares')}</Text>
+            ) : (
+              visibleThreads.map(({ share, replies }) => (
+                <ShareThread
+                  key={share.id}
+                  share={share}
+                  replies={replies}
+                  devotionId={devotion.id}
+                  userId={userId}
+                />
+              ))
+            )}
+
+            {hiddenThreads > 0 ? (
+              <Pressable
+                onPress={() => setVisibleCount((n) => n + VISIBLE_SHARES_STEP)}
+                style={({ pressed }) => [styles.moreButton, pressed && styles.pressed]}
+                accessibilityRole="button"
+                accessibilityLabel={t('devotion.moreShares', { count: String(hiddenThreads) })}
+              >
+                <Text style={styles.moreButtonText}>
+                  {t('devotion.moreShares', { count: String(hiddenThreads) })}
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
+        </>
+      ) : (
+        <View style={styles.foldedRow}>
+          <View
+            style={styles.count}
+            accessibilityLabel={t('devotion.heartsCount', { count: String(totals.hearts) })}
+          >
+            <Ionicons name="heart-outline" size={15} color={colors.textMuted} />
+            <Text style={styles.countText}>{totals.hearts}</Text>
+          </View>
+          <View
+            style={styles.count}
+            accessibilityLabel={t('devotion.commentsCount', { count: String(totals.comments) })}
+          >
+            <Ionicons name="chatbubble-outline" size={14} color={colors.textMuted} />
+            <Text style={styles.countText}>{totals.comments}</Text>
+          </View>
+          <View style={styles.foldedSpacer} />
+          <Pressable
+            onPress={() => setExpanded(true)}
+            style={({ pressed }) => [styles.filledButton, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel={t('devotion.shareButton')}
+            accessibilityHint={t('devotion.shareButtonHint')}
+          >
+            <Text style={styles.filledButtonText}>{t('devotion.shareButton')}</Text>
+          </Pressable>
         </View>
-      ) : null}
+      )}
     </View>
   );
 }
@@ -345,6 +408,7 @@ function ShareThread({
   const [reply, setReply] = useState('');
   const [replyError, setReplyError] = useState<string | null>(null);
   const createShare = useCreateDevotionShareMutation();
+  const { data: me } = useProfileQuery(userId);
 
   const handleReply = () => {
     const problem = validateShareBody(reply);
@@ -373,14 +437,13 @@ function ShareThread({
       <ShareRow share={share} devotionId={devotionId} userId={userId}>
         <Pressable
           onPress={() => setOpen((v) => !v)}
-          style={styles.action}
+          style={styles.linkButton}
           accessibilityRole="button"
           accessibilityState={{ expanded: open }}
           accessibilityLabel={toggleLabel}
           hitSlop={6}
         >
-          <Ionicons name="chatbubble-outline" size={15} color={colors.onSurfaceVariant} />
-          <Text style={styles.actionText}>{toggleLabel}</Text>
+          <Text style={styles.linkText}>{toggleLabel}</Text>
         </Pressable>
       </ShareRow>
 
@@ -390,6 +453,11 @@ function ShareThread({
             <ShareRow key={r.id} share={r} devotionId={devotionId} userId={userId} compact />
           ))}
           <View style={styles.replyComposer}>
+            <Avatar
+              source={me?.avatarUrl ? { uri: me.avatarUrl } : null}
+              fallbackText={me?.displayName ?? ''}
+              size="sm"
+            />
             <TextInput
               value={reply}
               onChangeText={(v) => {
@@ -397,7 +465,7 @@ function ShareThread({
                 if (replyError) setReplyError(null);
               }}
               placeholder={t('devotion.replyPlaceholder')}
-              placeholderTextColor={colors.onSurfaceVariant}
+              placeholderTextColor={colors.textMuted}
               maxLength={DEVOTION_BODY_MAX}
               style={styles.replyInput}
               accessibilityLabel={t('devotion.replyPlaceholder')}
@@ -406,12 +474,12 @@ function ShareThread({
             <Pressable
               onPress={handleReply}
               disabled={createShare.isPending}
-              style={({ pressed }) => [styles.replySend, pressed && { opacity: 0.7 }]}
+              style={({ pressed }) => [styles.replySend, pressed && styles.pressed]}
               accessibilityRole="button"
               accessibilityLabel={t('devotion.sendReply')}
               accessibilityHint={t('devotion.sendReplyHint')}
             >
-              <Ionicons name="send" size={16} color={colors.onPrimary} />
+              <Ionicons name="send" size={15} color={colors.onPrimary} />
             </Pressable>
           </View>
           {replyError ? <Text style={styles.errorText}>{replyError}</Text> : null}
@@ -482,18 +550,27 @@ function ShareRow({
   };
 
   return (
-    <View style={styles.shareRow}>
+    <View style={compact ? styles.replyRow : styles.shareRow}>
       <Avatar
         source={share.authorAvatarUrl ? { uri: share.authorAvatarUrl } : null}
         fallbackText={name}
-        size={compact ? 'sm' : 'md'}
+        size="sm"
       />
       <View style={styles.shareBody}>
         <View style={styles.shareMeta}>
           <Text style={styles.shareName} numberOfLines={1}>
             {name}
           </Text>
-          {share.editedAt ? <Text style={styles.editedMark}>{t('devotion.edited')}</Text> : null}
+          {/* The prompt an answer belongs to travels with it, so one list still reads clearly. */}
+          {share.question ? (
+            <View style={styles.questionTag}>
+              <Text style={styles.questionTagText}>
+                {t(DEVOTION_QUESTION_KEYS[share.question].tab)}
+              </Text>
+            </View>
+          ) : null}
+          <Text style={styles.shareTime}>{formatMessageSentClockTime(share.createdAt)}</Text>
+          {share.editedAt ? <Text style={styles.shareTime}>{t('devotion.edited')}</Text> : null}
         </View>
 
         {editing ? (
@@ -514,24 +591,21 @@ function ShareRow({
             <View style={styles.editActions}>
               <Pressable
                 onPress={() => setEditing(false)}
-                style={styles.action}
+                style={styles.linkButton}
                 accessibilityRole="button"
                 accessibilityLabel={t('devotion.cancel')}
                 hitSlop={6}
               >
-                <Text style={styles.actionText}>{t('devotion.cancel')}</Text>
+                <Text style={styles.linkText}>{t('devotion.cancel')}</Text>
               </Pressable>
               <Pressable
                 onPress={saveEdit}
                 disabled={updateShare.isPending}
-                style={styles.action}
+                style={({ pressed }) => [styles.outlineButton, pressed && styles.pressed]}
                 accessibilityRole="button"
                 accessibilityLabel={t('devotion.saveEdit')}
-                hitSlop={6}
               >
-                <Text style={[styles.actionText, styles.actionTextStrong]}>
-                  {t('devotion.saveEdit')}
-                </Text>
+                <Text style={styles.outlineButtonText}>{t('devotion.saveEdit')}</Text>
               </Pressable>
             </View>
           </View>
@@ -545,7 +619,11 @@ function ShareRow({
               onPress={() =>
                 setHeart.mutate({ devotionId, shareId: share.id, userId, hearted: !hearted })
               }
-              style={styles.action}
+              style={({ pressed }) => [
+                styles.heartPill,
+                hearted && styles.heartPillActive,
+                pressed && styles.pressed,
+              ]}
               accessibilityRole="button"
               accessibilityState={{ selected: hearted }}
               accessibilityLabel={`${hearted ? t('devotion.heartRemove') : t('devotion.heartAdd')} (${share.heartCount})`}
@@ -553,10 +631,10 @@ function ShareRow({
             >
               <Ionicons
                 name={hearted ? 'heart' : 'heart-outline'}
-                size={16}
-                color={hearted ? colors.secondary : colors.onSurfaceVariant}
+                size={14}
+                color={hearted ? colors.onSecondaryContainer : colors.textMuted}
               />
-              <Text style={[styles.actionText, hearted && styles.actionTextActive]}>
+              <Text style={[styles.heartCount, hearted && styles.heartCountActive]}>
                 {share.heartCount}
               </Text>
             </Pressable>
@@ -565,22 +643,22 @@ function ShareRow({
               <>
                 <Pressable
                   onPress={startEdit}
-                  style={styles.action}
+                  style={styles.linkButton}
                   accessibilityRole="button"
                   accessibilityLabel={t('devotion.edit')}
                   hitSlop={6}
                 >
-                  <Text style={styles.actionText}>{t('devotion.edit')}</Text>
+                  <Text style={styles.linkText}>{t('devotion.edit')}</Text>
                 </Pressable>
                 <Pressable
                   onPress={handleDelete}
                   disabled={deleteShare.isPending}
-                  style={styles.action}
+                  style={styles.linkButton}
                   accessibilityRole="button"
                   accessibilityLabel={t('devotion.delete')}
                   hitSlop={6}
                 >
-                  <Text style={[styles.actionText, styles.actionTextDanger]}>
+                  <Text style={[styles.linkText, styles.linkTextDanger]}>
                     {t('devotion.delete')}
                   </Text>
                 </Pressable>
@@ -599,44 +677,54 @@ const styles = StyleSheet.create({
     borderRadius: radius.card,
     borderWidth: 1,
     borderColor: colors.outlineVariant,
-    padding: spacing.cardPadding,
-    gap: spacing.sm,
+    overflow: 'hidden',
   },
-  headerRow: {
+  banner: {
+    backgroundColor: colors.primaryContainer,
+    paddingHorizontal: spacing.cardPadding,
+    paddingVertical: spacing.md,
+    gap: spacing.xs,
+  },
+  bannerLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
   },
-  headerText: {
-    ...typography.labelLg,
-    color: colors.onSurfaceVariant,
+  bannerLabel: {
+    ...typography.labelMd,
+    color: colors.onPrimaryContainer,
     flex: 1,
     minWidth: 0,
+  },
+  bannerPassage: {
+    fontFamily: fontFamily.serifBold,
+    fontSize: 20,
+    lineHeight: 30,
+    color: colors.onPrimary,
   },
   leaderActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: spacing.xxs,
   },
   iconButton: {
     padding: spacing.xxs,
   },
+  body: {
+    padding: spacing.cardPadding,
+    gap: spacing.sm,
+  },
   loading: {
     alignSelf: 'flex-start',
   },
-  reference: {
-    fontFamily: fontFamily.serifBold,
-    fontSize: 20,
-    lineHeight: 28,
-    color: colors.primary,
-  },
-  passage: {
-    ...typography.bodyLg,
-    color: colors.onSurface,
-  },
-  countsRow: {
+  foldedRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.md,
+    padding: spacing.cardPadding,
+  },
+  foldedSpacer: {
+    flex: 1,
   },
   count: {
     flexDirection: 'row',
@@ -645,18 +733,10 @@ const styles = StyleSheet.create({
   },
   countText: {
     ...typography.labelMd,
-    color: colors.onSurfaceVariant,
+    color: colors.textMuted,
   },
-  emptyText: {
-    ...typography.bodyMd,
-    color: colors.onSurfaceVariant,
-  },
-  errorText: {
-    ...typography.bodyMd,
-    color: colors.error,
-  },
-  expanded: {
-    marginTop: spacing.sm,
+  composer: {
+    padding: spacing.cardPadding,
     gap: spacing.sm,
   },
   tabs: {
@@ -665,13 +745,16 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   tab: {
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: radius.chip,
-    backgroundColor: colors.surfaceContainerLow,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
+    backgroundColor: colors.surfaceContainerLowest,
   },
   tabActive: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryContainer,
+    borderColor: colors.primaryContainer,
   },
   tabText: {
     ...typography.labelLg,
@@ -681,59 +764,98 @@ const styles = StyleSheet.create({
     color: colors.onPrimary,
   },
   question: {
-    ...typography.titleMd,
-    color: colors.primary,
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: 15,
+    lineHeight: 22,
+    color: colors.onSurface,
   },
   input: {
     ...typography.bodyLg,
     color: colors.onSurface,
-    backgroundColor: colors.surfaceContainer,
+    backgroundColor: colors.surfaceContainerLowest,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
     borderRadius: radius.lg,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    minHeight: 72,
+    minHeight: 88,
     textAlignVertical: 'top',
   },
-  submit: {
-    alignSelf: 'flex-end',
+  composerFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
   },
-  sharesTitle: {
-    ...typography.titleMd,
-    color: colors.onSurface,
-    marginTop: spacing.md,
+  hint: {
+    ...typography.labelMd,
+    color: colors.textMuted,
+    flexShrink: 1,
   },
-  // One collapsible list per prompt.
-  section: {
-    borderRadius: radius.lg,
-    backgroundColor: colors.surfaceContainerLow,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    gap: spacing.xs,
-  },
-  sectionHeader: {
+  composerButtons: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    minHeight: 36,
   },
-  sectionCount: {
-    ...typography.labelMd,
+  filledButton: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.lg,
+    backgroundColor: colors.primaryContainer,
+  },
+  filledButtonText: {
+    ...typography.labelLg,
+    fontFamily: fontFamily.sansSemiBold,
+    color: colors.onPrimary,
+  },
+  outlineButton: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
+    backgroundColor: colors.surfaceContainerLowest,
+  },
+  outlineButtonText: {
+    ...typography.labelLg,
     color: colors.onSurfaceVariant,
+  },
+  pressed: {
+    opacity: 0.85,
+  },
+  // The shared answers sit below the composer, divided from it the way the mockup divides them.
+  shares: {
+    borderTopWidth: 1,
+    borderTopColor: colors.outlineVariant,
+    padding: spacing.cardPadding,
+    gap: spacing.md,
+  },
+  sharesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  sharesTitle: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: 15,
+    color: colors.onSurface,
+  },
+  sharesCount: {
+    ...typography.labelMd,
+    color: colors.textMuted,
     flex: 1,
   },
-  sectionEmpty: {
-    paddingBottom: spacing.xs,
-  },
   thread: {
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.xs,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.outlineVariant,
     gap: spacing.xs,
   },
   shareRow: {
     flexDirection: 'row',
     gap: spacing.sm,
+  },
+  replyRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
   },
   shareBody: {
     flex: 1,
@@ -752,19 +874,19 @@ const styles = StyleSheet.create({
     color: colors.onSurface,
     flexShrink: 1,
   },
-  editedMark: {
+  shareTime: {
     ...typography.labelMd,
-    color: colors.onSurfaceVariant,
+    color: colors.textMuted,
   },
   questionTag: {
     paddingHorizontal: spacing.xs,
     paddingVertical: 2,
     borderRadius: radius.chip,
-    backgroundColor: colors.secondaryContainer,
+    backgroundColor: colors.primaryFixed,
   },
   questionTagText: {
     ...typography.labelMd,
-    color: colors.onSecondaryContainer,
+    color: colors.primary,
   },
   shareText: {
     ...typography.bodyMd,
@@ -775,40 +897,53 @@ const styles = StyleSheet.create({
   },
   editActions: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'flex-end',
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   actionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: spacing.md,
+    gap: spacing.sm,
     marginTop: spacing.xxs,
   },
-  action: {
+  heartPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xxs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xxs,
+    borderRadius: radius.chip,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
   },
-  actionText: {
+  heartPillActive: {
+    backgroundColor: colors.secondaryContainer,
+    borderColor: colors.secondaryContainer,
+  },
+  heartCount: {
+    ...typography.labelMd,
+    color: colors.textMuted,
+  },
+  heartCountActive: {
+    color: colors.onSecondaryContainer,
+  },
+  linkButton: {
+    paddingVertical: 2,
+  },
+  linkText: {
     ...typography.labelMd,
     color: colors.onSurfaceVariant,
   },
-  actionTextActive: {
-    color: colors.secondary,
-  },
-  actionTextStrong: {
-    color: colors.primary,
-    fontFamily: fontFamily.sansSemiBold,
-  },
-  actionTextDanger: {
+  linkTextDanger: {
     color: colors.error,
   },
-  // Slack-style thread: indented under the answer with a rail down its left edge.
+  // The thread is indented under its answer with a rail down its left edge.
   replies: {
     marginLeft: spacing.xl,
     paddingLeft: spacing.sm,
-    borderLeftWidth: 2,
+    borderLeftWidth: 1,
     borderLeftColor: colors.outlineVariant,
     gap: spacing.sm,
   },
@@ -822,16 +957,37 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.onSurface,
     backgroundColor: colors.surfaceContainerLowest,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
     borderRadius: radius.chip,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
   },
   replySend: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.primary,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.primaryContainer,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  moreButton: {
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
+  },
+  moreButtonText: {
+    ...typography.labelLg,
+    color: colors.onSurfaceVariant,
+  },
+  emptyText: {
+    ...typography.bodyMd,
+    color: colors.onSurfaceVariant,
+  },
+  errorText: {
+    ...typography.bodyMd,
+    color: colors.error,
   },
 });

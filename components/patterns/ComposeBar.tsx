@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
+import { composeAction } from '@/lib/composeAction';
 import { t } from '@/lib/i18n';
 import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
@@ -91,6 +92,12 @@ export interface ComposeBarProps {
    * when the clipboard carries actual files, which is how a screenshot arrives.
    */
   onPasteFiles?: (files: File[]) => void;
+
+  /**
+   * Chat only: when given, the send button becomes a mic while there is nothing to send, and one
+   * tap starts a voice message (KAN-30).
+   */
+  onRecordVoice?: () => void;
 }
 
 export function ComposeBar({
@@ -112,8 +119,15 @@ export function ComposeBar({
   editingContext,
   replyingToContext,
   variant = 'discussion',
+  onRecordVoice,
 }: ComposeBarProps) {
   const isChat = variant === 'chat';
+  const action = composeAction({
+    voiceAvailable: isChat && !!onRecordVoice,
+    text,
+    attachmentCount: pendingAttachments.length,
+    editing: !!editingContext,
+  });
   const atLimit = pendingAttachments.length >= maxAttachments;
   const inputRef = React.useRef<TextInput>(null);
 
@@ -448,7 +462,18 @@ export function ComposeBar({
           accessibilityHint={sendLabel ?? t('message.postReply')}
         />
 
-        {isChat ? (
+        {isChat && action === 'voice' ? (
+          <Pressable
+            style={[chatStyles.sendButton, chatStyles.sendButtonActive]}
+            onPress={onRecordVoice}
+            disabled={isSending || isUploadingAttachment}
+            accessibilityRole="button"
+            accessibilityLabel={t('attachments.voiceMessage')}
+            accessibilityHint={t('attachments.recordVoiceHint')}
+          >
+            <Ionicons name="mic" size={20} color={colors.onPrimary} />
+          </Pressable>
+        ) : isChat ? (
           <Pressable
             style={[chatStyles.sendButton, canSend && !isSending && chatStyles.sendButtonActive]}
             onPress={onSend}

@@ -15,7 +15,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { t } from '@/lib/i18n';
 import { isDesktopWebPointer } from '@/lib/pointer';
 import type { PostReactionType } from '@/lib/api';
-import { colors, radius, spacing } from '@/theme/tokens';
+import { colors, radius, shadow, spacing } from '@/theme/tokens';
 
 import { REACTION_OPTIONS } from './constants';
 
@@ -144,6 +144,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xxs,
     borderRadius: radius.chip,
     backgroundColor: colors.surfaceContainerHigh,
+    // It floats over the messages now, so it needs an edge of its own.
+    ...shadow.card,
+    shadowColor: colors.shadow,
   },
   button: {
     width: BUTTON_SIZE,
