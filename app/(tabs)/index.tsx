@@ -49,15 +49,19 @@ import {
   typography,
 } from '@/theme/tokens';
 
-/** Three group cards fill the row on desktop web, the way the canvas lays them out. */
-const GROUPS_PER_ROW = 3;
+/** Narrower than this and a quadrant drops onto its own row instead of sharing one. */
+const QUADRANT_MIN_WIDTH = 380;
+/** Group cards inside one quadrant. */
+const GROUPS_PER_ROW = 2;
 const GROUP_CARD_MIN_WIDTH = 200;
 
+/** Sizes a group card so a full row of them fills the quadrant it sits in. */
 function useGroupCardWidth() {
   const { width } = useWindowDimensions();
   if (Platform.OS !== 'web' || width < breakpoints.sidebar) return GROUP_CARD_MIN_WIDTH;
   const content = Math.min(width - SIDEBAR_WIDTH, tabScreenContent.maxWidth);
-  const usable = content - spacing.screenHorizontal * 2 - spacing.md * (GROUPS_PER_ROW - 1);
+  const quadrant = content >= QUADRANT_MIN_WIDTH * 2 ? content / 2 : content;
+  const usable = quadrant - spacing.screenHorizontal * 2 - spacing.md * (GROUPS_PER_ROW - 1);
   return Math.max(GROUP_CARD_MIN_WIDTH, Math.floor(usable / GROUPS_PER_ROW));
 }
 const GROUP_CARD_IMAGE_HEIGHT = 120;
@@ -234,20 +238,16 @@ export default function HomeScreen() {
           errorMessage={globalFormError}
         />
 
-        {/* Everything worth reading, and first on the screen: the platform-wide announcements,
+        <View style={styles.grid}>
+          {/* Everything worth reading, and first on the screen: the platform-wide announcements,
             then the latest published announcement from each joined group. News is what someone
             opens the app for; the groups strip below it is navigation, which can wait.
 
             A global announcement is addressed to everyone, so this section exists even for
             someone who has joined nothing yet. */}
-        {myGroups.length > 0 || globalAnnouncements.length > 0 ? (
-          <View style={styles.latestUpdatesSection}>
+          <View style={styles.quadrant}>
             <View style={styles.sectionPadded}>
-              <View style={styles.latestUpdatesHeader}>
-                <Text style={styles.latestUpdatesTitle}>
-                  {t('announcements.latestUpdatesSectionTitle')}
-                </Text>
-              </View>
+              <SectionHeader title={t('announcements.latestUpdatesSectionTitle')} />
             </View>
             {globalAnnouncementsIsError ? (
               <View style={styles.sectionPadded}>
@@ -313,51 +313,63 @@ export default function HomeScreen() {
               </View>
             )}
           </View>
-        ) : null}
 
-        {/* My Groups — horizontal scroll */}
-        <View style={styles.sectionPadded}>
-          <SectionHeader
-            title={t('home.yourGroups')}
-            actionLabel={myGroups.length > 0 ? t('home.seeAll') : undefined}
-            onAction={
-              myGroups.length > 0
-                ? () => router.navigate('/(tabs)/groups?filter=joined')
-                : undefined
-            }
-          />
-        </View>
-
-        {groupsLoading ? (
-          <View style={styles.loadingRow}>
-            <ActivityIndicator size="small" color={colors.primary} />
+          {/* The day's passage sits beside the news, not at the bottom of the scroll. */}
+          <View style={styles.quadrant}>
+            <View style={styles.sectionPadded}>
+              <SectionHeader title={t('home.reflectionTitle')} />
+              <ReflectionPlate
+                quote={t('home.reflectionQuote')}
+                attribution={t('home.reflectionAttribution')}
+                variant="dark"
+              />
+            </View>
           </View>
-        ) : myGroups.length === 0 ? (
-          <View style={styles.sectionPadded}>
-            <EmptyState
-              iconName="people-outline"
-              title={t('home.noGroupsYet')}
-              subtitle={t('home.noGroupsSubtitle')}
-              actionLabel={t('home.browseGroups')}
-              onAction={() => router.navigate('/(tabs)/groups')}
-            />
-          </View>
-        ) : (
-          <FlatList
-            data={myGroups}
-            renderItem={renderGroupItem}
-            keyExtractor={(item) => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.carouselContent}
-            ItemSeparatorComponent={() => <View style={styles.carouselSeparator} />}
-            scrollEnabled
-          />
-        )}
 
-        {/* Upcoming events from joined groups */}
-        {myGroups.length > 0 ? (
-          <View style={styles.upcomingSection}>
+          {/* My Groups — horizontal scroll */}
+          <View style={styles.quadrant}>
+            <View style={styles.sectionPadded}>
+              <SectionHeader
+                title={t('home.yourGroups')}
+                actionLabel={myGroups.length > 0 ? t('home.seeAll') : undefined}
+                onAction={
+                  myGroups.length > 0
+                    ? () => router.navigate('/(tabs)/groups?filter=joined')
+                    : undefined
+                }
+              />
+            </View>
+
+            {groupsLoading ? (
+              <View style={styles.loadingRow}>
+                <ActivityIndicator size="small" color={colors.primary} />
+              </View>
+            ) : myGroups.length === 0 ? (
+              <View style={styles.sectionPadded}>
+                <EmptyState
+                  iconName="people-outline"
+                  title={t('home.noGroupsYet')}
+                  subtitle={t('home.noGroupsSubtitle')}
+                  actionLabel={t('home.browseGroups')}
+                  onAction={() => router.navigate('/(tabs)/groups')}
+                />
+              </View>
+            ) : (
+              <FlatList
+                data={myGroups}
+                renderItem={renderGroupItem}
+                keyExtractor={(item) => item.id}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.carouselContent}
+                ItemSeparatorComponent={() => <View style={styles.carouselSeparator} />}
+                scrollEnabled
+              />
+            )}
+          </View>
+
+          {/* Upcoming events from joined groups */}
+          <View style={styles.quadrant}>
             <View style={styles.sectionPadded}>
               <SectionHeader
                 title={t('home.upcomingEvents')}
@@ -404,15 +416,6 @@ export default function HomeScreen() {
               />
             )}
           </View>
-        ) : null}
-
-        {/* Reflection Plate */}
-        <View style={styles.reflectionSection}>
-          <ReflectionPlate
-            quote={t('home.reflectionQuote')}
-            attribution={t('home.reflectionAttribution')}
-            variant="dark"
-          />
         </View>
       </Animated.View>
     </ScrollView>
@@ -451,6 +454,23 @@ const styles = StyleSheet.create({
 
   sectionPadded: {
     paddingHorizontal: spacing.screenHorizontal,
+  },
+
+  /**
+   * Two cards across on a desktop row, one below the other on a phone. Each quadrant keeps its
+   * own horizontal padding, so the gutter between columns is the two paddings meeting.
+   */
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: spacing.lg,
+  },
+  quadrant: {
+    flexGrow: 1,
+    flexBasis: QUADRANT_MIN_WIDTH,
+    minWidth: QUADRANT_MIN_WIDTH,
+    maxWidth: '100%',
+    marginBottom: spacing.lg,
   },
 
   // An outlined button, sized to its own content so it never stretches across the screen.
