@@ -50,6 +50,7 @@ export const ko: TranslationShape = {
     backToWatch: '영상 목록으로',
   },
   tabs: {
+    brandSubtitle: '커뮤니티',
     home: '홈',
     groups: '그룹',
     watch: '영상',

@@ -50,6 +50,7 @@ export const km: TranslationShape = {
     backToWatch: 'ត្រឡប់ទៅវីដេអូ',
   },
   tabs: {
+    brandSubtitle: 'សហគមន៍',
     home: 'ផ្ទះ',
     watch: 'វីដេអូ',
     groups: 'ក្រុម',

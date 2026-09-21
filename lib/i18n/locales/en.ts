@@ -50,6 +50,7 @@ export const en = {
     backToWatch: 'Back to Watch',
   },
   tabs: {
+    brandSubtitle: 'Community',
     home: 'Home',
     groups: 'Groups',
     watch: 'Watch',

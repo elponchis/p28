@@ -2,10 +2,12 @@ import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -36,9 +38,28 @@ import { t } from '@/lib/i18n';
 import { isApiError, type Group } from '@/lib/api';
 import { getUserFacingError } from '@/lib/errors';
 import type { JoinedGroupUpcomingEventRow } from '@/lib/upcomingJoinedGroupEvents';
-import { colors, fontFamily, radius, spacing, tabScreenContent, typography } from '@/theme/tokens';
+import { SIDEBAR_WIDTH } from '@/components/navigation/FloatingTabBar';
+import {
+  breakpoints,
+  colors,
+  fontFamily,
+  radius,
+  spacing,
+  tabScreenContent,
+  typography,
+} from '@/theme/tokens';
 
-const GROUP_CARD_WIDTH = 200;
+/** Three group cards fill the row on desktop web, the way the canvas lays them out. */
+const GROUPS_PER_ROW = 3;
+const GROUP_CARD_MIN_WIDTH = 200;
+
+function useGroupCardWidth() {
+  const { width } = useWindowDimensions();
+  if (Platform.OS !== 'web' || width < breakpoints.sidebar) return GROUP_CARD_MIN_WIDTH;
+  const content = Math.min(width - SIDEBAR_WIDTH, tabScreenContent.maxWidth);
+  const usable = content - spacing.screenHorizontal * 2 - spacing.md * (GROUPS_PER_ROW - 1);
+  return Math.max(GROUP_CARD_MIN_WIDTH, Math.floor(usable / GROUPS_PER_ROW));
+}
 const GROUP_CARD_IMAGE_HEIGHT = 120;
 /** A cover with no banner behind it is a touch shorter than a photo. */
 const GROUP_CARD_COVER_HEIGHT = 108;
@@ -46,6 +67,7 @@ const UPCOMING_EVENT_CARD_WIDTH = 300;
 
 function GroupCarouselCard({ group }: { group: Group }) {
   const { push } = useRouter();
+  const width = useGroupCardWidth();
 
   return (
     <Pressable
@@ -54,7 +76,7 @@ function GroupCarouselCard({ group }: { group: Group }) {
       accessibilityLabel={`${group.name}`}
       accessibilityHint={t('home.opensGroup')}
     >
-      <View style={carouselStyles.card}>
+      <View style={[carouselStyles.card, { width }]}>
         {group.bannerImageUrl ? (
           <Image
             source={{ uri: group.bannerImageUrl }}
@@ -518,7 +540,6 @@ const styles = StyleSheet.create({
 
 const carouselStyles = StyleSheet.create({
   card: {
-    width: GROUP_CARD_WIDTH,
     backgroundColor: colors.surfaceContainerLowest,
     borderRadius: radius.card,
     borderWidth: 1,

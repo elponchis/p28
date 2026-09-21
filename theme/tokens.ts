@@ -163,8 +163,8 @@ export const spacing = {
   cardPaddingTop: 16,
   cardPaddingBottom: 24,
   cardGap: 16,
-  sectionGap: 44, // scale 8 = 2.75rem between feed items
-  majorSectionGap: 88, // 5.5rem between major sections
+  sectionGap: 24, // between feed items — the canvas spacing scale
+  majorSectionGap: 48, // between major sections
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -423,10 +423,13 @@ export const breakpoints = {
  * instead of stretching full-width. A no-op below this width (phones, narrow web), since
  * `width: '100%'` never exceeds `maxWidth` there. Merge into a screen's existing content
  * wrapper style (e.g. `style={[styles.content, tabScreenContent]}`).
+ *
+ * The cap is wide enough that a normal laptop next to the sidebar fills the row the way the
+ * canvas draws it; it only bites on very wide monitors, where a full-width line is unreadable.
  */
 export const tabScreenContent = {
   width: '100%',
-  maxWidth: 720,
+  maxWidth: 1080,
   alignSelf: 'center',
 } as const;
 

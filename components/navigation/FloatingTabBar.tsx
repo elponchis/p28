@@ -3,6 +3,7 @@ import { Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
+import { Image } from 'expo-image';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { OpenChatsList } from '@/components/messages';
@@ -15,7 +16,7 @@ import { breakpoints, colors, fontFamily, radius, spacing } from '@/theme/tokens
 const HIDDEN_FROM_NAV = new Set(['notifications']);
 
 /** Width of the sidebar when acting as a desktop-web left nav instead of a bottom bar. */
-export const SIDEBAR_WIDTH = 240;
+export const SIDEBAR_WIDTH = 264;
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -260,6 +261,19 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
         style={[styles.sidebarOuter, { paddingTop: insets.top + spacing.lg, width: SIDEBAR_WIDTH }]}
       >
         <View style={styles.sidebarMain}>
+          {/* The app's own mark, so the sidebar says whose app this is before it says where to go. */}
+          <View style={styles.brand}>
+            <Image
+              source={require('@/assets/images/icon.png')}
+              style={styles.brandMark}
+              contentFit="cover"
+              accessibilityIgnoresInvertColors
+            />
+            <View style={styles.brandText}>
+              <Text style={styles.brandName}>P2:8</Text>
+              <Text style={styles.brandSub}>{t('tabs.brandSubtitle')}</Text>
+            </View>
+          </View>
           {mainItems.map(({ routeKey, routeName, ...item }) => (
             <View key={routeKey}>
               <SidebarTabItem {...item} />
@@ -367,6 +381,33 @@ const styles = StyleSheet.create({
   },
   sidebarMain: {
     gap: spacing.xxs,
+  },
+  brand: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    paddingBottom: spacing.lg,
+  },
+  brandMark: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+  },
+  brandText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  brandName: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.onSurface,
+  },
+  brandSub: {
+    fontFamily: fontFamily.sans,
+    fontSize: 13,
+    color: colors.onSurfaceVariant,
   },
   sidebarFooter: {
     borderTopWidth: 1,
