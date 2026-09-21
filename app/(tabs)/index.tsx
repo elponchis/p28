@@ -41,7 +41,7 @@ import { isApiError, type Group } from '@/lib/api';
 import { getUserFacingError } from '@/lib/errors';
 import { confirm, notify } from '@/lib/dialogs';
 import type { JoinedGroupUpcomingEventRow } from '@/lib/upcomingJoinedGroupEvents';
-import { SIDEBAR_WIDTH } from '@/components/navigation/FloatingTabBar';
+import { SIDEBAR_WIDTH } from '@/components/navigation/DesktopSidebar';
 import {
   breakpoints,
   colors,

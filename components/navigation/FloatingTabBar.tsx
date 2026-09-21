@@ -1,22 +1,14 @@
 import React from 'react';
-import { Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
-import { Image } from 'expo-image';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { OpenChatsList } from '@/components/messages';
-import { Avatar } from '@/components/primitives';
-import { useAuth } from '@/hooks/useAuth';
-import { t } from '@/lib/i18n';
-import { breakpoints, colors, fontFamily, radius, spacing } from '@/theme/tokens';
+import { colors, fontFamily, spacing } from '@/theme/tokens';
 
 /** Routes that never get a nav icon — surfaced elsewhere (notifications: header bell). */
 const HIDDEN_FROM_NAV = new Set(['notifications']);
-
-/** Width of the sidebar when acting as a desktop-web left nav instead of a bottom bar. */
-export const SIDEBAR_WIDTH = 264;
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -87,105 +79,6 @@ function TabItem({
   );
 }
 
-function SidebarTabItem({
-  label,
-  iconFocused,
-  iconDefault,
-  isFocused,
-  badge,
-  onPress,
-  onLongPress,
-  accessibilityLabel,
-}: {
-  label: string;
-  iconFocused: IoniconsName;
-  iconDefault: IoniconsName;
-  isFocused: boolean;
-  badge?: number;
-  onPress: () => void;
-  onLongPress: () => void;
-  accessibilityLabel?: string;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      onLongPress={onLongPress}
-      accessibilityRole="tab"
-      accessibilityState={{ selected: isFocused }}
-      accessibilityLabel={accessibilityLabel ?? label}
-      style={({ pressed }) => [
-        styles.sidebarItem,
-        isFocused && styles.sidebarItemFocused,
-        pressed && styles.sidebarItemPressed,
-      ]}
-    >
-      <Ionicons
-        name={isFocused ? iconFocused : iconDefault}
-        size={20}
-        color={isFocused ? colors.primary : colors.onSurfaceVariant}
-      />
-      <Text
-        style={[
-          styles.sidebarLabel,
-          { color: isFocused ? colors.primary : colors.onSurfaceVariant },
-        ]}
-        numberOfLines={1}
-      >
-        {label}
-      </Text>
-      {badge != null && badge > 0 && (
-        <View style={styles.sidebarBadge}>
-          <Text style={styles.badgeText}>{badge > 99 ? '99+' : badge}</Text>
-        </View>
-      )}
-    </Pressable>
-  );
-}
-
-function SidebarProfileFooter({
-  isFocused,
-  onPress,
-  onLongPress,
-  accessibilityLabel,
-}: {
-  isFocused: boolean;
-  onPress: () => void;
-  onLongPress: () => void;
-  accessibilityLabel?: string;
-}) {
-  const { session } = useAuth();
-
-  return (
-    <Pressable
-      onPress={onPress}
-      onLongPress={onLongPress}
-      accessibilityRole="tab"
-      accessibilityState={{ selected: isFocused }}
-      accessibilityLabel={accessibilityLabel ?? t('tabs.profile')}
-      style={({ pressed }) => [
-        styles.sidebarItem,
-        isFocused && styles.sidebarItemFocused,
-        pressed && styles.sidebarItemPressed,
-      ]}
-    >
-      <Avatar
-        size="sm"
-        fallbackText={session?.user?.email}
-        accessibilityLabel={t('tabs.profile')}
-      />
-      <Text
-        style={[
-          styles.sidebarLabel,
-          { color: isFocused ? colors.primary : colors.onSurfaceVariant },
-        ]}
-        numberOfLines={1}
-      >
-        {t('tabs.profile')}
-      </Text>
-    </Pressable>
-  );
-}
-
 const ICON_MAP: Record<string, { focused: IoniconsName; default: IoniconsName }> = {
   index: { focused: 'home', default: 'home-outline' },
   groups: { focused: 'people', default: 'people-outline' },
@@ -196,8 +89,6 @@ const ICON_MAP: Record<string, { focused: IoniconsName; default: IoniconsName }>
 
 export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
-  const isSidebar = Platform.OS === 'web' && width >= breakpoints.sidebar;
 
   const visibleRoutes = state.routes.filter((route) => !HIDDEN_FROM_NAV.has(route.name));
 
@@ -251,51 +142,6 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
       accessibilityLabel: options.tabBarAccessibilityLabel,
     };
   });
-
-  if (isSidebar) {
-    const mainItems = items.filter((item) => item.routeName !== 'profile');
-    const profileItem = items.find((item) => item.routeName === 'profile');
-
-    return (
-      <View
-        style={[styles.sidebarOuter, { paddingTop: insets.top + spacing.lg, width: SIDEBAR_WIDTH }]}
-      >
-        <View style={styles.sidebarMain}>
-          {/* The app's own mark, so the sidebar says whose app this is before it says where to go. */}
-          <View style={styles.brand}>
-            <Image
-              source={require('@/assets/images/icon.png')}
-              style={styles.brandMark}
-              contentFit="cover"
-              accessibilityIgnoresInvertColors
-            />
-            <View style={styles.brandText}>
-              <Text style={styles.brandName}>P2:8</Text>
-              <Text style={styles.brandSub}>{t('tabs.brandSubtitle')}</Text>
-            </View>
-          </View>
-          {mainItems.map(({ routeKey, routeName, ...item }) => (
-            <View key={routeKey}>
-              <SidebarTabItem {...item} />
-              {/* Open conversations hang off the Messages entry, because that is what they are
-                  part of — a flat list beside the tabs would read as more tabs. */}
-              {routeName === 'messages' ? <OpenChatsList /> : null}
-            </View>
-          ))}
-        </View>
-        {profileItem && (
-          <View style={[styles.sidebarFooter, { paddingBottom: insets.bottom + spacing.sm }]}>
-            <SidebarProfileFooter
-              isFocused={profileItem.isFocused}
-              onPress={profileItem.onPress}
-              onLongPress={profileItem.onLongPress}
-              accessibilityLabel={profileItem.accessibilityLabel}
-            />
-          </View>
-        )}
-      </View>
-    );
-  }
 
   return (
     <View
@@ -367,80 +213,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     letterSpacing: 0.2,
-  },
-  sidebarOuter: {
-    // Row-direction sidebar: fixed width, never grows/shrinks — `flex: 1` here would compete
-    // with the scene container for the row's main-axis space (roughly 50/50 instead of fixed).
-    flexGrow: 0,
-    flexShrink: 0,
-    backgroundColor: colors.surfaceContainerLowest,
-    borderRightWidth: 1,
-    borderRightColor: colors.ghostBorder,
-    paddingHorizontal: spacing.sm,
-    justifyContent: 'space-between',
-  },
-  sidebarMain: {
-    gap: spacing.xxs,
-  },
-  brand: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.sm,
-    paddingBottom: spacing.lg,
-  },
-  brandMark: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.md,
-  },
-  brandText: {
-    flex: 1,
-    minWidth: 0,
-  },
-  brandName: {
-    fontFamily: fontFamily.sansSemiBold,
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.onSurface,
-  },
-  brandSub: {
-    fontFamily: fontFamily.sans,
-    fontSize: 13,
-    color: colors.onSurfaceVariant,
-  },
-  sidebarFooter: {
-    borderTopWidth: 1,
-    borderTopColor: colors.ghostBorder,
-    paddingTop: spacing.sm,
-  },
-  sidebarItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: 12,
-  },
-  sidebarItemFocused: {
-    backgroundColor: colors.secondaryContainer,
-  },
-  sidebarItemPressed: {
-    opacity: 0.7,
-  },
-  sidebarLabel: {
-    flex: 1,
-    fontFamily: fontFamily.sansMedium,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  sidebarBadge: {
-    minWidth: 18,
-    height: 18,
-    borderRadius: radius.md,
-    backgroundColor: colors.error,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
   },
 });

@@ -13,8 +13,10 @@ import {
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import 'react-native-reanimated';
 
+import { DesktopSidebar, useDesktopSidebar } from '@/components/navigation/DesktopSidebar';
 import { BrandedSplash } from '@/components/patterns/BrandedSplash';
 import { StackHeaderBack } from '@/components/patterns/StackHeaderBack';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -198,25 +200,46 @@ function RootLayoutNav() {
     },
   };
 
+  // The sidebar sits beside the whole stack, so it stays put when a group, an announcement or
+  // a profile is pushed on top of the tabs. Signed-out screens get the window to themselves.
+  const showSidebar = useDesktopSidebar() && !!session && segments[0] !== 'auth';
+
   return (
     <ThemeProvider value={navTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '' }} />
-        <Stack.Screen name="upcoming-events" options={upcomingEventsStackOptions} />
-        <Stack.Screen name="announcements" options={announcementsStackOptions} />
-        <Stack.Screen name="group" options={{ headerShown: false }} />
-        <Stack.Screen name="auth" options={{ headerShown: false }} />
-        <Stack.Screen name="profile" options={profileStackScreenOptions} />
-        <Stack.Screen
-          name="modal"
-          options={{
-            presentation: 'modal',
-            headerShown: true,
-            title: '',
-            headerLeft: () => <StackHeaderBack />,
-          }}
-        />
-      </Stack>
+      <View style={styles.shell}>
+        {showSidebar ? <DesktopSidebar /> : null}
+        <View style={styles.scene}>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '' }} />
+            <Stack.Screen name="upcoming-events" options={upcomingEventsStackOptions} />
+            <Stack.Screen name="announcements" options={announcementsStackOptions} />
+            <Stack.Screen name="group" options={{ headerShown: false }} />
+            <Stack.Screen name="auth" options={{ headerShown: false }} />
+            <Stack.Screen name="profile" options={profileStackScreenOptions} />
+            <Stack.Screen
+              name="modal"
+              options={{
+                presentation: 'modal',
+                headerShown: true,
+                title: '',
+                headerLeft: () => <StackHeaderBack />,
+              }}
+            />
+          </Stack>
+        </View>
+      </View>
     </ThemeProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  shell: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: colors.background,
+  },
+  scene: {
+    flex: 1,
+    minWidth: 0,
+  },
+});

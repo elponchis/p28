@@ -46,9 +46,9 @@ export default function TabLayout() {
   return (
     <View style={style}>
       <Tabs
-        tabBar={(props) => <FloatingTabBar {...props} />}
+        tabBar={(props) => (isSidebar ? null : <FloatingTabBar {...props} />)}
         screenOptions={{
-          tabBarPosition: isSidebar ? 'left' : 'bottom',
+          tabBarPosition: 'bottom',
           tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: colors.ink300,
           tabBarStyle: {},
