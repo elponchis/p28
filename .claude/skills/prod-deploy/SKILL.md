@@ -91,6 +91,19 @@ gh api repos/elponchis/p28/commits/<main head>/status   # Vercel=success 기다�
 `/_expo/static/js/web/entry-*.js`를 찾아 받고, **이번에 들어간 코드에만 있는 문자열**
 (새 i18n 키, 새 스타일 이름 등)이 있는지 grep. "배포 성공" 표시만으로 끝내지 않는다.
 
+**Vercel=success가 프로덕션 배포라는 뜻은 아니다.** 커밋 하나당 배포는 하나고, 환경은
+그 커밋을 **먼저 받은 브랜치**가 정한다. 같은 SHA를 작업 브랜치에 먼저 밀고 곧바로
+main에 밀면, Vercel은 이미 만든 Preview 배포를 재사용하고 프로덕션은 그대로 있는다.
+커밋 상태는 success인데 운영 번들만 옛것인 상태가 된다.
+
+```bash
+gh api "repos/elponchis/p28/deployments?per_page=5" --jq '.[] | {sha: .sha[0:7], env: .environment}'
+```
+
+`env`가 `Production`인지 본다. `Preview`면 두 가지 중 하나다 — Vercel 대시보드에서
+Promote to Production, 또는 main에 새 커밋을 얹어 새 SHA로 빌드시키기. **작업 브랜치를
+백업으로 올리려면 main에 먼저 밀고 나서 올린다.** 순서만 바꾸면 이 일이 없다.
+
 ## 7. Jira
 
 배포된 PR에 대응하는 티켓만, `검토 중` → 코멘트 → `완료`:
