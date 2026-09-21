@@ -37,7 +37,7 @@ import {
   useUpcomingJoinedGroupEventsQuery,
 } from '@/hooks/useApiQueries';
 import { useLocale } from '@/contexts/LocaleContext';
-import { verseForDay } from '@/lib/dailyVerse';
+import { VERSE_ATTRIBUTION, verseForDay } from '@/lib/dailyVerse';
 import { groupTypeLabel } from '@/lib/groupTypes';
 import { t } from '@/lib/i18n';
 import { isApiError, type Group } from '@/lib/api';
@@ -391,10 +391,11 @@ export default function HomeScreen() {
             <View style={styles.sectionPadded}>
               <SectionHeader title={t('home.reflectionTitle')} />
               <ReflectionPlate
-                quote={todaysVerse ? '“' + todaysVerse.passage + '”' : t('home.reflectionQuote')}
+                quote={todaysVerse ? `“${todaysVerse.passage}”` : t('home.reflectionQuote')}
                 attribution={
-                  todaysVerse ? '— ' + todaysVerse.reference : t('home.reflectionAttribution')
+                  todaysVerse ? `— ${todaysVerse.reference}` : t('home.reflectionAttribution')
                 }
+                source={todaysVerse ? VERSE_ATTRIBUTION : undefined}
                 variant="dark"
               />
             </View>

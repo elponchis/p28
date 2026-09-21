@@ -6,6 +6,8 @@ export interface ReflectionPlateProps {
   quote: string;
   attribution?: string;
   variant?: 'light' | 'dark';
+  /** Whose translation this is. Required by the publisher, so it is never dropped. */
+  source?: string;
 }
 
 /**
@@ -13,12 +15,18 @@ export interface ReflectionPlateProps {
  * light: white card with left accent bar.
  * dark: deep primary background with white serif text.
  */
-export function ReflectionPlate({ quote, attribution, variant = 'light' }: ReflectionPlateProps) {
+export function ReflectionPlate({
+  quote,
+  attribution,
+  variant = 'light',
+  source,
+}: ReflectionPlateProps) {
   if (variant === 'dark') {
     return (
       <View style={darkStyles.plate}>
         <Text style={darkStyles.quote}>{quote}</Text>
         {attribution ? <Text style={darkStyles.attribution}>{attribution}</Text> : null}
+        {source ? <Text style={darkStyles.source}>{source}</Text> : null}
       </View>
     );
   }
@@ -29,6 +37,7 @@ export function ReflectionPlate({ quote, attribution, variant = 'light' }: Refle
       <View style={lightStyles.content}>
         <Text style={lightStyles.quote}>{quote}</Text>
         {attribution ? <Text style={lightStyles.attribution}>{attribution}</Text> : null}
+        {source ? <Text style={lightStyles.source}>{source}</Text> : null}
       </View>
     </View>
   );
@@ -63,6 +72,12 @@ const lightStyles = StyleSheet.create({
     color: colors.onSurfaceVariant,
     marginTop: spacing.md,
   },
+  source: {
+    fontFamily: fontFamily.sans,
+    fontSize: 12,
+    color: colors.onSurfaceVariant,
+    marginTop: spacing.xs,
+  },
 });
 
 const darkStyles = StyleSheet.create({
@@ -85,5 +100,11 @@ const darkStyles = StyleSheet.create({
     color: 'rgba(255,255,255,0.7)',
     marginTop: spacing.md,
     letterSpacing: 0.4,
+  },
+  source: {
+    fontFamily: fontFamily.sans,
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.6)',
+    marginTop: spacing.xs,
   },
 });

@@ -10,6 +10,7 @@ import {
   useCurrentGroupDevotionQuery,
   useDeleteDevotionShareMutation,
   useDeleteGroupDevotionMutation,
+  useDailyVersesQuery,
   useDevotionSharesQuery,
   useProfileQuery,
   useSetDevotionShareHeartMutation,
@@ -29,6 +30,8 @@ import {
   validateShareBody,
   VISIBLE_SHARES_STEP,
 } from '@/lib/devotion';
+import { useLocale } from '@/contexts/LocaleContext';
+import { VERSE_ATTRIBUTION, verseForDay } from '@/lib/dailyVerse';
 import { confirm, notify } from '@/lib/dialogs';
 import { t } from '@/lib/i18n';
 import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
@@ -67,6 +70,9 @@ export function DailyDevotionCard({
     error,
   } = useCurrentGroupDevotionQuery(groupId, today);
   const { data: shares = [] } = useDevotionSharesQuery(devotion?.id, userId);
+  const { locale } = useLocale();
+  const { data: dailyVerses = [] } = useDailyVersesQuery(locale);
+  const todaysVerse = useMemo(() => verseForDay(dailyVerses), [dailyVerses]);
   const createShare = useCreateDevotionShareMutation();
   const deleteDevotion = useDeleteGroupDevotionMutation();
 
@@ -187,13 +193,24 @@ export function DailyDevotionCard({
   }
 
   if (!devotion) {
+    // The leader's passage comes first. With none set, the group still gets a verse: the same
+    // one the whole app is reading today.
     return (
       <View style={styles.card}>
-        {banner(t('devotion.title', { group: groupName }))}
+        {banner(
+          todaysVerse
+            ? `${t('devotion.title', { group: groupName })} · ${todaysVerse.reference}`
+            : t('devotion.title', { group: groupName }),
+          todaysVerse?.passage
+        )}
         <View style={styles.body}>
-          <Text style={styles.emptyText}>
-            {canManage ? t('devotion.noDevotionLeader') : t('devotion.noDevotionMember')}
-          </Text>
+          {todaysVerse ? (
+            <Text style={styles.verseSource}>{VERSE_ATTRIBUTION}</Text>
+          ) : (
+            <Text style={styles.emptyText}>
+              {canManage ? t('devotion.noDevotionLeader') : t('devotion.noDevotionMember')}
+            </Text>
+          )}
           {canManage ? (
             <Button
               title={t('devotion.setPassage')}
@@ -980,6 +997,11 @@ const styles = StyleSheet.create({
   },
   moreButtonText: {
     ...typography.labelLg,
+    color: colors.onSurfaceVariant,
+  },
+  verseSource: {
+    fontFamily: fontFamily.sans,
+    fontSize: 12,
     color: colors.onSurfaceVariant,
   },
   emptyText: {

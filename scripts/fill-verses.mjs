@@ -45,7 +45,8 @@ const ATTRIBUTION = {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /** Named politely so the hosts can see who is asking. */
-const USER_AGENT = 'p28-community-app/1.0 (daily verse import; contact via github.com/elponchis/p28)';
+const USER_AGENT =
+  'p28-community-app/1.0 (daily verse import; contact via github.com/elponchis/p28)';
 
 async function cachedText(url, file) {
   const full = path.join(CACHE_DIR, file);
@@ -94,10 +95,15 @@ async function ebibleBooks(edition) {
   const malachi = listed.findIndex((b) => b.code === 'MAL');
   const matthew = listed.findIndex((b) => b.code === 'MAT');
   if (malachi < 0 || matthew < 0) throw new Error(`${edition}: contents page has no MAL/MAT`);
-  const canon = [...listed.slice(malachi - 38, malachi + 1), ...listed.slice(matthew, matthew + 27)];
+  const canon = [
+    ...listed.slice(malachi - 38, malachi + 1),
+    ...listed.slice(matthew, matthew + 27),
+  ];
   if (canon.length !== 66) throw new Error(`${edition}: found ${canon.length} books, expected 66`);
   if (canon[0].code !== 'GEN' || canon[65].code !== 'REV' || canon[42].code !== 'JHN') {
-    throw new Error(`${edition}: canon starts ${canon[0].code}, ends ${canon[65].code}, 43rd is ${canon[42].code}`);
+    throw new Error(
+      `${edition}: canon starts ${canon[0].code}, ends ${canon[65].code}, 43rd is ${canon[42].code}`
+    );
   }
   return new Map(canon.map((b, i) => [i + 1, b]));
 }
@@ -187,7 +193,10 @@ const text = { ko: new Map(), en: new Map(), km: new Map() };
 const bookName = { en: new Map(), km: new Map() };
 let done = 0;
 for (const [key, { book, chapter }] of chapters) {
-  const koHtml = await cachedText(koChapterUrl(ko.get(book).code, chapter), `ko/${ko.get(book).code}-${chapter}.html`);
+  const koHtml = await cachedText(
+    koChapterUrl(ko.get(book).code, chapter),
+    `ko/${ko.get(book).code}-${chapter}.html`
+  );
   text.ko.set(key, parseKorean(koHtml));
 
   for (const [locale, edition] of [
@@ -239,7 +248,18 @@ say(filled.length === 183, `count is 183 (got ${filled.length})`);
 
 for (const locale of ['ko', 'en', 'km']) {
   const empty = filled.filter((v) => !v.text[locale].trim());
-  say(empty.length === 0, `${locale}: no empty text (${empty.length}${empty.length ? ': ' + empty.slice(0, 5).map((v) => v.reference.ko).join(', ') : ''})`);
+  say(
+    empty.length === 0,
+    `${locale}: no empty text (${empty.length}${
+      empty.length
+        ? ': ' +
+          empty
+            .slice(0, 5)
+            .map((v) => v.reference.ko)
+            .join(', ')
+        : ''
+    })`
+  );
   const broken = filled.filter((v) => v.text[locale].includes('�'));
   say(broken.length === 0, `${locale}: no replacement characters (${broken.length})`);
   const noRef = filled.filter((v) => !v.reference[locale] || /undefined/.test(v.reference[locale]));
@@ -290,7 +310,12 @@ for (const locale of ['ko', 'en', 'km']) {
     odd.length === 0
       ? `PASS  ${locale}: every verse is 10–400 characters`
       : `WARN  ${locale}: ${odd.length} verse(s) outside 10–400 characters — check the parse:\n` +
-          odd.map((v) => `        day ${v.day} ${v.reference[locale]} (${v.text[locale].length}) ${v.text[locale]}`).join('\n')
+          odd
+            .map(
+              (v) =>
+                `        day ${v.day} ${v.reference[locale]} (${v.text[locale].length}) ${v.text[locale]}`
+            )
+            .join('\n')
   );
 }
 
