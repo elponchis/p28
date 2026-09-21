@@ -57,14 +57,30 @@ const LEGACY = {
   '#EBEEF9': 'brandSoft',
 };
 
+/** 팔레트 이름 → 앱의 역할 이름. 컴포넌트는 역할 이름으로만 고칩니다. */
+const ROLE_FOR = {
+  brandDeep: 'colors.primary',
+  brandSoft: 'colors.surfaceContainerHighest',
+  sand: 'colors.secondary',
+  sandSoft: 'colors.amberSoft',
+  sandInk: 'colors.onSecondaryContainer',
+  ground: 'colors.background',
+  surface: 'colors.surface',
+  surfaceSunken: 'colors.surfaceContainerLow',
+  neutralSoft: 'colors.surfaceContainerHigh',
+  ink: 'colors.onSurface',
+  inkSoft: 'colors.ink300',
+  muted: 'colors.onSurfaceVariant',
+  line: 'colors.outlineVariant',
+};
+const roleOf = (name) => ROLE_FOR[name] ?? `palette.${name} (맞는 역할 없음 — 보고)`;
+
 const SKIP_DIRS = new Set([
   'node_modules', '.git', '.expo', '.expo-shared', 'dist', 'build',
   'android', 'ios', 'coverage', '.next', 'supabase',
-  // Vendored snapshots of app source that ship with a skill, not the app itself.
-  '.claude',
 ]);
 const EXTS = new Set(['.ts', '.tsx', '.js', '.jsx']);
-const SKIP_FILES = [/tokens\.(ts|js|json)$/, /-theme\.mjs$/, /-tokens\.mjs$/, /-artboards\.mjs$/, /\.d\.ts$/, /__tests__/];
+const SKIP_FILES = [/tokens\.(ts|js|json)$/, /palette\.generated\.ts$/, /-theme\.mjs$/, /-tokens\.mjs$/, /-artboards\.mjs$/, /\.d\.ts$/, /__tests__/];
 
 /* ---------- 가장 가까운 토큰 ---------- */
 
@@ -132,7 +148,7 @@ function checkFile(file) {
       if (PALETTE_SET.has(hex)) continue;
       const near = nearestColor(hex);
       findings.push({
-        ...at, kind: 'color', value: m[0], suggest: `color.${near.name}`,
+        ...at, kind: 'color', value: m[0], suggest: roleOf(near.name),
         note: near.exact ? '예전 팔레트 — 그대로 치환' : `가장 가까운 토큰 (거리 ${near.distance})`,
       });
     }
@@ -158,8 +174,7 @@ function checkFile(file) {
 
     for (const m of line.matchAll(RADIUS)) {
       const n = Number(m[1]);
-      // 0 is a square corner, not an off-scale radius (cards that butt onto a footer).
-      if (RADII.includes(n) || n === 999 || n === 0) continue;
+      if (RADII.includes(n) || n === 999) continue;
       const near = nearestOf(RADII, n);
       findings.push({
         ...at, kind: 'radius', value: m[1],
@@ -199,7 +214,7 @@ if (!QUIET && all.length) {
 
 console.log(
   all.length
-    ? '\n고치려면: 이 출력을 Claude Code에 붙여넣고 "theme/tokens.ts에서 import해서 치환해줘, 레이아웃은 바꾸지 마"라고 하세요.\n'
+    ? '\n색 항목은 제안된 역할 이름(colors.*)으로 바꾸세요. 여백·글자 크기 항목은 바꾸지 말고 보고만 합니다.\n'
     : '\n전부 토큰 안에 있습니다.\n'
 );
 

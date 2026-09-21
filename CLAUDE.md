@@ -157,64 +157,40 @@ const errorMessage = isError && error && 'message' in error ? getUserFacingError
 
 ## 디자인 — 블루오션 테마
 
-색·크기·간격은 `theme/tokens.ts` 에서만 가져옵니다. 컴포넌트 안에 hex 값이나
-임의의 숫자를 직접 적지 않습니다.
+### 색과 크기는 역할 이름으로만
 
-```ts
-import { color, space, radius, fontSize } from '@/theme/tokens';
-```
+컴포넌트는 `@/theme/tokens` 의 역할 이름만 씁니다 — `colors.primary`,
+`colors.onSurfaceVariant`, `spacing.md`, `radius.card`, `typography.body`,
+`fontFamily.serif` 등. 컴포넌트 안에 hex 값이나 임의의 숫자를 적지 않습니다.
 
-`theme/tokens.ts` 와 `theme/tokens.json` 은 Claude Design 캔버스에서 자동으로
-뽑아낸 파일입니다. **손으로 고치지 마세요.** 값을 바꾸려면 캔버스를 고친 뒤
-다시 뽑습니다.
+역할이 가리키는 실제 값은 `theme/tokens.ts` 가 `theme/palette.generated.ts` 에서
+가져옵니다. `palette.generated.ts` 는 Claude Design 캔버스에서 자동으로 뽑은
+파일이므로 **손으로 고치지 않습니다.**
 
-캔버스의 목업은 **값의 출처일 뿐입니다.** UX, 버튼 배치, 화면 흐름, 컴포넌트
-구성이 목업과 앱에서 다르면 **언제나 앱이 맞습니다.** 목업을 근거로 버튼을
-옮기거나 추가하거나 화면 구조를 바꾸지 마세요.
+### 목업보다 앱이 정답
 
-### 색을 고르는 규칙
+캔버스 목업은 값의 출처일 뿐입니다. UX, 버튼 배치, 화면 흐름, 컴포넌트 구성이
+목업과 다르면 **언제나 앱이 맞습니다.** 목업을 근거로 버튼을 옮기거나 추가하거나
+화면 구조를 바꾸지 않습니다.
 
-- 기본 동작(버튼, 선택된 탭, 링크, 안 읽음 표시)은 `color.brandDeep`. 그 위 글자는 흰색.
-- `color.brand` 는 로고와 큰 강조 면적에만. 이 위에 흰 글자를 올리면 대비가 4.5:1을 겨우 넘으니 본문에는 쓰지 않습니다.
-- 파란 면 위의 보조 글자는 `color.onBrandMuted`. 흰색에 투명도를 주지 않습니다.
-- `color.sand` 계열은 채움색으로만. 그 위 글자는 `color.sandInk`. 검정이나 회색을 올리지 않습니다.
+### 역할을 고르는 규칙
+
+- 기본 동작(버튼, 선택된 탭, 링크, 안 읽음 표시) — `colors.primary`, 그 위 글자 `colors.onPrimary`.
+- 앰버는 채움으로만 — `colors.secondaryContainer` / `colors.amberSoft`, 그 위 글자 `colors.onSecondaryContainer`.
+- 보조 글자 — `colors.onSurfaceVariant`. 투명도로 글자를 흐리게 만들지 않습니다.
+- 테두리 — `colors.outlineVariant` 1px. 그림자는 새로 추가하지 않습니다.
 - 한 화면에 주 강조는 하나. 파랑과 앰버를 같은 위계로 나란히 쓰지 않습니다.
-- 보조 글자는 `color.muted`. 투명도로 글자를 흐리게 만들지 않습니다.
+- `fontFamily.serif` 는 말씀 인용과 그룹 이름에만.
+- 누르는 요소는 최소 44px.
 
-### 서체
+### git
 
-- `font.serif`(Gowun Batang)는 말씀 인용과 그룹 이름에만.
-- 나머지는 전부 `font.sans`(IBM Plex Sans KR), 굵기는 400 / 500 / 600 셋뿐입니다.
-- 700 이상이나 ALL CAPS는 쓰지 않습니다.
-
-### 모양
-
-- 여백은 `space` 의 값만 씁니다 (0 · 4 · 8 · 12 · 16 · 20 · 24 · 32 · 48).
-- 모서리는 `radius` 의 값만 씁니다 — `xs` 8, `control` 10, `field` 12, `card` 16, `feature` 18, `pill` 999.
-- 테두리는 `color.line` 1px. 그림자는 쓰지 않습니다.
-- 카드 한쪽에만 두꺼운 테두리를 두는 형태(left border accent)는 쓰지 않습니다.
-- 누르는 요소는 최소 44px(`hitSize`).
-
-### 작업 순서
-
-1. 화면을 고치기 전에 `git commit` 을 하나 만듭니다.
-2. 고친 뒤 `node scripts/check-theme.mjs` 를 돌립니다.
-3. 0건이 될 때까지 고칩니다. 레이아웃은 바꾸지 않고 값만 치환합니다.
+`git push`, `merge`, `rebase`, PR 생성은 사용자가 확인하기 전까지 하지 않습니다.
 
 ### 디자인이 바뀌었을 때
 
-캔버스에서 아트보드를 고쳤다면, 아트보드 파일을 내려받아 순서대로 돌립니다.
-
 ```
-node scripts/normalize-artboards.mjs <아트보드 폴더>   # 값을 스케일에 맞춤
-node scripts/extract-tokens.mjs <아트보드 폴더>        # tokens.ts / tokens.json 재생성
-node scripts/check-theme.mjs                          # 소스에서 어긋난 곳 찾기
+node scripts/normalize-artboards.mjs <아트보드 폴더>
+node scripts/extract-tokens.mjs <아트보드 폴더>
+node scripts/check-theme.mjs
 ```
-
-캔버스에 없던 색을 새로 썼다면 `extract-tokens.mjs` 가 "이름 없는 값"으로
-보고합니다. 그 파일의 `NAMES` 에 이름을 한 줄 추가한 뒤 다시 돌리세요.
-
-### 이 규칙이 적용되지 않는 곳
-
-- `supabase/functions/**` (서버 코드)
-- 사용자가 올린 사진·영상 썸네일 원본

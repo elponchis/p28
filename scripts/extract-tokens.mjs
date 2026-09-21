@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 /**
  * extract-tokens.mjs — Claude Design 캔버스에서 디자인 토큰을 뽑아
- * theme/tokens.ts 와 theme/tokens.json 을 다시 만듭니다.
+ * theme/palette.generated.ts 와 theme/tokens.json 을 다시 만듭니다.
  *
  *   node scripts/extract-tokens.mjs <아트보드 폴더> [--out theme]
  *
- * 캔버스를 편집한 뒤 아트보드 파일을 내려받아 이 스크립트를 다시 돌리면
- * 토큰 파일이 캔버스와 다시 맞춰집니다. 손으로 옮겨 적지 않으므로
- * 디자인과 코드가 어긋날 일이 없습니다.
+ * 앱의 theme/tokens.ts 는 건드리지 않습니다. 앱의 tokens.ts 가
+ * palette.generated.ts 를 import 해서 역할(primary, background …)에
+ * 값을 연결하는 구조입니다. 그래서 캔버스를 고치고 이 스크립트를 다시
+ * 돌리면, 앱의 역할 이름은 그대로인 채 값만 따라 바뀝니다.
  *
  * 이름 붙이기: 아래 NAMES에 있는 색만 이름을 받습니다.
  * 캔버스에 새 색이 생기면 "이름 없는 값"으로 보고되니, NAMES에 한 줄
@@ -114,61 +115,39 @@ const json = {
 fs.mkdirSync(OUT, { recursive: true });
 fs.writeFileSync(path.join(OUT, 'tokens.json'), JSON.stringify(json, null, 2) + '\n', 'utf8');
 
+const asc = (list) => [...list].sort((a, b) => a.px - b.px);
+
 const ts = `/**
- * P2:8 디자인 토큰 — 손으로 고치지 마세요.
+ * P2:8 팔레트 — 자동 생성 파일, 손으로 고치지 마세요.
  *
- * Claude Design 캔버스의 아트보드 ${files.length}개에서 자동으로 뽑아낸 파일입니다.
- * 디자인을 고쳤으면 아트보드를 내려받아 다시 돌리세요:
+ * Claude Design 캔버스의 아트보드 ${files.length}개에서 뽑았습니다.
+ * 앱의 theme/tokens.ts 가 이 값을 역할(primary, background …)에 연결해 씁니다.
+ * 디자인이 바뀌면 아트보드를 내려받아 다시 돌리세요:
  *
  *   node scripts/extract-tokens.mjs <아트보드 폴더>
  */
 
-export const color = {
+export const palette = {
 ${named.map((c) => `  /** ${c.note} (캔버스에서 ${c.count}회) */\n  ${c.name}: '${c.hex}',`).join('\n')}
 } as const;
 
-/** 예전 팔레트 → 새 토큰. 치환이 끝나면 지워도 됩니다. */
-export const legacyColorMap: Record<string, keyof typeof color> = {
-  '#F9F9FF': 'ground',
-  '#002046': 'ink',
-  '#151C27': 'ink',
-  '#FED488': 'sandSoft',
-  '#DCE3F2': 'line',
-  '#E7EEFE': 'brandSoft',
-  '#E5EAF6': 'brandSoft',
-  '#EBEEF9': 'brandSoft',
-};
-
-/** 4px 그리드. 캔버스에서 실제로 쓰인 값. */
-export const space = {
-${json.space.map((n) => `  s${n}: ${n},`).join('\n')}
+/** 캔버스에서 실제로 쓰인 스케일. 앱의 spacing / radius / typography 가 참고합니다. */
+export const scale = {
+  space: [${json.space.join(', ')}],
+  radius: { ${asc(radii.filter((r) => r.name)).map((r) => `${r.name}: ${r.px}`).join(', ')} },
+  fontSize: { ${asc(sizes.filter((s) => s.name)).map((s) => `${s.name}: ${s.px}`).join(', ')} },
 } as const;
 
-export const radius = {
-${radii.filter((r) => r.name).map((r) => `  ${r.name}: ${r.px},`).join('\n')}
-} as const;
-
-export const fontSize = {
-${sizes.filter((s) => s.name).map((s) => `  ${s.name}: ${s.px},`).join('\n')}
-} as const;
-
-export const font = {
+export const typeface = {
   /** 말씀 인용과 그룹 이름에만. */
   serif: 'Gowun Batang',
   sans: 'IBM Plex Sans KR',
 } as const;
 
-export const fontWeight = { regular: '400', medium: '500', bold: '600' } as const;
-export const lineHeight = { tight: 1.35, body: 1.65, verse: 1.6 } as const;
-
-/** 최소 터치 영역. */
-export const hitSize = 44;
-
-export const tokens = { color, space, radius, font, fontSize, fontWeight, lineHeight, hitSize } as const;
-export default tokens;
+export type PaletteName = keyof typeof palette;
 `;
 
-fs.writeFileSync(path.join(OUT, 'tokens.ts'), ts, 'utf8');
+fs.writeFileSync(path.join(OUT, 'palette.generated.ts'), ts, 'utf8');
 
 /* ---------- 리포트 ---------- */
 
@@ -188,4 +167,4 @@ if (offGrid.length) {
   console.log('  ' + offGrid.map((s) => `${s.px}px(${s.count})`).join('  '));
 }
 
-console.log(`\n${path.join(OUT, 'tokens.ts')} 와 tokens.json 을 새로 썼습니다.\n`);
+console.log(`\n${path.join(OUT, 'palette.generated.ts')} 와 tokens.json 을 새로 썼습니다. 앱의 tokens.ts 는 그대로입니다.\n`);
