@@ -160,20 +160,20 @@ export const spacing = {
 } as const;
 
 // ---------------------------------------------------------------------------
-// Radius (nothing sharper than sm/4px — prioritize lg and xl)
+// Radius — the canvas corners: 8 · 10 · 12 · 16 · 18 · pill
 // ---------------------------------------------------------------------------
 
 export const radius = {
-  sm: 4,
-  md: 8,
-  button: 9999, // pill shape — "Soft-Touch CTA"
-  card: 16, // tighter corners for the list-style surfaces
-  /** Stitch “Sacred Gatherings” cards — 2rem corners */
-  sacredGatheringCard: 32,
-  chip: 9999, // pill
-  lg: 12,
-  xl: 24,
-  input: 12, // md = 0.75rem
+  sm: 8,
+  md: 10,
+  button: 999, // pill shape — "Soft-Touch CTA"
+  card: 16,
+  /** Stitch “Sacred Gatherings” cards — the canvas's widest corner */
+  sacredGatheringCard: 18,
+  chip: 999, // pill
+  lg: 16,
+  xl: 18,
+  input: 12,
 } as const;
 
 // ---------------------------------------------------------------------------
