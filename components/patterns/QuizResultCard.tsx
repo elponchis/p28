@@ -3,7 +3,7 @@ import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { t } from '@/lib/i18n';
-import { colors, fontFamily, fontSize, radius, space, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 import { USE_NATIVE_DRIVER } from '@/lib/animation';
 
 export interface QuizResultCardProps {
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
   subtitle: {
     ...typography.caption,
     color: colors.onSurfaceVariant,
-    marginTop: space.s0,
+    marginTop: 0,
   },
   scoreRow: {
     flexDirection: 'row',
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
   },
   score: {
     fontFamily: fontFamily.serif,
-    fontSize: fontSize.display,
+    fontSize: 32,
     lineHeight: 46,
   },
   scoreMax: {

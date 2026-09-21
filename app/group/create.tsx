@@ -30,7 +30,7 @@ import { getUserFacingError } from '@/lib/api';
 import { creatableGroupTypes, groupTypeLabel } from '@/lib/groupTypes';
 import { t } from '@/lib/i18n';
 import type { GroupType } from '@/lib/api';
-import { colors, radius, space, spacing, typography } from '@/theme/tokens';
+import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 const LANGUAGES = [
   { code: 'en', nameKey: 'language.english' as const },
@@ -441,7 +441,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: colors.surfaceContainerHighest,
     borderRadius: radius.input,
-    paddingHorizontal: space.s12,
+    paddingHorizontal: 12,
     paddingVertical: 12,
     minHeight: 48,
     marginBottom: spacing.lg,

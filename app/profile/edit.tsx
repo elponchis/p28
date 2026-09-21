@@ -15,7 +15,7 @@ import { t } from '@/lib/i18n';
 import { Avatar, Button, Input, ListItem } from '@/components/primitives';
 import { UploadProgressBar } from '@/components/patterns/UploadProgressBar';
 import { DesktopContentContainer } from '@/components/layout/DesktopContentContainer';
-import { colors, radius, shadow, space, spacing, typography } from '@/theme/tokens';
+import { colors, radius, shadow, spacing, typography } from '@/theme/tokens';
 import type { ProfileUpdates } from '@/lib/api';
 
 const LANGUAGE_OPTIONS: {
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: spacing.screenHorizontal,
     paddingTop: spacing.lg,
-    paddingBottom: space.s32,
+    paddingBottom: 32,
   },
 
   // Avatar card

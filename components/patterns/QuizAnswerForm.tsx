@@ -4,7 +4,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import type { QuizAnswer, QuizAnswerResult, QuizQuestion } from '@/lib/api';
 import { isChoiceQuestion } from '@/lib/quiz';
 import { t } from '@/lib/i18n';
-import { colors, radius, space, spacing, typography } from '@/theme/tokens';
+import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 export interface QuizAnswerFormProps {
   questions: QuizQuestion[];
@@ -192,9 +192,9 @@ const styles = StyleSheet.create({
   verdictBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.s0,
+    gap: 0,
     paddingHorizontal: spacing.xs,
-    paddingVertical: space.s0,
+    paddingVertical: 0,
     borderRadius: radius.chip,
     marginLeft: 'auto',
   },

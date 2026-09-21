@@ -13,7 +13,7 @@ import {
 import type { FriendRequest } from '@/lib/api';
 import { formatRelativeTime } from '@/lib/dates';
 import { t } from '@/lib/i18n';
-import { colors, radius, shadow, space, spacing, typography } from '@/theme/tokens';
+import { colors, radius, shadow, spacing, typography } from '@/theme/tokens';
 
 export default function FriendRequestsScreen() {
   const { session } = useAuth();
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   timestamp: {
     ...typography.caption,
     color: colors.textSecondary,
-    marginTop: space.s0,
+    marginTop: 0,
   },
   actions: {
     flexDirection: 'row',
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: space.s4,
+    gap: 4,
     paddingVertical: spacing.sm,
     backgroundColor: colors.primary,
     borderRadius: radius.button,

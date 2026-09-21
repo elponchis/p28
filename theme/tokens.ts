@@ -1,16 +1,15 @@
 /**
- * Design tokens — the P2:8 Blue Ocean theme (single source of truth).
+ * Design tokens — The Sanctuary Editorial (single source of truth).
  *
  * Creative North Star: "The Digital Hearth"
  * Aesthetic: High-end editorial — warm, spacious, deeply personal.
- * Palette: extracted from the Claude Design canvas — ocean blues + a warm sand amber.
+ * Palette: "Spirit and Earth" — deep authoritative blues + warm illuminating golds.
  * Typography: Noto Serif (headlines) + Plus Jakarta Sans (body).
  * Depth: Tonal layering with light hairline borders; shadows kept faint.
  *
- * Blue Ocean theme (2026-09): the palette, type scale, corners and spacing come from the
- * Claude Design canvas (`color`, `space`, `fontSize`, `radius` below). The names the app
- * already imports — `colors`, `spacing`, `radius`, `typography` — are kept and repointed at
- * those values, so screens did not have to change. Fonts are unchanged for now.
+ * List styling (2026-09): one quieter secondary grey for meta text, a lighter muted grey for
+ * timestamps and counts, visible light borders, tighter card corners and list padding. Navy,
+ * amber and the lavender-grey surfaces are unchanged; so are the fonts.
  */
 
 // ---------------------------------------------------------------------------
@@ -28,147 +27,58 @@ export const fontFamily = {
 } as const;
 
 // ---------------------------------------------------------------------------
-// Canvas tokens — extracted from the Claude Design artboards (p28-theme).
-// Do not hand-edit these values; re-run scripts/extract-tokens.mjs instead.
-// Everything below (colors, spacing, radius, typography) is built from them.
-// ---------------------------------------------------------------------------
-
-export const color = {
-  /** 보조 글자. ground 위에서 대비 5.4:1. */
-  muted: '#4E6679',
-  /** 테두리·구분선. */
-  line: '#DCE6EF',
-  /** 본문 글자색이자 가장 어두운 면. */
-  ink: '#0B2A45',
-  /** 카드·사이드바 바탕. */
-  surface: '#FFFFFF',
-  /** 기본 동작(버튼, 선택된 탭, 링크). 흰 글씨는 이 위에만. */
-  brandDeep: '#1E5C8C',
-  /** 옅은 파랑 배경 — 칩, 아바타, 빈 섬네일. */
-  brandSoft: '#E3EFF8',
-  /** 앰버 옅은 면 — 활성 메뉴, 반응 칩. */
-  sandSoft: '#FBEBD2',
-  /** 앱 아이콘의 파랑. 로고·큰 강조 면적에만. */
-  brand: '#2C7CB5',
-  /** 화면 바탕. */
-  ground: '#F2F6FA',
-  /** 앰버 면 위의 글자. */
-  sandInk: '#8A5A12',
-  /** 본문보다 한 단계 옅은 글자. */
-  inkSoft: '#35506A',
-  /** 보조 색조 — 계열 구분용. */
-  teal: '#1C6B67',
-  /** 중립 칩·아바타. */
-  neutralSoft: '#E9EEF3',
-  /** 파란 면 위의 보조 글자. */
-  onBrandMuted: '#D6E5F0',
-  /** 따뜻한 강조. 채움색으로만. */
-  sand: '#D98F2B',
-  /** 입력창처럼 내려앉은 면. */
-  surfaceSunken: '#F8FAFC',
-  /** 앰버 면의 테두리. */
-  sandLine: '#E7C79A',
-  /** teal 계열 옅은 면. */
-  tealSoft: '#DCEAE7',
-  /** tealSoft 위의 글자. */
-  tealInk: '#14534F',
-} as const;
-
-/** 4px 그리드. 캔버스에서 실제로 쓰인 값. */
-export const space = {
-  s0: 0,
-  s4: 4,
-  s8: 8,
-  s12: 12,
-  s16: 16,
-  s20: 20,
-  s24: 24,
-  s32: 32,
-  s48: 48,
-} as const;
-
-export const fontSize = {
-  caption: 12,
-  small: 13,
-  label: 14,
-  body: 15,
-  bodyLarge: 16,
-  title: 19,
-  verseSm: 21,
-  heading: 24,
-  verse: 27,
-  display: 32,
-} as const;
-
-/**
- * The canvas asks for Gowun Batang / IBM Plex Sans KR. Neither is loaded yet, so
- * `fontFamily` below still names the loaded faces — swapping them is its own change.
- */
-export const font = {
-  /** 말씀 인용과 그룹 이름에만. */
-  serif: 'Gowun Batang',
-  sans: 'IBM Plex Sans KR',
-} as const;
-
-export const fontWeight = { regular: '400', medium: '500', bold: '600' } as const;
-export const lineHeight = { tight: 1.35, body: 1.65, verse: 1.6 } as const;
-
-/** 최소 터치 영역. */
-export const hitSize = 44;
-
-// ---------------------------------------------------------------------------
-// Colors — the canvas palette under the names the app already imports
+// Colors — "Spirit and Earth" duality
 // ---------------------------------------------------------------------------
 
 export const colors = {
   // Surface hierarchy (nested sheets of heavy-stock paper)
-  background: color.ground, // base surface
-  surface: color.ground, // alias for background
-  surfaceContainerLowest: color.surface, // floating elements
-  surfaceContainerLow: color.surfaceSunken, // cards on surface
-  surfaceContainer: color.brandSoft, // card backgrounds
-  surfaceContainerHigh: color.neutralSoft, // recessed sections
-  surfaceContainerHighest: color.line, // input backgrounds
+  background: '#f9f9ff', // base surface
+  surface: '#f9f9ff', // alias for background
+  surfaceContainerLowest: '#ffffff', // floating elements
+  surfaceContainerLow: '#f0f3ff', // cards on surface
+  surfaceContainer: '#e7eefe', // card backgrounds
+  surfaceContainerHigh: '#e2e8f8', // recessed sections
+  surfaceContainerHighest: '#dce3f2', // input backgrounds
 
   /** Native splash + app icon background (keep in sync with app.json splash / adaptiveIcon) */
-  brandSplashBackground: color.brand,
+  brandSplashBackground: '#327db6',
 
-  // Primary — the blue the app icon is cut from
-  primary: color.brandDeep,
-  primaryContainer: color.brandDeep,
-  primaryFixed: color.brandSoft, // input focus background
-  onPrimary: color.surface,
+  // Primary — deep authoritative blue
+  primary: '#002046',
+  primaryContainer: '#1b365d',
+  primaryFixed: '#d6e3ff', // input focus background
+  onPrimary: '#ffffff',
   /** Muted text on `primaryContainer` surfaces (e.g. Sacred Gatherings dark cards). */
-  onPrimaryContainer: color.onBrandMuted,
+  onPrimaryContainer: '#87a0cd',
 
-  // Secondary — warm amber, fills only
-  secondary: color.sandInk,
-  secondaryContainer: color.sandSoft,
-  onSecondaryContainer: color.sandInk,
+  // Secondary — warm illuminating gold
+  secondary: '#775a19',
+  secondaryContainer: '#fed488',
+  onSecondaryContainer: '#785a1a',
 
   // Text / on-surface
-  onSurface: color.ink,
+  onSurface: '#151c27',
   /** Secondary text. At least 5.3:1 on every surface, including surfaceContainerHighest. */
-  onSurfaceVariant: color.inkSoft,
+  onSurfaceVariant: '#555a6b',
   /**
    * Meta text — timestamps, counts, previews. At least 4.5:1 on white, background,
    * surfaceContainerLow/Container/High; not for text on surfaceContainerHighest.
    */
-  textMuted: color.muted,
+  textMuted: '#62677a',
   /** Light hairline border for chips, dividers and outlined surfaces. */
-  outlineVariant: color.line,
+  outlineVariant: '#dfe3ec',
 
   /** Hairline for separators on tinted surfaces (sidebar rails, list dividers). */
-  ghostBorder: 'rgba(11, 42, 69, 0.08)',
+  ghostBorder: 'rgba(0, 32, 70, 0.08)',
 
   // List accents
   /** Unread marker at the left of a list row. */
-  unreadIndicator: color.brandDeep,
+  unreadIndicator: '#775a19',
   /** Outlined tag chip naming where an item belongs. */
-  chipBackground: color.surface,
-  chipBorder: color.line,
-  chipText: color.muted,
-  chipAccent: color.sandInk,
+  chipBackground: '#ffffff',
+  chipBorder: '#dfe3ec',
+  chipText: '#62677a',
+  chipAccent: '#775a19',
 
   // Glassmorphism
   glass: {
@@ -179,45 +89,44 @@ export const colors = {
   },
 
   // Semantic (muted, desaturated)
-  success: color.teal,
-  warning: color.sandInk,
-  /** Not in the canvas palette — destructive states keep their own red. */
+  success: '#4a7c5c',
+  warning: '#8a6d2b',
   error: '#ba1a1a',
-  info: color.brandDeep,
+  info: '#002046',
 
   // Focus ring
-  focusRing: 'rgba(30, 92, 140, 0.25)',
+  focusRing: 'rgba(0, 32, 70, 0.25)',
 
   /** Recurring meeting card divider (body is white; join row uses secondaryContainer) */
-  recurringMeetingCardDivider: 'rgba(11, 42, 69, 0.12)',
+  recurringMeetingCardDivider: 'rgba(0, 32, 70, 0.12)',
 
   // ---------------------------------------------------------------------------
   // Backward-compat aliases (map old names → new values during migration)
   // ---------------------------------------------------------------------------
-  textPrimary: color.ink,
-  textSecondary: color.inkSoft,
-  ink700: color.inkSoft,
-  ink300: color.line,
-  ink500: color.muted,
-  brandSoft: color.brandSoft,
-  surfaceHighlight: color.surfaceSunken,
-  surface100: color.brandSoft,
-  cardDefault: color.surface,
-  cardAlt: color.surfaceSunken,
-  cardHighlight: color.ground,
-  primaryDark: color.ink,
-  primaryLight: color.brandSoft,
-  accent: color.brandDeep,
-  accentSoft: color.brandSoft,
-  lavender: color.brandDeep,
-  lavenderSoft: color.brandSoft,
-  blue: color.brandDeep,
-  blueSoft: color.brandSoft,
-  peach: color.sandSoft,
-  greenSoft: color.tealSoft,
-  amberSoft: color.sandSoft,
-  shadow: color.ink,
-  borderSubtle: 'rgba(11, 42, 69, 0.08)',
+  textPrimary: '#151c27',
+  textSecondary: '#555a6b',
+  ink700: '#555a6b',
+  ink300: '#dfe3ec',
+  ink500: '#62677a',
+  brandSoft: '#d6e3ff',
+  surfaceHighlight: '#f0f3ff',
+  surface100: '#e7eefe',
+  cardDefault: '#ffffff',
+  cardAlt: '#f0f3ff',
+  cardHighlight: '#f9f9ff',
+  primaryDark: '#1b365d',
+  primaryLight: '#d6e3ff',
+  accent: '#002046',
+  accentSoft: '#d6e3ff',
+  lavender: '#002046',
+  lavenderSoft: '#d6e3ff',
+  blue: '#002046',
+  blueSoft: '#d6e3ff',
+  peach: '#fed488',
+  greenSoft: '#e2e8f8',
+  amberSoft: '#fed488',
+  shadow: '#151c27',
+  borderSubtle: 'rgba(0, 32, 70, 0.08)',
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -225,20 +134,20 @@ export const colors = {
 // ---------------------------------------------------------------------------
 
 export const spacing = {
-  xxs: space.s4,
-  xs: space.s8,
-  sm: space.s12,
-  md: space.s16,
-  lg: space.s24,
-  xl: space.s32,
-  xxl: space.s48,
-  screenHorizontal: space.s20,
-  cardPadding: space.s16,
-  cardPaddingTop: space.s16,
-  cardPaddingBottom: space.s24,
-  cardGap: space.s16,
-  sectionGap: space.s32, // between feed items
-  majorSectionGap: space.s48, // between major sections
+  xxs: 4,
+  xs: 8,
+  sm: 12,
+  md: 16,
+  lg: 24,
+  xl: 32,
+  xxl: 40,
+  screenHorizontal: 20,
+  cardPadding: 16,
+  cardPaddingTop: 16,
+  cardPaddingBottom: 24,
+  cardGap: 16,
+  sectionGap: 44, // scale 8 = 2.75rem between feed items
+  majorSectionGap: 88, // 5.5rem between major sections
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -246,23 +155,16 @@ export const spacing = {
 // ---------------------------------------------------------------------------
 
 export const radius = {
-  /** Canvas names */
-  xs: 8,
-  control: 10,
-  field: 12,
-  card: 16,
-  feature: 18,
-  pill: 999,
-
-  // Names the app already imports, mapped onto the same scale
-  sm: 8,
+  sm: 4,
   md: 8,
-  button: 999, // pill shape — "Soft-Touch CTA"
-  sacredGatheringCard: 18,
-  chip: 999,
+  button: 9999, // pill shape — "Soft-Touch CTA"
+  card: 16, // tighter corners for the list-style surfaces
+  /** Stitch “Sacred Gatherings” cards — 2rem corners */
+  sacredGatheringCard: 32,
+  chip: 9999, // pill
   lg: 12,
-  xl: 18,
-  input: 12,
+  xl: 24,
+  input: 12, // md = 0.75rem
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -273,28 +175,28 @@ export const typography = {
   // Serif — Noto Serif (display & headlines)
   displayLg: {
     fontFamily: fontFamily.serif,
-    fontSize: fontSize.display,
+    fontSize: 36,
     fontWeight: '400' as const,
     lineHeight: 44,
     letterSpacing: -0.5,
   },
   headlineLg: {
     fontFamily: fontFamily.serif,
-    fontSize: fontSize.display,
+    fontSize: 32,
     fontWeight: '400' as const,
     lineHeight: 40,
     letterSpacing: -0.3,
   },
   headlineMd: {
     fontFamily: fontFamily.serif,
-    fontSize: fontSize.verse,
+    fontSize: 28,
     fontWeight: '400' as const,
     lineHeight: 36,
     letterSpacing: -0.2,
   },
   headlineSm: {
     fontFamily: fontFamily.serif,
-    fontSize: fontSize.heading,
+    fontSize: 24,
     fontWeight: '400' as const,
     lineHeight: 32,
     letterSpacing: -0.1,
@@ -303,50 +205,50 @@ export const typography = {
   // Sans — Plus Jakarta Sans (body, labels, buttons)
   titleLg: {
     fontFamily: fontFamily.sansSemiBold,
-    fontSize: fontSize.title,
+    fontSize: 20,
     fontWeight: '600' as const,
     lineHeight: 28,
   },
   titleMd: {
     fontFamily: fontFamily.sansMedium,
-    fontSize: fontSize.bodyLarge,
+    fontSize: 16,
     fontWeight: '500' as const,
     lineHeight: 24,
   },
   bodyLg: {
     fontFamily: fontFamily.sans,
-    fontSize: fontSize.bodyLarge,
+    fontSize: 16,
     fontWeight: '400' as const,
     lineHeight: 24,
   },
   bodyMd: {
     fontFamily: fontFamily.sans,
-    fontSize: fontSize.label,
+    fontSize: 14,
     fontWeight: '400' as const,
     lineHeight: 20,
   },
   labelLg: {
     fontFamily: fontFamily.sansMedium,
-    fontSize: fontSize.label,
+    fontSize: 14,
     fontWeight: '500' as const,
     lineHeight: 20,
   },
   labelMd: {
     fontFamily: fontFamily.sansMedium,
-    fontSize: fontSize.caption,
+    fontSize: 12,
     fontWeight: '500' as const,
     lineHeight: 16,
     letterSpacing: 0.2,
   },
   labelSm: {
     fontFamily: fontFamily.sans,
-    fontSize: fontSize.caption,
+    fontSize: 11,
     fontWeight: '400' as const,
     lineHeight: 14,
   },
   buttonLabel: {
     fontFamily: fontFamily.sansSemiBold,
-    fontSize: fontSize.label,
+    fontSize: 14,
     fontWeight: '600' as const,
     letterSpacing: 0.3,
   },
@@ -356,61 +258,61 @@ export const typography = {
   // ---------------------------------------------------------------------------
   h1: {
     fontFamily: fontFamily.serif,
-    fontSize: fontSize.display,
+    fontSize: 32,
     fontWeight: '400' as const,
     letterSpacing: -0.3,
   },
   h2: {
     fontFamily: fontFamily.serif,
-    fontSize: fontSize.heading,
+    fontSize: 24,
     fontWeight: '400' as const,
     letterSpacing: -0.2,
   },
   h3: {
     fontFamily: fontFamily.serif,
-    fontSize: fontSize.title,
+    fontSize: 20,
     fontWeight: '400' as const,
     letterSpacing: -0.1,
   },
   title: {
     fontFamily: fontFamily.sansSemiBold,
-    fontSize: fontSize.title,
+    fontSize: 18,
     fontWeight: '600' as const,
     letterSpacing: 0,
   },
   body: {
     fontFamily: fontFamily.sans,
-    fontSize: fontSize.body,
+    fontSize: 15,
     fontWeight: '400' as const,
     lineHeight: 24,
   },
   bodyStrong: {
     fontFamily: fontFamily.sansMedium,
-    fontSize: fontSize.body,
+    fontSize: 15,
     fontWeight: '500' as const,
     lineHeight: 24,
   },
   caption: {
     fontFamily: fontFamily.sans,
-    fontSize: fontSize.small,
+    fontSize: 13,
     fontWeight: '400' as const,
     lineHeight: 18,
   },
   micro: {
     fontFamily: fontFamily.sans,
-    fontSize: fontSize.caption,
+    fontSize: 11,
     fontWeight: '400' as const,
     lineHeight: 14,
   },
   label: {
     fontFamily: fontFamily.sansMedium,
-    fontSize: fontSize.small,
+    fontSize: 13,
     fontWeight: '500' as const,
     letterSpacing: 0.2,
   },
   cardTitle: {
     fontFamily: fontFamily.sansMedium,
-    fontSize: fontSize.bodyLarge,
+    fontSize: 16,
     fontWeight: '500' as const,
   },
 } as const;
@@ -421,7 +323,7 @@ export const typography = {
 
 export const shadow = {
   ambient: {
-    shadowColor: color.ink,
+    shadowColor: '#151c27',
     shadowOpacity: 0.06,
     shadowRadius: 30,
     shadowOffset: { width: 0 as const, height: 4 },
@@ -460,13 +362,13 @@ export const listAccents = {
     paddingVertical: spacing.xxs,
     borderWidth: 1,
     borderRadius: radius.chip,
-    fontSize: fontSize.caption,
+    fontSize: 12,
   },
   unreadDot: {
     size: spacing.xs,
   },
   count: {
-    fontSize: fontSize.caption,
+    fontSize: 11,
     minWidth: spacing.md + spacing.xxs,
   },
 } as const;
@@ -516,13 +418,6 @@ export const tabScreenContent = {
 // ---------------------------------------------------------------------------
 
 export const tokens = {
-  color,
-  space,
-  fontSize,
-  font,
-  fontWeight,
-  lineHeight,
-  hitSize,
   colors,
   spacing,
   radius,

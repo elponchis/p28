@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   handle: {
     width: 36,
     height: 4,
-    borderRadius: radius.xs,
+    borderRadius: radius.sm,
     backgroundColor: colors.outlineVariant,
     alignSelf: 'center',
     marginBottom: spacing.md,

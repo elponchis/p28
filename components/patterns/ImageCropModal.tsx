@@ -15,7 +15,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Button } from '@/components/primitives';
 import { cropImageRegion, getImageSize, type CroppedImage } from '@/lib/cropImage';
 import { t } from '@/lib/i18n';
-import { color, colors, radius, spacing, typography } from '@/theme/tokens';
+import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 4;
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
   },
   frame: {
     overflow: 'hidden',
-    backgroundColor: color.ink,
+    backgroundColor: '#000',
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
   zoomButton: {
     width: 40,
     height: 40,
-    borderRadius: radius.feature,
+    borderRadius: radius.xl,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.surfaceContainerHighest,

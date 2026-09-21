@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { t } from '@/lib/i18n';
-import { color, colors, fontSize, space, spacing } from '@/theme/tokens';
+import { colors, spacing } from '@/theme/tokens';
 
 /** Shared header-right bell for all (tabs) screens — notifications has no nav icon of its own. */
 export function NotificationsBellButton({ badge }: { badge?: number }) {
@@ -44,11 +44,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.error,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: space.s4,
+    paddingHorizontal: 4,
   },
   badgeText: {
-    color: color.surface,
-    fontSize: fontSize.caption,
+    color: colors.onPrimary,
+    fontSize: 12,
     fontWeight: '700',
     lineHeight: 12,
   },

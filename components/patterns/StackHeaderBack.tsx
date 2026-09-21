@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
     // Sized to the 22px icon plus its padding, so the disc is a circle rather than a lozenge.
     width: 38,
     height: 38,
-    borderRadius: radius.feature,
+    borderRadius: radius.xl,
     alignItems: 'center',
     justifyContent: 'center',
     // Dark enough for a white chevron to read against a white page, light enough not to blot

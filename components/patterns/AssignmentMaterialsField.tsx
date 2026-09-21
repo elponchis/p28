@@ -16,7 +16,7 @@ import { normalizeMimeTypeForAllowlist } from '@/lib/api/messageAttachments';
 import { enqueueDocumentPick } from '@/lib/documentPickerLock';
 import { formatFileSize } from '@/lib/formatFileSize';
 import { t } from '@/lib/i18n';
-import { colors, radius, space, spacing, typography } from '@/theme/tokens';
+import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 export interface AssignmentMaterialsFieldProps {
   groupId: string;
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
   label: {
     ...typography.label,
     color: colors.textPrimary,
-    marginBottom: space.s0,
+    marginBottom: 0,
   },
   hint: {
     ...typography.caption,

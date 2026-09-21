@@ -12,7 +12,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import type { Announcement } from '@/lib/api';
 import { t } from '@/lib/i18n';
-import { colors, fontFamily, fontSize, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, spacing, typography } from '@/theme/tokens';
 
 function statusLabel(status: Announcement['status']): string {
   if (status === 'cancelled') return t('announcements.cancelled');
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   },
   screenTitle: {
     fontFamily: fontFamily.serif,
-    fontSize: fontSize.title,
+    fontSize: 19,
     color: colors.primary,
     marginBottom: spacing.xs,
   },

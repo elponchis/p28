@@ -27,7 +27,7 @@ import {
 } from '@/lib/dates';
 import { t } from '@/lib/i18n';
 import { confirm, notify } from '@/lib/dialogs';
-import { colors, fontFamily, fontSize, radius, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
 function paramString(v: string | string[] | undefined): string | undefined {
   if (v == null) return undefined;
@@ -493,7 +493,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: fontFamily.serif,
-    fontSize: fontSize.verse,
+    fontSize: 27,
     color: colors.primary,
   },
   titlePast: {

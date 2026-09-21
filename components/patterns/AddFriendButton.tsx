@@ -15,7 +15,7 @@ import {
 import { t } from '@/lib/i18n';
 import { getUserFacingError } from '@/lib/api';
 import { notify } from '@/lib/dialogs';
-import { colors, radius, space, spacing, typography } from '@/theme/tokens';
+import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 export interface AddFriendButtonProps {
   currentUserId: string;
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.s4,
+    gap: 4,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
     backgroundColor: colors.surfaceContainerLow,
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
   requestedButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.s4,
+    gap: 4,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
     backgroundColor: colors.surfaceContainerLow,
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
   acceptButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.s4,
+    gap: 4,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
     backgroundColor: colors.primary,
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
   declineButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.s4,
+    gap: 4,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
     backgroundColor: colors.surfaceContainer,

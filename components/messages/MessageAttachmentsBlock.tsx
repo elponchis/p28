@@ -4,7 +4,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import type { MessageAttachment } from '@/lib/api';
 import { t } from '@/lib/i18n';
-import { colors, fontFamily, radius, space, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
 import type { MessageLike } from './types';
 import { VoiceMessageBubble } from './VoiceMessageBubble';
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
   },
   fileExt: {
     ...typography.caption,
-    marginTop: space.s0,
+    marginTop: 0,
   },
   fileSubOther: {
     color: colors.onSurfaceVariant,

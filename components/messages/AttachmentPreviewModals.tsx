@@ -20,7 +20,7 @@ import { downloadFileInBrowser } from '@/lib/downloadFile';
 import { getMediaViewerSize } from '@/lib/mediaViewerBounds';
 import { t } from '@/lib/i18n';
 import { notify } from '@/lib/dialogs';
-import { color, colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
 function fileExtensionLabel(fileName: string): string {
   if (!fileName.includes('.')) return '';
@@ -197,7 +197,7 @@ function VideoModalInner({
 const videoStyles = StyleSheet.create({
   wrap: {
     flex: 1,
-    backgroundColor: color.ink,
+    backgroundColor: '#000',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -209,7 +209,7 @@ const videoStyles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   video: {
-    backgroundColor: color.ink,
+    backgroundColor: '#000',
   },
   closeBtn: {
     position: 'absolute',

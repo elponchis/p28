@@ -11,7 +11,7 @@ import {
   newQuizOptionId,
 } from '@/lib/quiz';
 import { t } from '@/lib/i18n';
-import { colors, radius, space, spacing, typography } from '@/theme/tokens';
+import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 export interface QuizBuilderProps {
   questions: QuizQuestionInput[];
@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
   label: {
     ...typography.label,
     color: colors.textPrimary,
-    marginBottom: space.s0,
+    marginBottom: 0,
   },
   hint: {
     ...typography.caption,
@@ -503,7 +503,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   pointsCol: {
-    gap: space.s0,
+    gap: 0,
   },
   metaLabel: {
     ...typography.caption,

@@ -14,7 +14,7 @@ import { reactionRowMetrics, splitVisibleReactions } from '@/lib/reactionLayout'
 import { MessageVideoEmbed } from '@/components/patterns/MessageVideoEmbed';
 import type { MessageAttachment } from '@/lib/api';
 import { t } from '@/lib/i18n';
-import { colors, fontFamily, fontSize, space, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, spacing, typography } from '@/theme/tokens';
 
 import { REACTION_EMOJI } from './constants';
 import { MessageHoverActions } from './MessageHoverActions';
@@ -503,9 +503,9 @@ const styles = StyleSheet.create({
   },
   messageWrapper: {
     position: 'relative',
-    marginBottom: space.s0,
+    marginBottom: 0,
     overflow: 'hidden',
-    paddingBottom: space.s0,
+    paddingBottom: 0,
   },
   messageWrapperPeerChange: {
     marginTop: spacing.xxs,
@@ -528,7 +528,7 @@ const styles = StyleSheet.create({
     // be, so adding a reaction -- which appends a badge row under the bubble -- visibly
     // dropped the author's avatar. From the top nothing below it can move it.
     alignSelf: 'flex-start',
-    marginTop: space.s0,
+    marginTop: 0,
   },
   avatarSpacer: {
     width: 36,
@@ -551,7 +551,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    marginBottom: space.s0,
+    marginBottom: 0,
     paddingHorizontal: spacing.xxs,
   },
   metaRowOwn: {
@@ -590,13 +590,13 @@ const styles = StyleSheet.create({
   },
   sentClockTime: {
     ...typography.caption,
-    fontSize: fontSize.caption,
+    fontSize: 12,
     // Same reason as unreadCount: caption's 18px leading is 7px of slack at this size. The
     // bottom padding stays -- it is what keeps the time off the bubble's rounded corner --
     // but the top padding only widened the gap under the unread count.
     lineHeight: 14,
     color: colors.onSurfaceVariant,
-    paddingBottom: space.s0,
+    paddingBottom: 0,
   },
   sentClockTimeOther: {
     marginStart: spacing.xs,
@@ -649,7 +649,7 @@ const styles = StyleSheet.create({
   replyPreviewAuthor: {
     ...typography.caption,
     color: colors.primary,
-    marginBottom: space.s0,
+    marginBottom: 0,
   },
   replyPreviewAuthorOwn: {
     color: colors.primaryFixed,
@@ -676,10 +676,10 @@ const styles = StyleSheet.create({
 
   editedLabel: {
     fontFamily: fontFamily.sans,
-    fontSize: fontSize.caption,
+    fontSize: 12,
     color: colors.onSurfaceVariant,
     fontStyle: 'italic',
-    marginTop: space.s0,
+    marginTop: 0,
   },
   editedLabelOwn: {
     color: 'rgba(255, 255, 255, 0.6)',
@@ -731,9 +731,9 @@ const styles = StyleSheet.create({
   reactionBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.s0,
-    paddingHorizontal: space.s4,
-    paddingVertical: space.s0,
+    gap: 0,
+    paddingHorizontal: 4,
+    paddingVertical: 0,
     borderRadius: 12,
     borderWidth: 2,
     borderColor: colors.background,

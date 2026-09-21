@@ -3,7 +3,7 @@ import { Platform, StyleSheet, Text, View } from 'react-native';
 
 import { parseVideoEmbedUrl } from '@/lib/videoEmbed';
 import { t } from '@/lib/i18n';
-import { color, colors, radius, spacing, typography } from '@/theme/tokens';
+import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 // react-native-webview has no web target; guarding the require behind a runtime check
 // (rather than `import`) means it's never invoked on web, so Metro's web bundle never
@@ -62,13 +62,13 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     aspectRatio: 16 / 9,
-    backgroundColor: color.ink,
+    backgroundColor: '#000',
     borderRadius: radius.lg,
     overflow: 'hidden',
   },
   webview: {
     flex: 1,
-    backgroundColor: color.ink,
+    backgroundColor: '#000',
   },
   unsupported: {
     alignItems: 'center',

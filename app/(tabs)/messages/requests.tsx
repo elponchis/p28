@@ -12,7 +12,7 @@ import { getUserFacingError } from '@/lib/api';
 import { formatRelativeTime } from '@/lib/dates';
 import { confirm } from '@/lib/dialogs';
 import { t } from '@/lib/i18n';
-import { colors, radius, space, spacing, typography } from '@/theme/tokens';
+import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 /**
  * Message requests: conversations started by someone the user is not friends with.
@@ -178,8 +178,8 @@ const styles = StyleSheet.create({
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   cardText: { flex: 1, minWidth: 0 },
   name: { ...typography.bodyStrong, color: colors.textPrimary },
-  preview: { ...typography.bodyMd, color: colors.onSurfaceVariant, marginTop: space.s0 },
-  meta: { ...typography.caption, color: colors.onSurfaceVariant, marginTop: space.s0 },
+  preview: { ...typography.bodyMd, color: colors.onSurfaceVariant, marginTop: 0 },
+  meta: { ...typography.caption, color: colors.onSurfaceVariant, marginTop: 0 },
   actions: { flexDirection: 'row', gap: spacing.sm },
   errorBanner: {
     backgroundColor: colors.amberSoft,

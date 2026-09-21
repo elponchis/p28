@@ -30,7 +30,7 @@ import type {
   GroupRecurringMeeting,
   RecurringMeetingFrequency,
 } from '@/lib/api';
-import { colors, fontFamily, fontSize, radius, space, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
 export interface GroupRecurringMeetingFormSheetProps {
   visible: boolean;
@@ -560,7 +560,7 @@ const styles = StyleSheet.create({
   handle: {
     width: 36,
     height: 4,
-    borderRadius: radius.xs,
+    borderRadius: radius.sm,
     backgroundColor: colors.outlineVariant,
     alignSelf: 'center',
     marginBottom: spacing.md,
@@ -573,7 +573,7 @@ const styles = StyleSheet.create({
   },
   sheetTitle: {
     fontFamily: fontFamily.serif,
-    fontSize: fontSize.verseSm,
+    fontSize: 21,
     color: colors.primary,
   },
   scrollContent: {
@@ -657,7 +657,7 @@ const styles = StyleSheet.create({
   },
   chipTextSm: {
     ...typography.caption,
-    fontSize: fontSize.caption,
+    fontSize: 12,
     color: colors.textPrimary,
   },
   chipTextSelected: {
@@ -694,7 +694,7 @@ const styles = StyleSheet.create({
   tzRowSub: {
     ...typography.caption,
     color: colors.onSurfaceVariant,
-    marginTop: space.s0,
+    marginTop: 0,
   },
   iosPickerShell: {
     marginTop: spacing.sm,

@@ -11,7 +11,7 @@ import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { Avatar } from '@/components/primitives';
 import { USE_NATIVE_DRIVER } from '@/lib/animation';
 import { t } from '@/lib/i18n';
-import { colors, fontSize, radius, space, spacing, typography } from '@/theme/tokens';
+import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 const DOT_COUNT = 3;
 const DOT_DURATION_MS = 320;
@@ -113,11 +113,11 @@ const styles = StyleSheet.create({
     width: 36,
   },
   column: {
-    gap: space.s0,
+    gap: 0,
   },
   label: {
     ...typography.caption,
-    fontSize: fontSize.caption,
+    fontSize: 12,
     lineHeight: 14,
     color: colors.onSurfaceVariant,
   },
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
     gap: 4,
     alignSelf: 'flex-start',
     paddingHorizontal: spacing.sm,
-    paddingVertical: space.s8,
+    paddingVertical: 8,
     borderRadius: radius.lg,
     borderCurve: 'continuous',
     backgroundColor: colors.surfaceContainerLowest,
@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   dot: {
     width: 6,
     height: 6,
-    borderRadius: radius.xs,
+    borderRadius: radius.sm,
     backgroundColor: colors.onSurfaceVariant,
   },
 });

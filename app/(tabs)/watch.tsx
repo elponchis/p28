@@ -29,7 +29,7 @@ import { getUserFacingError } from '@/lib/api';
 import { t } from '@/lib/i18n';
 import { watchCardWidth } from '@/lib/watchGrid';
 import { buildShelves } from '@/lib/watchShelves';
-import { colors, fontFamily, fontSize, radius, space, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
 function CourseCard({
   course,
@@ -235,13 +235,13 @@ const styles = StyleSheet.create({
   },
   badge: {
     paddingHorizontal: spacing.sm,
-    paddingVertical: space.s0,
+    paddingVertical: 0,
     borderRadius: radius.sm,
     backgroundColor: colors.secondaryContainer,
   },
   badgeText: {
     ...typography.caption,
-    fontSize: fontSize.caption,
+    fontSize: 12,
     color: colors.onSecondaryContainer,
     fontFamily: fontFamily.sansSemiBold,
   },

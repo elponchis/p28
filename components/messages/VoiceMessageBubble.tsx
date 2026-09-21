@@ -4,7 +4,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 
 import { t } from '@/lib/i18n';
-import { colors, fontFamily, fontSize, radius, space, spacing } from '@/theme/tokens';
+import { colors, fontFamily, radius, spacing } from '@/theme/tokens';
 
 function formatTime(seconds: number): string {
   const total = Math.max(0, Math.round(seconds));
@@ -90,11 +90,11 @@ const styles = StyleSheet.create({
   trackCol: {
     flex: 1,
     minWidth: 0,
-    gap: space.s0,
+    gap: 0,
   },
   track: {
     height: 3,
-    borderRadius: radius.xs,
+    borderRadius: radius.sm,
     backgroundColor: colors.outlineVariant,
     overflow: 'hidden',
   },
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
   },
   durationText: {
     fontFamily: fontFamily.sans,
-    fontSize: fontSize.caption,
+    fontSize: 12,
     color: colors.onSurfaceVariant,
   },
   durationTextOwn: {

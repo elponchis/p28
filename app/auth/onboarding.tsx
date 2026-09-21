@@ -27,7 +27,7 @@ import { auth } from '@/lib/api';
 import { getUserFacingError } from '@/lib/errors';
 import type { ApiError } from '@/lib/api/contracts/errors';
 import { t } from '@/lib/i18n';
-import { colors, fontFamily, fontSize, radius, space, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
 type Option = { value: string; label: string };
 
@@ -669,7 +669,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: fontFamily.serifBold,
-    fontSize: fontSize.display,
+    fontSize: 32,
     fontWeight: '700',
     lineHeight: 42,
     letterSpacing: -0.5,
@@ -678,7 +678,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontFamily: fontFamily.sans,
-    fontSize: fontSize.bodyLarge,
+    fontSize: 16,
     fontWeight: '400',
     lineHeight: 26,
     color: colors.onSurfaceVariant,
@@ -692,13 +692,13 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     fontFamily: fontFamily.sansBold,
-    fontSize: fontSize.caption,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: 1.8,
     textTransform: 'uppercase',
     color: colors.onSurfaceVariant,
     marginBottom: spacing.xs,
-    paddingHorizontal: space.s0,
+    paddingHorizontal: 0,
   },
 
   select: {
@@ -759,7 +759,7 @@ const styles = StyleSheet.create({
   sheetHandle: {
     width: 36,
     height: 4,
-    borderRadius: radius.xs,
+    borderRadius: radius.sm,
     backgroundColor: colors.outlineVariant,
     alignSelf: 'center',
     marginBottom: spacing.md,

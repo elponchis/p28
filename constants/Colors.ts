@@ -1,11 +1,11 @@
-import { color } from '@/theme/tokens';
+import { colors } from '@/theme/tokens';
 
-const tintColor = color.ink; // Deep blue — Spirit and Earth editorial palette
+const tintColor = colors.primary;
 
 export default {
-  text: color.ink,
-  background: color.ground,
+  text: colors.onSurface,
+  background: colors.background,
   tint: tintColor,
-  tabIconDefault: color.onBrandMuted,
+  tabIconDefault: colors.textMuted,
   tabIconSelected: tintColor,
 };

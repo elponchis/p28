@@ -39,7 +39,6 @@ import type { JoinedGroupUpcomingEventRow } from '@/lib/upcomingJoinedGroupEvent
 import {
   colors,
   fontFamily,
-  fontSize,
   radius,
   shadow,
   spacing,
@@ -415,7 +414,7 @@ const styles = StyleSheet.create({
   },
   welcomeText: {
     fontFamily: fontFamily.serif,
-    fontSize: fontSize.verse,
+    fontSize: 27,
     fontWeight: '400',
     lineHeight: 36,
     letterSpacing: -0.2,
@@ -423,7 +422,7 @@ const styles = StyleSheet.create({
   },
   nameText: {
     fontFamily: fontFamily.serifItalic,
-    fontSize: fontSize.verse,
+    fontSize: 27,
     fontWeight: '400',
     lineHeight: 36,
     letterSpacing: -0.2,

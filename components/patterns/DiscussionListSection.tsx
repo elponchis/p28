@@ -6,10 +6,10 @@ import { EmptyState } from '@/components/patterns/EmptyState';
 import type { Discussion } from '@/lib/api';
 import { formatRelativeTime } from '@/lib/dates';
 import { t } from '@/lib/i18n';
-import { color, colors, fontFamily, fontSize, radius, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
 const editorialShadow = {
-  shadowColor: color.ink,
+  shadowColor: colors.shadow,
   shadowOpacity: 0.06,
   shadowRadius: 30,
   shadowOffset: { width: 0, height: 15 },
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   },
   addTopicText: {
     fontFamily: fontFamily.sansBold,
-    fontSize: fontSize.caption,
+    fontSize: 12,
     fontWeight: '700',
     color: colors.secondary,
     textTransform: 'uppercase',

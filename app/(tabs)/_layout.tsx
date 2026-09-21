@@ -17,7 +17,7 @@ import {
   usePendingFriendRequestCountQuery,
 } from '@/hooks/useApiQueries';
 import { t } from '@/lib/i18n';
-import { breakpoints, colors, fontFamily, fontSize } from '@/theme/tokens';
+import { breakpoints, colors, fontFamily } from '@/theme/tokens';
 
 export default function TabLayout() {
   useLocale();
@@ -61,7 +61,7 @@ export default function TabLayout() {
           },
           headerTitleStyle: {
             fontFamily: fontFamily.serif,
-            fontSize: fontSize.title,
+            fontSize: 19,
             fontWeight: '400',
             color: colors.onSurface,
           },

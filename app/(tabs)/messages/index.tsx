@@ -28,11 +28,9 @@ import { t } from '@/lib/i18n';
 import {
   colors,
   fontFamily,
-  fontSize,
   listAccents,
   radius,
   shadow,
-  space,
   spacing,
   tabScreenContent,
   typography,
@@ -458,14 +456,14 @@ const styles = StyleSheet.create({
   },
   heading: {
     fontFamily: fontFamily.serifBold,
-    fontSize: fontSize.display,
+    fontSize: 32,
     color: colors.primary,
     letterSpacing: -0.3,
   },
   friendsButton: {
     width: 44,
     height: 44,
-    borderRadius: radius.feature,
+    borderRadius: radius.xl,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -530,7 +528,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.sans,
     fontSize: 15,
     color: colors.onSurface,
-    paddingVertical: space.s12,
+    paddingVertical: 12,
   },
 
   // ── Chat rows ──
@@ -571,7 +569,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: space.s4,
+    marginBottom: 4,
   },
   chatRowMeta: {
     flexDirection: 'row',
@@ -580,7 +578,7 @@ const styles = StyleSheet.create({
   },
   chatName: {
     fontFamily: fontFamily.sansSemiBold,
-    fontSize: fontSize.bodyLarge,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.primary,
     flex: 1,
@@ -609,11 +607,11 @@ const styles = StyleSheet.create({
   unreadBadge: {
     minWidth: 22,
     height: 22,
-    borderRadius: radius.control,
+    borderRadius: radius.md,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: space.s4,
+    paddingHorizontal: 4,
   },
   unreadBadgeText: {
     fontFamily: fontFamily.sansSemiBold,
@@ -640,7 +638,7 @@ const styles = StyleSheet.create({
     right: spacing.lg,
     width: 56,
     height: 56,
-    borderRadius: radius.feature,
+    borderRadius: radius.xl,
     backgroundColor: colors.secondaryContainer,
     alignItems: 'center',
     justifyContent: 'center',

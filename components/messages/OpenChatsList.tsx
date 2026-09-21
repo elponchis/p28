@@ -26,16 +26,7 @@ import { useChatsForUserQuery } from '@/hooks/useApiQueries';
 import { useAuth } from '@/hooks/useAuth';
 import { t } from '@/lib/i18n';
 import { orderByActivity } from '@/lib/openChats';
-import {
-  colors,
-  fontFamily,
-  fontSize,
-  listAccents,
-  radius,
-  space,
-  spacing,
-  typography,
-} from '@/theme/tokens';
+import { colors, fontFamily, listAccents, radius, spacing, typography } from '@/theme/tokens';
 
 export function OpenChatsList() {
   const { openChats, closeChat, collapsed, toggleCollapsed } = useOpenChats();
@@ -155,7 +146,7 @@ const styles = StyleSheet.create({
     paddingLeft: spacing.xs,
     borderLeftWidth: 1,
     borderLeftColor: colors.ghostBorder,
-    gap: space.s0,
+    gap: 0,
   },
   openChatsHeader: {
     flexDirection: 'row',
@@ -167,7 +158,7 @@ const styles = StyleSheet.create({
   openChatsHeaderLabel: {
     ...typography.caption,
     flex: 1,
-    fontSize: fontSize.caption,
+    fontSize: 12,
     color: colors.onSurfaceVariant,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
@@ -183,7 +174,7 @@ const styles = StyleSheet.create({
   },
   openChatOpen: {
     flex: 1,
-    paddingVertical: space.s4,
+    paddingVertical: 4,
     minWidth: 0,
   },
   openChatLabel: {
@@ -209,6 +200,6 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   openChatClose: {
-    padding: space.s4,
+    padding: 4,
   },
 });

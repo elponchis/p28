@@ -17,7 +17,7 @@ import {
 import type { Discussion } from '@/lib/api';
 import { t } from '@/lib/i18n';
 import { confirm } from '@/lib/dialogs';
-import { colors, fontFamily, fontSize, radius, space, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
 export default function CourseDetailScreen() {
   const { id: groupId, courseId } = useLocalSearchParams<{ id: string; courseId: string }>();
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
   },
   addLessonText: {
     fontFamily: fontFamily.sansBold,
-    fontSize: fontSize.caption,
+    fontSize: 12,
     fontWeight: '700',
     color: colors.secondary,
     textTransform: 'uppercase',
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
   lessonLabel: {
     ...typography.caption,
     color: colors.onSurfaceVariant,
-    marginBottom: space.s0,
+    marginBottom: 0,
   },
   lessonTitle: {
     ...typography.bodyStrong,

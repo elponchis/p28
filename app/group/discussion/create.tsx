@@ -23,7 +23,7 @@ import {
 } from '@/hooks/useApiQueries';
 import { getUserFacingError } from '@/lib/api';
 import { t } from '@/lib/i18n';
-import { colors, fontFamily, fontSize, radius, space, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
 export default function CreateDiscussionScreen() {
   const {
@@ -243,13 +243,13 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     fontFamily: fontFamily.sansBold,
-    fontSize: fontSize.caption,
+    fontSize: 12,
     fontWeight: '700',
     letterSpacing: 1.8,
     textTransform: 'uppercase',
     color: colors.onSurfaceVariant,
     marginBottom: spacing.xs,
-    paddingHorizontal: space.s0,
+    paddingHorizontal: 0,
   },
   groupSelect: {
     flexDirection: 'row',

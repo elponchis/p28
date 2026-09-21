@@ -3,7 +3,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import type { AssignmentType } from '@/lib/api';
 import { t } from '@/lib/i18n';
-import { colors, radius, space, spacing, typography } from '@/theme/tokens';
+import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 export interface AssignmentTypeFieldProps {
   value: AssignmentType;
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   label: {
     ...typography.label,
     color: colors.textPrimary,
-    marginBottom: space.s0,
+    marginBottom: 0,
   },
   hint: {
     ...typography.caption,

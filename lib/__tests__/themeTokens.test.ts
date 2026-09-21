@@ -1,18 +1,8 @@
 /**
- * The Blue Ocean theme repoints every app color, size and gap at the canvas tokens. Lighter
- * greys are where contrast quietly breaks, so each text token is pinned to the surfaces it is
- * allowed on, and every scale value is checked to be one the canvas actually uses.
+ * The list-style theme pass lightened the greys and borders. Lighter greys are where contrast
+ * quietly breaks, so each text token is pinned to the surfaces it is allowed on.
  */
-import {
-  color,
-  colors,
-  fontSize,
-  listAccents,
-  radius,
-  space,
-  spacing,
-  typography,
-} from '@/theme/tokens';
+import { colors, listAccents, radius, spacing } from '@/theme/tokens';
 
 /** WCAG contrast ratio for two #rrggbb colors. */
 function contrast(a: string, b: string): number {
@@ -69,37 +59,8 @@ describe('theme aliases stay in step', () => {
     expect(colors.borderSubtle).toBe(colors.ghostBorder);
     expect(colors.chipBorder).toBe(colors.outlineVariant);
     expect(colors.chipText).toBe(colors.textMuted);
-    // Blue Ocean puts every primary action, the unread dot included, on brandDeep.
-    expect(colors.unreadIndicator).toBe(colors.primary);
+    expect(colors.unreadIndicator).toBe(colors.secondary);
     expect(colors.chipAccent).toBe(colors.secondary);
-  });
-});
-
-describe('Blue Ocean palette', () => {
-  it('builds the app colors out of the canvas tokens', () => {
-    expect(colors.primary).toBe(color.brandDeep);
-    expect(colors.onSurface).toBe(color.ink);
-    expect(colors.secondaryContainer).toBe(color.sandSoft);
-    expect(colors.background).toBe(color.ground);
-    expect(colors.outlineVariant).toBe(color.line);
-  });
-
-  it('keeps white legible on the blue that carries white text', () => {
-    expect(contrast(colors.onPrimary, color.brandDeep)).toBeGreaterThanOrEqual(4.5);
-    expect(contrast(colors.onPrimaryContainer, color.brandDeep)).toBeGreaterThanOrEqual(4.5);
-  });
-
-  it('keeps amber a fill, read with its own ink', () => {
-    expect(contrast(color.sandInk, color.sandSoft)).toBeGreaterThanOrEqual(4.5);
-  });
-
-  it('holds spacing, radius and type to the canvas scales', () => {
-    const scale = Object.values(space);
-    for (const value of Object.values(spacing)) expect(scale).toContain(value);
-    const radii = [8, 10, 12, 16, 18, 999];
-    for (const value of Object.values(radius)) expect(radii).toContain(value);
-    const sizes = Object.values(fontSize);
-    for (const style of Object.values(typography)) expect(sizes).toContain(style.fontSize);
   });
 });
 

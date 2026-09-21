@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, View, Text, StyleSheet } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Button } from '@/components/primitives';
-import { colors, spacing, typography, radius } from '@/theme/tokens';
+import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 export interface EmptyStateProps {
   iconName: React.ComponentProps<typeof Ionicons>['name'];
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
   iconWrap: {
     width: 64,
     height: 64,
-    borderRadius: radius.feature,
+    borderRadius: radius.xl,
     backgroundColor: colors.surfaceContainer,
     justifyContent: 'center',
     alignItems: 'center',

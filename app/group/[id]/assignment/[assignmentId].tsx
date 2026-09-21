@@ -33,7 +33,7 @@ import { formatGroupEventDateTime, formatRelativeTime, isGroupEventPast } from '
 import { formatFileSize } from '@/lib/formatFileSize';
 import { getPublicStorageUrl } from '@/lib/supabasePublicUrl';
 import { t } from '@/lib/i18n';
-import { colors, fontFamily, radius, space, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
 interface PendingFile {
   uri: string;
@@ -618,7 +618,7 @@ const styles = StyleSheet.create({
   adminCardSubtitle: {
     ...typography.caption,
     color: colors.onSurfaceVariant,
-    marginTop: space.s0,
+    marginTop: 0,
   },
   section: {
     marginBottom: spacing.lg,
@@ -680,7 +680,7 @@ const styles = StyleSheet.create({
   submissionMeta: {
     ...typography.caption,
     color: colors.onSurfaceVariant,
-    marginTop: space.s0,
+    marginTop: 0,
   },
   quizBlock: {
     gap: spacing.md,
