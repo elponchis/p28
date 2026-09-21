@@ -62,8 +62,8 @@ describe('theme aliases stay in step', () => {
     expect(colors.borderSubtle).toBe(colors.ghostBorder);
     expect(colors.chipBorder).toBe(colors.outlineVariant);
     expect(colors.chipText).toBe(colors.textMuted);
-    // The unread dot is a primary action marker in Blue Ocean, so it follows primary, not amber.
-    expect(colors.unreadIndicator).toBe(colors.primary);
+    // The unread dot has to read as blue, and `primary` is ink here, so it follows `accent`.
+    expect(colors.unreadIndicator).toBe(colors.accent);
     expect(colors.chipAccent).toBe(colors.secondary);
   });
 });
@@ -88,6 +88,7 @@ describe('Blue Ocean roles', () => {
 
   it('keeps white legible on the blue that carries it', () => {
     expect(contrast(colors.onPrimary, colors.primary)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(colors.onAccent, colors.accent)).toBeGreaterThanOrEqual(4.5);
     expect(contrast(colors.onPrimary, colors.primaryContainer)).toBeGreaterThanOrEqual(4.5);
     expect(contrast(colors.onPrimaryContainer, colors.primaryContainer)).toBeGreaterThanOrEqual(
       4.5

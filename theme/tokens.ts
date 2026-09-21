@@ -46,7 +46,11 @@ export const colors = {
   brandSplashBackground: palette.brand,
 
   // Primary — the blue the app icon is cut from
-  primary: palette.brandDeep,
+  /**
+   * Also the heading colour in this app, so it stays ink. Blue that is meant to read as blue —
+   * links, group covers — uses `accent`.
+   */
+  primary: palette.ink,
   /**
    * Filled blue surfaces that carry white text: own chat bubbles, the devotion banner, group
    * card covers, filled buttons. Deep on purpose — `primaryFixed` is the pale blue fill.
@@ -56,6 +60,11 @@ export const colors = {
   onPrimary: palette.surface,
   /** Muted text on `primaryContainer` surfaces (e.g. Sacred Gatherings dark cards). */
   onPrimaryContainer: palette.onBrandMuted,
+
+  /** Where blue has to read as blue: link text, group covers. Never a heading. */
+  accent: palette.brandDeep,
+  /** Text and icons on an `accent` fill. */
+  onAccent: palette.surface,
 
   // Secondary — warm amber, fills only
   secondary: palette.sand,
@@ -124,7 +133,6 @@ export const colors = {
   cardHighlight: palette.ground,
   primaryDark: palette.brandDeep,
   primaryLight: palette.brandSoft,
-  accent: palette.brandDeep,
   accentSoft: palette.brandSoft,
   lavender: palette.brandDeep,
   lavenderSoft: palette.brandSoft,
