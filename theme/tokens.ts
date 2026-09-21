@@ -12,6 +12,8 @@
  * amber and the lavender-grey surfaces are unchanged; so are the fonts.
  */
 
+import { palette } from './palette.generated';
+
 // ---------------------------------------------------------------------------
 // Font families (loaded via expo-google-fonts in app/_layout.tsx)
 // ---------------------------------------------------------------------------
@@ -27,58 +29,62 @@ export const fontFamily = {
 } as const;
 
 // ---------------------------------------------------------------------------
-// Colors — "Spirit and Earth" duality
+// Colors — each role points at the Blue Ocean palette
 // ---------------------------------------------------------------------------
 
 export const colors = {
   // Surface hierarchy (nested sheets of heavy-stock paper)
-  background: '#f9f9ff', // base surface
-  surface: '#f9f9ff', // alias for background
-  surfaceContainerLowest: '#ffffff', // floating elements
-  surfaceContainerLow: '#f0f3ff', // cards on surface
-  surfaceContainer: '#e7eefe', // card backgrounds
-  surfaceContainerHigh: '#e2e8f8', // recessed sections
-  surfaceContainerHighest: '#dce3f2', // input backgrounds
+  background: palette.ground, // base surface
+  surface: palette.surface, // alias for background
+  surfaceContainerLowest: palette.surface, // floating elements
+  surfaceContainerLow: palette.surfaceSunken, // cards on surface
+  surfaceContainer: palette.ground, // card backgrounds
+  surfaceContainerHigh: palette.neutralSoft, // recessed sections
+  surfaceContainerHighest: palette.brandSoft, // input backgrounds
 
   /** Native splash + app icon background (keep in sync with app.json splash / adaptiveIcon) */
-  brandSplashBackground: '#327db6',
+  brandSplashBackground: palette.brand,
 
-  // Primary — deep authoritative blue
-  primary: '#002046',
-  primaryContainer: '#1b365d',
-  primaryFixed: '#d6e3ff', // input focus background
-  onPrimary: '#ffffff',
+  // Primary — the blue the app icon is cut from
+  primary: palette.brandDeep,
+  /**
+   * Filled blue surfaces that carry white text: own chat bubbles, the devotion banner, group
+   * card covers, filled buttons. Deep on purpose — `primaryFixed` is the pale blue fill.
+   */
+  primaryContainer: palette.brandDeep,
+  primaryFixed: palette.brandSoft, // input focus background
+  onPrimary: palette.surface,
   /** Muted text on `primaryContainer` surfaces (e.g. Sacred Gatherings dark cards). */
-  onPrimaryContainer: '#87a0cd',
+  onPrimaryContainer: palette.onBrandMuted,
 
-  // Secondary — warm illuminating gold
-  secondary: '#775a19',
-  secondaryContainer: '#fed488',
-  onSecondaryContainer: '#785a1a',
+  // Secondary — warm amber, fills only
+  secondary: palette.sand,
+  secondaryContainer: palette.sandSoft,
+  onSecondaryContainer: palette.sandInk,
 
   // Text / on-surface
-  onSurface: '#151c27',
+  onSurface: palette.ink,
   /** Secondary text. At least 5.3:1 on every surface, including surfaceContainerHighest. */
-  onSurfaceVariant: '#555a6b',
+  onSurfaceVariant: palette.muted,
   /**
-   * Meta text — timestamps, counts, previews. At least 4.5:1 on white, background,
-   * surfaceContainerLow/Container/High; not for text on surfaceContainerHighest.
+   * Meta text — timestamps, counts, previews. The canvas has one grey at this level, so this
+   * and `onSurfaceVariant` are the same colour now.
    */
-  textMuted: '#62677a',
+  textMuted: palette.muted,
   /** Light hairline border for chips, dividers and outlined surfaces. */
-  outlineVariant: '#dfe3ec',
+  outlineVariant: palette.line,
 
   /** Hairline for separators on tinted surfaces (sidebar rails, list dividers). */
-  ghostBorder: 'rgba(0, 32, 70, 0.08)',
+  ghostBorder: palette.line,
 
   // List accents
   /** Unread marker at the left of a list row. */
-  unreadIndicator: '#775a19',
+  unreadIndicator: palette.brandDeep,
   /** Outlined tag chip naming where an item belongs. */
-  chipBackground: '#ffffff',
-  chipBorder: '#dfe3ec',
-  chipText: '#62677a',
-  chipAccent: '#775a19',
+  chipBackground: palette.surface,
+  chipBorder: palette.line,
+  chipText: palette.muted,
+  chipAccent: palette.sand,
 
   // Glassmorphism
   glass: {
@@ -89,44 +95,47 @@ export const colors = {
   },
 
   // Semantic (muted, desaturated)
-  success: '#4a7c5c',
-  warning: '#8a6d2b',
+  success: palette.teal,
+  warning: palette.sandInk,
+  /** Kept — the canvas palette has no red. */
   error: '#ba1a1a',
-  info: '#002046',
+  info: palette.brandDeep,
 
   // Focus ring
-  focusRing: 'rgba(0, 32, 70, 0.25)',
+  focusRing: 'rgba(30, 92, 140, 0.25)',
 
   /** Recurring meeting card divider (body is white; join row uses secondaryContainer) */
-  recurringMeetingCardDivider: 'rgba(0, 32, 70, 0.12)',
+  recurringMeetingCardDivider: palette.line,
 
   // ---------------------------------------------------------------------------
   // Backward-compat aliases (map old names → new values during migration)
   // ---------------------------------------------------------------------------
-  textPrimary: '#151c27',
-  textSecondary: '#555a6b',
-  ink700: '#555a6b',
-  ink300: '#dfe3ec',
-  ink500: '#62677a',
-  brandSoft: '#d6e3ff',
-  surfaceHighlight: '#f0f3ff',
-  surface100: '#e7eefe',
-  cardDefault: '#ffffff',
-  cardAlt: '#f0f3ff',
-  cardHighlight: '#f9f9ff',
-  primaryDark: '#1b365d',
-  primaryLight: '#d6e3ff',
-  accent: '#002046',
-  accentSoft: '#d6e3ff',
-  lavender: '#002046',
-  lavenderSoft: '#d6e3ff',
-  blue: '#002046',
-  blueSoft: '#d6e3ff',
-  peach: '#fed488',
-  greenSoft: '#e2e8f8',
-  amberSoft: '#fed488',
+  textPrimary: palette.ink,
+  textSecondary: palette.muted,
+  ink700: palette.muted,
+  /** Placeholders, disabled icons, chevrons, the inactive tab tint. */
+  ink300: palette.inkSoft,
+  ink500: palette.muted,
+  brandSoft: palette.brandSoft,
+  surfaceHighlight: palette.surfaceSunken,
+  surface100: palette.ground,
+  cardDefault: palette.surface,
+  cardAlt: palette.surfaceSunken,
+  cardHighlight: palette.ground,
+  primaryDark: palette.brandDeep,
+  primaryLight: palette.brandSoft,
+  accent: palette.brandDeep,
+  accentSoft: palette.brandSoft,
+  lavender: palette.brandDeep,
+  lavenderSoft: palette.brandSoft,
+  blue: palette.brandDeep,
+  blueSoft: palette.brandSoft,
+  peach: palette.sandSoft,
+  greenSoft: palette.tealSoft,
+  amberSoft: palette.sandSoft,
+  /** Kept — a shadow is not a palette colour. */
   shadow: '#151c27',
-  borderSubtle: 'rgba(0, 32, 70, 0.08)',
+  borderSubtle: palette.line,
 } as const;
 
 // ---------------------------------------------------------------------------

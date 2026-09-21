@@ -3,6 +3,7 @@
  * quietly breaks, so each text token is pinned to the surfaces it is allowed on.
  */
 import { colors, listAccents, radius, spacing } from '@/theme/tokens';
+import { palette } from '@/theme/palette.generated';
 
 /** WCAG contrast ratio for two #rrggbb colors. */
 function contrast(a: string, b: string): number {
@@ -55,12 +56,48 @@ describe('theme aliases stay in step', () => {
     expect(colors.textSecondary).toBe(colors.onSurfaceVariant);
     expect(colors.ink700).toBe(colors.onSurfaceVariant);
     expect(colors.ink500).toBe(colors.textMuted);
-    expect(colors.ink300).toBe(colors.outlineVariant);
+    // Blue Ocean splits these: ink300 is now a foreground grey (placeholders, chevrons,
+    // the inactive tab tint), while outlineVariant stays the hairline border.
+    expect(colors.ink300).not.toBe(colors.outlineVariant);
     expect(colors.borderSubtle).toBe(colors.ghostBorder);
     expect(colors.chipBorder).toBe(colors.outlineVariant);
     expect(colors.chipText).toBe(colors.textMuted);
-    expect(colors.unreadIndicator).toBe(colors.secondary);
+    // The unread dot is a primary action marker in Blue Ocean, so it follows primary, not amber.
+    expect(colors.unreadIndicator).toBe(colors.primary);
     expect(colors.chipAccent).toBe(colors.secondary);
+  });
+});
+
+describe('Blue Ocean roles', () => {
+  it('reads every role out of the generated palette', () => {
+    const named = new Set<string>(Object.values(palette));
+    const roles = [
+      colors.primary,
+      colors.onPrimary,
+      colors.primaryContainer,
+      colors.background,
+      colors.surfaceContainerLowest,
+      colors.onSurface,
+      colors.onSurfaceVariant,
+      colors.outlineVariant,
+      colors.secondaryContainer,
+      colors.onSecondaryContainer,
+    ];
+    for (const value of roles) expect(named).toContain(value);
+  });
+
+  it('keeps white legible on the blue that carries it', () => {
+    expect(contrast(colors.onPrimary, colors.primary)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(colors.onPrimary, colors.primaryContainer)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(colors.onPrimaryContainer, colors.primaryContainer)).toBeGreaterThanOrEqual(
+      4.5
+    );
+  });
+
+  it('reads amber with its own ink, never with grey', () => {
+    expect(contrast(colors.onSecondaryContainer, colors.secondaryContainer)).toBeGreaterThanOrEqual(
+      4.5
+    );
   });
 });
 
