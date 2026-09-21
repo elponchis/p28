@@ -58,3 +58,6 @@ mcp-deploy-inline.json
 
 # Supabase CLI scratch (version marker it rewrites on every run)
 supabase/.temp/
+
+# Cached Bible pages for scripts/fill-verses.mjs
+verses/.cache/
