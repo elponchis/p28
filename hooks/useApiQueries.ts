@@ -629,6 +629,16 @@ export function useAnnouncementQuery(
   });
 }
 
+export function useDailyVersesQuery(locale: string) {
+  return useQuery({
+    queryKey: queryKeys.dailyVerses(locale),
+    queryFn: () =>
+      queryFn(api.data.listDailyVerses(locale)) as Promise<import('@/lib/api').DailyVerse[]>,
+    // The rotation changes about as often as someone edits the list.
+    staleTime: 60 * 60 * 1000,
+  });
+}
+
 export function useGlobalAnnouncementsQuery(
   userId: string | undefined,
   options?: { enabled?: boolean; limit?: number }

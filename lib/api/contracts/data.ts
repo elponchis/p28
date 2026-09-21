@@ -17,6 +17,7 @@ import type {
   Announcement,
   CreateAnnouncementInput,
   CreateGlobalAnnouncementInput,
+  DailyVerse,
   UpdateGlobalAnnouncementInput,
   GlobalAnnouncement,
   CreateGroupDiscussionInput,
@@ -256,6 +257,9 @@ export interface DataContract {
   ): Promise<Announcement | ApiError>;
   /** Invokes Edge Function to send push notifications for a published announcement (idempotent). */
   publishAnnouncement(announcementId: string): Promise<void | ApiError>;
+
+  /** The home screen's verse rotation for one language, in order. */
+  listDailyVerses(locale: string): Promise<DailyVerse[] | ApiError>;
 
   /** Newest global (platform) announcements for the home feed. */
   listGlobalAnnouncements(options?: { limit?: number }): Promise<GlobalAnnouncement[] | ApiError>;

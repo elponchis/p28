@@ -133,6 +133,17 @@ export interface CreateGlobalAnnouncementInput {
   description: string;
 }
 
+/** One verse in the home screen's daily rotation. */
+export interface DailyVerse {
+  id: string;
+  /** en · ko · km */
+  locale: string;
+  /** Position in the rotation; the day picks by this. */
+  sortOrder: number;
+  reference: string;
+  passage: string;
+}
+
 /** The wording is all an edit may change; author and posting time stay put. */
 export type UpdateGlobalAnnouncementInput = CreateGlobalAnnouncementInput;
 

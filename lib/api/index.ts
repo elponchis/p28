@@ -34,6 +34,7 @@ export type {
   NotificationPreferencesUpdates,
   CreateAnnouncementInput,
   CreateGlobalAnnouncementInput,
+  DailyVerse,
   UpdateGlobalAnnouncementInput,
   GlobalAnnouncement,
   CreateGroupEventInput,

@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -27,6 +27,7 @@ import {
   useProfileQuery,
   useGroupsForUserQuery,
   useCreateGlobalAnnouncementMutation,
+  useDailyVersesQuery,
   useDeleteGlobalAnnouncementMutation,
   useGlobalAnnouncementsQuery,
   useIsSuperAdminQuery,
@@ -35,6 +36,8 @@ import {
   useUpdateGlobalAnnouncementMutation,
   useUpcomingJoinedGroupEventsQuery,
 } from '@/hooks/useApiQueries';
+import { useLocale } from '@/contexts/LocaleContext';
+import { verseForDay } from '@/lib/dailyVerse';
 import { groupTypeLabel } from '@/lib/groupTypes';
 import { t } from '@/lib/i18n';
 import { isApiError, type Group } from '@/lib/api';
@@ -125,6 +128,7 @@ function GroupCarouselCard({ group }: { group: Group }) {
 
 export default function HomeScreen() {
   const { session } = useAuth();
+  const { locale } = useLocale();
   const router = useRouter();
   const userId = session?.user?.id;
   const [globalSheetOpen, setGlobalSheetOpen] = useState(false);
@@ -214,6 +218,10 @@ export default function HomeScreen() {
       : profile && 'displayName' in profile && profile.displayName
         ? profile.displayName
         : undefined;
+
+  const { data: dailyVerses = [] } = useDailyVersesQuery(locale);
+  // Falls back to the verse the app shipped with while the list is empty.
+  const todaysVerse = useMemo(() => verseForDay(dailyVerses), [dailyVerses]);
 
   const renderGroupItem = ({ item }: { item: Group }) => <GroupCarouselCard group={item} />;
 
@@ -383,8 +391,10 @@ export default function HomeScreen() {
             <View style={styles.sectionPadded}>
               <SectionHeader title={t('home.reflectionTitle')} />
               <ReflectionPlate
-                quote={t('home.reflectionQuote')}
-                attribution={t('home.reflectionAttribution')}
+                quote={todaysVerse ? '“' + todaysVerse.passage + '”' : t('home.reflectionQuote')}
+                attribution={
+                  todaysVerse ? '— ' + todaysVerse.reference : t('home.reflectionAttribution')
+                }
                 variant="dark"
               />
             </View>

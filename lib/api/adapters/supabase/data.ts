@@ -40,6 +40,7 @@ import type {
   Announcement,
   CreateAnnouncementInput,
   CreateGlobalAnnouncementInput,
+  DailyVerse,
   UpdateGlobalAnnouncementInput,
   GlobalAnnouncement,
   CreateGroupDiscussionInput,
@@ -2497,6 +2498,26 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
           .single();
         if (error) return toApiError(error);
         return mapAnnouncementRow(row as AnnouncementRow, null);
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async listDailyVerses(locale: string): Promise<DailyVerse[] | ApiError> {
+      try {
+        const { data, error } = await getClient()
+          .from('daily_verses')
+          .select('id, locale, sort_order, reference, passage')
+          .eq('locale', locale)
+          .order('sort_order', { ascending: true });
+        if (error) return toApiError(error);
+        return (data ?? []).map((row) => ({
+          id: row.id as string,
+          locale: row.locale as string,
+          sortOrder: row.sort_order as number,
+          reference: row.reference as string,
+          passage: row.passage as string,
+        }));
       } catch (e) {
         return toApiError(e);
       }

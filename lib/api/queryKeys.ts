@@ -59,6 +59,7 @@ export const queryKeys = {
   latestPublishedAnnouncementsPerJoinedGroup: (userId: string, groupIdsKey: string) =>
     ['latestPublishedAnnouncementsPerJoinedGroup', userId, groupIdsKey] as const,
   announcement: (id: string) => ['announcement', id] as const,
+  dailyVerses: (locale: string) => ['dailyVerses', locale] as const,
   globalAnnouncements: () => ['globalAnnouncements'] as const,
   groupEvents: (groupId: string, discover?: boolean) =>
     ['groupEvents', groupId, discover === true ? 'discover' : 'member'] as const,
