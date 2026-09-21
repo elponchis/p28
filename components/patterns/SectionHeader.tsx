@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { colors, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, spacing } from '@/theme/tokens';
 
 export interface SectionHeaderProps {
   title: string;
@@ -32,11 +32,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.sm,
-    marginTop: spacing.sectionGap,
+    marginBottom: spacing.md,
+    marginTop: spacing.lg,
   },
   title: {
-    ...typography.headlineSm,
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: 19,
+    fontWeight: '600',
     color: colors.onSurface,
   },
   actionBtn: {
@@ -45,7 +47,8 @@ const styles = StyleSheet.create({
   },
   actionPressed: { opacity: 0.5 },
   actionText: {
-    ...typography.body,
-    color: colors.primary,
+    fontFamily: fontFamily.sans,
+    fontSize: 14,
+    color: colors.accent,
   },
 });

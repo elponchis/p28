@@ -5,7 +5,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { TagChip } from '@/components/patterns/TagChip';
 import { formatGroupEventCalendarBlock } from '@/lib/dates';
 import { t } from '@/lib/i18n';
-import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, radius, spacing } from '@/theme/tokens';
 
 export interface LatestAnnouncementRowProps {
   title: string;
@@ -43,13 +43,11 @@ export function LatestAnnouncementRow({
   };
 
   return (
-    <View style={[styles.wrap, hasMeetingFooter && styles.wrapUnified]}>
+    <View style={styles.wrap}>
       <Pressable
         onPress={onPress}
         style={({ pressed }) => [
           styles.row,
-          !hasMeetingFooter && styles.rowStandalone,
-          hasMeetingFooter && styles.rowWithFooter,
           pressed && { backgroundColor: colors.surfaceContainerLow },
         ]}
         accessibilityLabel={accessibilityLabel ?? title}
@@ -60,6 +58,7 @@ export function LatestAnnouncementRow({
           <Text style={styles.month}>{month}</Text>
           <Text style={styles.day}>{day}</Text>
         </View>
+        <View style={styles.dateRule} />
         <View style={styles.body}>
           <View style={styles.titleRow}>
             <Text style={styles.itemTitle} numberOfLines={2}>
@@ -91,9 +90,9 @@ export function LatestAnnouncementRow({
           accessibilityHint={t('groupEvents.joinMeetingHint')}
           accessibilityRole="link"
         >
-          <Ionicons name="videocam-outline" size={18} color={colors.primary} />
+          <Ionicons name="videocam-outline" size={18} color={colors.onSecondaryContainer} />
           <Text style={styles.meetingLinkText}>{t('groupEvents.joinMeeting')}</Text>
-          <Ionicons name="open-outline" size={16} color={colors.primary} />
+          <Ionicons name="open-outline" size={16} color={colors.onSecondaryContainer} />
         </Pressable>
       ) : null}
     </View>
@@ -101,32 +100,33 @@ export function LatestAnnouncementRow({
 }
 
 const styles = StyleSheet.create({
+  // A bordered card, whether or not the meeting footer is attached below the row.
   wrap: {
     marginBottom: 0,
-  },
-  wrapUnified: {
-    borderRadius: radius.lg,
+    borderRadius: radius.card,
     overflow: 'hidden',
-    backgroundColor: colors.surfaceContainerLowest,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
     borderCurve: 'continuous',
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.lg,
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.md,
+    gap: spacing.screenHorizontal,
+    paddingVertical: spacing.screenHorizontal,
+    paddingHorizontal: spacing.lg,
     borderCurve: 'continuous',
   },
-  rowStandalone: {
-    borderRadius: radius.lg,
-  },
-  rowWithFooter: {
-    borderRadius: 0,
-  },
   dateCol: {
-    width: 44,
+    width: 58,
     alignItems: 'center',
+  },
+  /** Separates the date from the title; the one element the card gained. */
+  dateRule: {
+    width: 1,
+    height: 42,
+    backgroundColor: colors.outlineVariant,
   },
   month: {
     fontFamily: fontFamily.sansBold,
@@ -138,10 +138,10 @@ const styles = StyleSheet.create({
   },
   day: {
     fontFamily: fontFamily.serifBold,
-    fontSize: 24,
+    fontSize: 27,
     fontWeight: '700',
-    color: colors.primary,
-    lineHeight: 28,
+    color: colors.onSurface,
+    lineHeight: 32,
     marginTop: spacing.xxs,
   },
   body: {
@@ -156,15 +156,14 @@ const styles = StyleSheet.create({
   itemTitle: {
     flex: 1,
     minWidth: 0,
-    fontFamily: fontFamily.sansBold,
+    fontFamily: fontFamily.sansSemiBold,
     fontSize: 16,
-    fontWeight: '700',
-    color: colors.primary,
+    fontWeight: '600',
+    color: colors.onSurface,
   },
   preview: {
-    fontFamily: fontFamily.sansMedium,
+    fontFamily: fontFamily.sans,
     fontSize: 14,
-    fontWeight: '500',
     color: colors.onSurfaceVariant,
     marginTop: spacing.xxs,
     lineHeight: 20,
@@ -190,16 +189,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    backgroundColor: colors.secondaryContainer,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: colors.amberSoft,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.recurringMeetingCardDivider,
     borderCurve: 'continuous',
   },
   meetingLinkText: {
-    ...typography.bodyMd,
-    fontFamily: fontFamily.sansSemiBold,
-    color: colors.primary,
+    fontFamily: fontFamily.sansMedium,
+    fontSize: 15,
+    fontWeight: '500',
+    color: colors.onSecondaryContainer,
     flex: 1,
   },
 });

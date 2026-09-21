@@ -36,18 +36,12 @@ import { t } from '@/lib/i18n';
 import { isApiError, type Group } from '@/lib/api';
 import { getUserFacingError } from '@/lib/errors';
 import type { JoinedGroupUpcomingEventRow } from '@/lib/upcomingJoinedGroupEvents';
-import {
-  colors,
-  fontFamily,
-  radius,
-  shadow,
-  spacing,
-  tabScreenContent,
-  typography,
-} from '@/theme/tokens';
+import { colors, fontFamily, radius, spacing, tabScreenContent, typography } from '@/theme/tokens';
 
 const GROUP_CARD_WIDTH = 200;
 const GROUP_CARD_IMAGE_HEIGHT = 120;
+/** A cover with no banner behind it is a touch shorter than a photo. */
+const GROUP_CARD_COVER_HEIGHT = 108;
 const UPCOMING_EVENT_CARD_WIDTH = 300;
 
 function GroupCarouselCard({ group }: { group: Group }) {
@@ -69,8 +63,11 @@ function GroupCarouselCard({ group }: { group: Group }) {
             accessibilityIgnoresInvertColors
           />
         ) : (
-          <View style={[carouselStyles.image, carouselStyles.imagePlaceholder]}>
-            <Ionicons name="people-outline" size={28} color={colors.outlineVariant} />
+          // No banner: the cover carries the group's own name instead of a generic icon.
+          <View style={carouselStyles.coverPlain}>
+            <Text style={carouselStyles.coverName} numberOfLines={2}>
+              {group.name}
+            </Text>
           </View>
         )}
 
@@ -79,7 +76,9 @@ function GroupCarouselCard({ group }: { group: Group }) {
             {group.name}
           </Text>
           <View style={carouselStyles.meta}>
-            <Text style={carouselStyles.type}>{groupTypeLabel(group.type)}</Text>
+            <View style={carouselStyles.typeChip}>
+              <Text style={carouselStyles.type}>{groupTypeLabel(group.type)}</Text>
+            </View>
             {group.memberCount != null ? (
               <View style={carouselStyles.memberRow}>
                 <Ionicons name="people" size={12} color={colors.onSurfaceVariant} />
@@ -196,7 +195,7 @@ export default function HomeScreen() {
                 accessibilityLabel={t('home.postGlobalAnnouncementLink')}
                 accessibilityHint={t('home.postGlobalAnnouncementHint')}
               >
-                <Ionicons name="globe-outline" size={18} color={colors.primary} />
+                <Ionicons name="globe-outline" size={17} color={colors.accent} />
                 <Text style={styles.globalAnnouncementLinkText}>
                   {t('home.postGlobalAnnouncementLink')}
                 </Text>
@@ -410,43 +409,47 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: spacing.screenHorizontal,
     paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
   },
   welcomeText: {
     fontFamily: fontFamily.serif,
-    fontSize: 27,
+    fontSize: 32,
     fontWeight: '400',
-    lineHeight: 36,
+    lineHeight: 43,
     letterSpacing: -0.2,
     color: colors.onSurface,
   },
   nameText: {
-    fontFamily: fontFamily.serifItalic,
-    fontSize: 27,
+    fontFamily: fontFamily.serifBold,
+    fontSize: 32,
     fontWeight: '400',
-    lineHeight: 36,
+    lineHeight: 43,
     letterSpacing: -0.2,
-    color: colors.primary,
+    color: colors.onSurface,
   },
 
   sectionPadded: {
     paddingHorizontal: spacing.screenHorizontal,
   },
 
+  // An outlined button, sized to its own content so it never stretches across the screen.
   globalAnnouncementLinkRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
+    gap: spacing.xs,
+    marginTop: spacing.md,
     alignSelf: 'flex-start',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
+    borderRadius: radius.md,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
   },
   globalAnnouncementLinkText: {
-    fontFamily: fontFamily.sansSemiBold,
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.primary,
-    textDecorationLine: 'underline',
-    textDecorationColor: colors.primary,
+    fontFamily: fontFamily.sansMedium,
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.accent,
   },
   globalAnnouncementStack: {
     gap: spacing.md,
@@ -462,19 +465,19 @@ const styles = StyleSheet.create({
   },
 
   latestUpdatesSection: {
-    marginTop: spacing.sectionGap,
+    marginTop: spacing.lg,
   },
   latestUpdatesHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.xl,
+    marginBottom: spacing.md,
   },
   latestUpdatesTitle: {
-    fontFamily: fontFamily.serifBold,
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.primary,
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: 19,
+    fontWeight: '600',
+    color: colors.onSurface,
     letterSpacing: -0.1,
     flex: 1,
     marginRight: spacing.md,
@@ -518,24 +521,34 @@ const carouselStyles = StyleSheet.create({
     width: GROUP_CARD_WIDTH,
     backgroundColor: colors.surfaceContainerLowest,
     borderRadius: radius.card,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
     overflow: 'hidden',
-    ...shadow.ambient,
   },
   image: {
     width: '100%',
     height: GROUP_CARD_IMAGE_HEIGHT,
   },
-  imagePlaceholder: {
-    backgroundColor: colors.surfaceContainer,
-    alignItems: 'center',
-    justifyContent: 'center',
+  coverPlain: {
+    width: '100%',
+    height: GROUP_CARD_COVER_HEIGHT,
+    backgroundColor: colors.accent,
+    justifyContent: 'flex-end',
+    padding: spacing.md,
+  },
+  coverName: {
+    fontFamily: fontFamily.serif,
+    fontSize: 19,
+    color: colors.onAccent,
   },
   info: {
     padding: spacing.md,
     gap: spacing.xs,
   },
   name: {
-    ...typography.titleMd,
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: 15,
+    fontWeight: '600',
     color: colors.onSurface,
   },
   meta: {
@@ -543,11 +556,16 @@ const carouselStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  typeChip: {
+    backgroundColor: colors.surfaceContainerHighest,
+    borderRadius: radius.chip,
+    paddingVertical: spacing.xxs,
+    paddingHorizontal: spacing.xs,
+  },
   type: {
-    ...typography.labelSm,
-    color: colors.secondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
+    fontFamily: fontFamily.sansMedium,
+    fontSize: 12,
+    color: colors.accent,
   },
   memberRow: {
     flexDirection: 'row',
@@ -555,7 +573,8 @@ const carouselStyles = StyleSheet.create({
     gap: spacing.xxs,
   },
   memberCount: {
-    ...typography.labelSm,
+    fontFamily: fontFamily.sans,
+    fontSize: 13,
     color: colors.onSurfaceVariant,
   },
 });
