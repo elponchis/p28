@@ -2,11 +2,8 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import {
-  NotoSerif_400Regular,
-  NotoSerif_400Regular_Italic,
-  NotoSerif_700Bold,
-} from '@expo-google-fonts/noto-serif';
+import { NotoSerif_400Regular_Italic } from '@expo-google-fonts/noto-serif';
+import { GowunBatang_400Regular, GowunBatang_700Bold } from '@expo-google-fonts/gowun-batang';
 import {
   PlusJakartaSans_400Regular,
   PlusJakartaSans_500Medium,
@@ -61,9 +58,10 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     ...FontAwesome.font,
     // Editorial fonts — Noto Serif (headlines) + Plus Jakarta Sans (body)
-    [fontFamily.serif]: NotoSerif_400Regular,
+    [fontFamily.serif]: GowunBatang_400Regular,
+    // Gowun Batang ships no italic; the Latin serif keeps that one slot.
     [fontFamily.serifItalic]: NotoSerif_400Regular_Italic,
-    [fontFamily.serifBold]: NotoSerif_700Bold,
+    [fontFamily.serifBold]: GowunBatang_700Bold,
     [fontFamily.sans]: PlusJakartaSans_400Regular,
     [fontFamily.sansMedium]: PlusJakartaSans_500Medium,
     [fontFamily.sansSemiBold]: PlusJakartaSans_600SemiBold,

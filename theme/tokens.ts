@@ -1,15 +1,15 @@
 /**
- * Design tokens — The Sanctuary Editorial (single source of truth).
+ * Design tokens — the P2:8 Blue Ocean theme (single source of truth).
  *
  * Creative North Star: "The Digital Hearth"
  * Aesthetic: High-end editorial — warm, spacious, deeply personal.
- * Palette: "Spirit and Earth" — deep authoritative blues + warm illuminating golds.
- * Typography: Noto Serif (headlines) + Plus Jakarta Sans (body).
+ * Palette: theme/palette.generated.ts — ocean blues + a warm sand amber.
+ * Typography: Gowun Batang (headlines, Korean-capable) + Plus Jakarta Sans (body).
  * Depth: Tonal layering with light hairline borders; shadows kept faint.
  *
- * List styling (2026-09): one quieter secondary grey for meta text, a lighter muted grey for
- * timestamps and counts, visible light borders, tighter card corners and list padding. Navy,
- * amber and the lavender-grey surfaces are unchanged; so are the fonts.
+ * Every role below reads its value from the generated palette, so a screen never names a
+ * colour of its own. `primary` is ink because it doubles as the heading colour; blue that
+ * has to read as blue is `accent`.
  */
 
 import { palette } from './palette.generated';
@@ -19,9 +19,9 @@ import { palette } from './palette.generated';
 // ---------------------------------------------------------------------------
 
 export const fontFamily = {
-  serif: 'NotoSerif',
+  serif: 'GowunBatang',
   serifItalic: 'NotoSerif-Italic',
-  serifBold: 'NotoSerif-Bold',
+  serifBold: 'GowunBatang-Bold',
   sans: 'PlusJakartaSans',
   sansMedium: 'PlusJakartaSans-Medium',
   sansSemiBold: 'PlusJakartaSans-SemiBold',
@@ -189,7 +189,7 @@ export const radius = {
 // ---------------------------------------------------------------------------
 
 export const typography = {
-  // Serif — Noto Serif (display & headlines)
+  // Serif — Gowun Batang (display & headlines)
   displayLg: {
     fontFamily: fontFamily.serif,
     fontSize: 36,

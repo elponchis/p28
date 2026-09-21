@@ -20,6 +20,7 @@
     "check:theme": "node scripts/check-theme.mjs"
   },
   "dependencies": {
+    "@expo-google-fonts/gowun-batang": "^0.4.1",
     "@expo-google-fonts/noto-serif": "^0.4.2",
     "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
     "@expo/vector-icons": "^15.0.3",
