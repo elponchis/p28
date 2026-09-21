@@ -40,6 +40,7 @@ import type {
   Announcement,
   CreateAnnouncementInput,
   CreateGlobalAnnouncementInput,
+  UpdateGlobalAnnouncementInput,
   GlobalAnnouncement,
   CreateGroupDiscussionInput,
   CreateGroupEventInput,
@@ -2545,6 +2546,45 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
           globalAnnouncementId: announcement.id,
         });
         return announcement;
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async updateGlobalAnnouncement(
+      announcementId: string,
+      input: UpdateGlobalAnnouncementInput
+    ): Promise<GlobalAnnouncement | ApiError> {
+      try {
+        const title = input.title.trim();
+        const description = input.description.trim();
+        if (!title || !description) {
+          return { message: 'Title and description are required', code: 'VALIDATION_ERROR' };
+        }
+        const { data: row, error } = await getClient()
+          .from('global_announcements')
+          .update({ title, description })
+          .eq('id', announcementId)
+          .select('id, title, description, created_by_user_id, created_at')
+          .maybeSingle();
+        if (error) return toApiError(error);
+        // RLS lets a non-super-admin read the row but not write it, so no row means refused.
+        if (!row) return { message: 'Not allowed', code: 'FORBIDDEN' };
+        return mapGlobalAnnouncementRow(row as GlobalAnnouncementRow);
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async deleteGlobalAnnouncement(announcementId: string): Promise<void | ApiError> {
+      try {
+        const { data, error } = await getClient()
+          .from('global_announcements')
+          .delete()
+          .eq('id', announcementId)
+          .select('id');
+        if (error) return toApiError(error);
+        if (!data || data.length === 0) return { message: 'Not allowed', code: 'FORBIDDEN' };
       } catch (e) {
         return toApiError(e);
       }

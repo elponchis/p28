@@ -29,6 +29,8 @@ export interface GlobalAnnouncementFormSheetProps {
   onSubmit: (payload: { title: string; description: string }) => void;
   isSubmitting?: boolean;
   errorMessage?: string | null;
+  /** Present when editing an announcement that already exists. */
+  initialValues?: { title: string; description: string } | null;
 }
 
 export function GlobalAnnouncementFormSheet({
@@ -37,6 +39,7 @@ export function GlobalAnnouncementFormSheet({
   onSubmit,
   isSubmitting = false,
   errorMessage = null,
+  initialValues = null,
 }: GlobalAnnouncementFormSheetProps) {
   const insets = useSafeAreaInsets();
   const { sheetSlideAnim, sheetFadeAnim } = useFadeSheetAnimation(visible);
@@ -45,8 +48,10 @@ export function GlobalAnnouncementFormSheet({
 
   useEffect(() => {
     if (!visible) return;
-    setTitle('');
-    setDescription('');
+    setTitle(initialValues?.title ?? '');
+    setDescription(initialValues?.description ?? '');
+    // Only the sheet opening should reset the fields — not every keystroke in the parent.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
   const handleSubmit = useCallback(() => {

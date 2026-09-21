@@ -1,18 +1,26 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { colors, fontFamily, spacing } from '@/theme/tokens';
+import { colors, fontFamily, radius, spacing } from '@/theme/tokens';
 
 export interface SectionHeaderProps {
   title: string;
   /** Optional action label shown as a tappable link on the right */
   actionLabel?: string;
   onAction?: () => void;
+  /** How many more there are than the section shows. Hidden when zero. */
+  badge?: number;
 }
 
-export function SectionHeader({ title, actionLabel, onAction }: SectionHeaderProps) {
+export function SectionHeader({ title, actionLabel, onAction, badge }: SectionHeaderProps) {
   return (
     <View style={styles.row}>
       <Text style={styles.title}>{title}</Text>
+      {badge != null && badge > 0 ? (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{badge > 99 ? '99+' : badge}</Text>
+        </View>
+      ) : null}
+      <View style={styles.spacer} />
       {actionLabel && onAction ? (
         <Pressable
           onPress={onAction}
@@ -31,9 +39,26 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: spacing.xs,
     marginBottom: spacing.md,
     marginTop: spacing.lg,
+  },
+  spacer: {
+    flex: 1,
+  },
+  /** How many more wait behind "see all". */
+  badge: {
+    minWidth: 20,
+    paddingHorizontal: spacing.xxs,
+    paddingVertical: 1,
+    borderRadius: radius.chip,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+  },
+  badgeText: {
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: 12,
+    color: colors.onAccent,
   },
   title: {
     fontFamily: fontFamily.sansSemiBold,

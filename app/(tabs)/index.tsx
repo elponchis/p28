@@ -27,16 +27,19 @@ import {
   useProfileQuery,
   useGroupsForUserQuery,
   useCreateGlobalAnnouncementMutation,
+  useDeleteGlobalAnnouncementMutation,
   useGlobalAnnouncementsQuery,
   useIsSuperAdminQuery,
   useLatestPublishedAnnouncementsPerJoinedGroupQuery,
   useMyEventRsvpsMapForEventsQuery,
+  useUpdateGlobalAnnouncementMutation,
   useUpcomingJoinedGroupEventsQuery,
 } from '@/hooks/useApiQueries';
 import { groupTypeLabel } from '@/lib/groupTypes';
 import { t } from '@/lib/i18n';
 import { isApiError, type Group } from '@/lib/api';
 import { getUserFacingError } from '@/lib/errors';
+import { confirm, notify } from '@/lib/dialogs';
 import type { JoinedGroupUpcomingEventRow } from '@/lib/upcomingJoinedGroupEvents';
 import { SIDEBAR_WIDTH } from '@/components/navigation/FloatingTabBar';
 import {
@@ -51,6 +54,8 @@ import {
 
 /** Narrower than this and a quadrant drops onto its own row instead of sharing one. */
 const QUADRANT_MIN_WIDTH = 380;
+/** Home shows the newest one; "see all" has the rest. */
+const LATEST_UPDATES_ON_HOME = 1;
 /** Group cards inside one quadrant. */
 const GROUPS_PER_ROW = 2;
 const GROUP_CARD_MIN_WIDTH = 200;
@@ -124,6 +129,7 @@ export default function HomeScreen() {
   const userId = session?.user?.id;
   const [globalSheetOpen, setGlobalSheetOpen] = useState(false);
   const [globalFormError, setGlobalFormError] = useState<string | null>(null);
+  const [editingGlobalId, setEditingGlobalId] = useState<string | null>(null);
 
   const { data: profile } = useProfileQuery(userId);
   const { data: myGroups = [], isLoading: groupsLoading } = useGroupsForUserQuery(userId);
@@ -152,19 +158,54 @@ export default function HomeScreen() {
     error: globalAnnouncementsError,
   } = useGlobalAnnouncementsQuery(userId, { enabled: !!userId, limit: 10 });
   const createGlobalAnnouncementMutation = useCreateGlobalAnnouncementMutation();
+  const updateGlobalAnnouncementMutation = useUpdateGlobalAnnouncementMutation();
+  const deleteGlobalAnnouncementMutation = useDeleteGlobalAnnouncementMutation();
+
+  // The same sheet writes a new announcement and edits an existing one; this says which.
+  const editingGlobal = globalAnnouncements.find((ga) => ga.id === editingGlobalId) ?? null;
 
   const handleGlobalAnnouncementSubmit = useCallback(
     async (payload: { title: string; description: string }) => {
       if (!userId) return;
       setGlobalFormError(null);
       try {
-        await createGlobalAnnouncementMutation.mutateAsync({ userId, input: payload });
+        if (editingGlobalId) {
+          await updateGlobalAnnouncementMutation.mutateAsync({
+            announcementId: editingGlobalId,
+            input: payload,
+          });
+        } else {
+          await createGlobalAnnouncementMutation.mutateAsync({ userId, input: payload });
+        }
         setGlobalSheetOpen(false);
+        setEditingGlobalId(null);
       } catch (e) {
         setGlobalFormError(e != null && isApiError(e) ? getUserFacingError(e) : t('common.error'));
       }
     },
-    [userId, createGlobalAnnouncementMutation]
+    [userId, editingGlobalId, createGlobalAnnouncementMutation, updateGlobalAnnouncementMutation]
+  );
+
+  const handleGlobalAnnouncementDelete = useCallback(
+    async (announcementId: string) => {
+      const ok = await confirm({
+        title: t('home.deleteGlobalAnnouncement'),
+        message: t('home.deleteGlobalAnnouncementConfirm'),
+        confirmLabel: t('common.delete'),
+        cancelLabel: t('common.cancel'),
+        destructive: true,
+      });
+      if (!ok) return;
+      try {
+        await deleteGlobalAnnouncementMutation.mutateAsync({ announcementId });
+      } catch (e) {
+        void notify({
+          title: t('common.error'),
+          message: e != null && isApiError(e) ? getUserFacingError(e) : t('common.error'),
+        });
+      }
+    },
+    [deleteGlobalAnnouncementMutation]
   );
 
   const displayName =
@@ -211,6 +252,7 @@ export default function HomeScreen() {
               <Pressable
                 onPress={() => {
                   setGlobalFormError(null);
+                  setEditingGlobalId(null);
                   setGlobalSheetOpen(true);
                 }}
                 style={({ pressed }) => [
@@ -232,42 +274,66 @@ export default function HomeScreen() {
 
         <GlobalAnnouncementFormSheet
           visible={globalSheetOpen}
-          onRequestClose={() => setGlobalSheetOpen(false)}
+          onRequestClose={() => {
+            setGlobalSheetOpen(false);
+            setEditingGlobalId(null);
+          }}
           onSubmit={handleGlobalAnnouncementSubmit}
-          isSubmitting={createGlobalAnnouncementMutation.isPending}
+          isSubmitting={
+            createGlobalAnnouncementMutation.isPending || updateGlobalAnnouncementMutation.isPending
+          }
           errorMessage={globalFormError}
+          initialValues={editingGlobal}
         />
 
-        <View style={styles.grid}>
-          {/* Everything worth reading, and first on the screen: the platform-wide announcements,
-            then the latest published announcement from each joined group. News is what someone
-            opens the app for; the groups strip below it is navigation, which can wait.
+        {/* A platform-wide announcement is addressed to everyone, so it sits across the top
+            rather than inside one quadrant. */}
+        {globalAnnouncementsIsError ? (
+          <View style={styles.sectionPadded}>
+            <Text style={styles.inlineError} accessibilityLiveRegion="polite">
+              {globalAnnouncementsError != null && isApiError(globalAnnouncementsError)
+                ? getUserFacingError(globalAnnouncementsError)
+                : t('common.error')}
+            </Text>
+          </View>
+        ) : globalAnnouncements.length > 0 ? (
+          <View style={[styles.sectionPadded, styles.globalAnnouncementStack]}>
+            {globalAnnouncements.map((ga) => (
+              <GlobalAnnouncementCard
+                key={ga.id}
+                title={ga.title}
+                description={ga.description}
+                onEdit={
+                  isSuperAdmin
+                    ? () => {
+                        setGlobalFormError(null);
+                        setEditingGlobalId(ga.id);
+                        setGlobalSheetOpen(true);
+                      }
+                    : undefined
+                }
+                onDelete={
+                  isSuperAdmin ? () => void handleGlobalAnnouncementDelete(ga.id) : undefined
+                }
+              />
+            ))}
+          </View>
+        ) : null}
 
-            A global announcement is addressed to everyone, so this section exists even for
-            someone who has joined nothing yet. */}
+        <View style={styles.grid}>
+          {/* The latest published announcement from each joined group. Only the newest one is
+            shown here — the rest are one tap away, counted on the header. */}
           <View style={styles.quadrant}>
             <View style={styles.sectionPadded}>
-              <SectionHeader title={t('announcements.latestUpdatesSectionTitle')} />
+              <SectionHeader
+                title={t('announcements.latestUpdatesSectionTitle')}
+                badge={Math.max(0, latestAnnouncements.length - LATEST_UPDATES_ON_HOME)}
+                actionLabel={latestAnnouncements.length > 0 ? t('home.seeAll') : undefined}
+                onAction={
+                  latestAnnouncements.length > 0 ? () => router.push('/announcements') : undefined
+                }
+              />
             </View>
-            {globalAnnouncementsIsError ? (
-              <View style={styles.sectionPadded}>
-                <Text style={styles.inlineError} accessibilityLiveRegion="polite">
-                  {globalAnnouncementsError != null && isApiError(globalAnnouncementsError)
-                    ? getUserFacingError(globalAnnouncementsError)
-                    : t('common.error')}
-                </Text>
-              </View>
-            ) : globalAnnouncements.length > 0 ? (
-              <View style={[styles.sectionPadded, styles.globalAnnouncementStack]}>
-                {globalAnnouncements.map((ga) => (
-                  <GlobalAnnouncementCard
-                    key={ga.id}
-                    title={ga.title}
-                    description={ga.description}
-                  />
-                ))}
-              </View>
-            ) : null}
             {globalAnnouncementsLoading || latestAnnouncementsLoading ? (
               <View style={styles.loadingRow}>
                 <ActivityIndicator size="small" color={colors.primary} />
@@ -281,18 +347,16 @@ export default function HomeScreen() {
                 </Text>
               </View>
             ) : latestAnnouncements.length === 0 ? (
-              globalAnnouncements.length === 0 ? (
-                <View style={styles.sectionPadded}>
-                  <EmptyState
-                    iconName="megaphone-outline"
-                    title={t('announcements.noAnnouncements')}
-                    subtitle={t('announcements.noAnnouncementsHint')}
-                  />
-                </View>
-              ) : null
+              <View style={styles.sectionPadded}>
+                <EmptyState
+                  iconName="megaphone-outline"
+                  title={t('announcements.noAnnouncements')}
+                  subtitle={t('announcements.noAnnouncementsHint')}
+                />
+              </View>
             ) : (
               <View style={[styles.sectionPadded, styles.latestUpdatesList]}>
-                {latestAnnouncements.map((item) => (
+                {latestAnnouncements.slice(0, LATEST_UPDATES_ON_HOME).map((item) => (
                   <View key={item.id} style={styles.latestUpdateBlock}>
                     <LatestAnnouncementRow
                       tagLabel={item.groupName}

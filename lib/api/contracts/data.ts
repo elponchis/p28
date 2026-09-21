@@ -17,6 +17,7 @@ import type {
   Announcement,
   CreateAnnouncementInput,
   CreateGlobalAnnouncementInput,
+  UpdateGlobalAnnouncementInput,
   GlobalAnnouncement,
   CreateGroupDiscussionInput,
   CreateGroupEventInput,
@@ -263,6 +264,13 @@ export interface DataContract {
     userId: string,
     input: CreateGlobalAnnouncementInput
   ): Promise<GlobalAnnouncement | ApiError>;
+  /** Super admins only (RLS). Author and posting time are kept by a trigger. */
+  updateGlobalAnnouncement(
+    announcementId: string,
+    input: UpdateGlobalAnnouncementInput
+  ): Promise<GlobalAnnouncement | ApiError>;
+  /** Super admins only (RLS). */
+  deleteGlobalAnnouncement(announcementId: string): Promise<void | ApiError>;
 
   // Group events
   /** @param options.discover When true, returns events without meeting links (for non-members). */

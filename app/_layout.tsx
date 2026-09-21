@@ -109,6 +109,21 @@ function RootLayoutNav() {
   const segments = useSegments();
   const router = useRouter();
 
+  const announcementsStackOptions = useMemo(() => {
+    return {
+      headerShown: true as const,
+      title: t('announcements.latestUpdatesSectionTitle'),
+      headerBackButtonDisplayMode: 'minimal' as const,
+      headerTitleStyle: {
+        fontFamily: fontFamily.serif,
+        fontWeight: '400' as const,
+        color: colors.onSurface,
+      },
+      headerLeft: () => <StackHeaderBack fallbackHref="/(tabs)" />,
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `t()` uses locale; keep title in sync after language change
+  }, [locale]);
+
   const upcomingEventsStackOptions = useMemo(() => {
     return {
       headerShown: true as const,
@@ -188,6 +203,7 @@ function RootLayoutNav() {
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '' }} />
         <Stack.Screen name="upcoming-events" options={upcomingEventsStackOptions} />
+        <Stack.Screen name="announcements" options={announcementsStackOptions} />
         <Stack.Screen name="group" options={{ headerShown: false }} />
         <Stack.Screen name="auth" options={{ headerShown: false }} />
         <Stack.Screen name="profile" options={profileStackScreenOptions} />

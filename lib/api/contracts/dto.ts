@@ -133,6 +133,9 @@ export interface CreateGlobalAnnouncementInput {
   description: string;
 }
 
+/** The wording is all an edit may change; author and posting time stay put. */
+export type UpdateGlobalAnnouncementInput = CreateGlobalAnnouncementInput;
+
 /** Group event lifecycle. */
 export type GroupEventStatus = 'active' | 'cancelled';
 

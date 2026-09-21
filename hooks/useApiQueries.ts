@@ -660,6 +660,33 @@ export function useCreateGlobalAnnouncementMutation() {
   });
 }
 
+export function useUpdateGlobalAnnouncementMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      announcementId,
+      input,
+    }: {
+      announcementId: string;
+      input: import('@/lib/api').UpdateGlobalAnnouncementInput;
+    }) => queryFn(api.data.updateGlobalAnnouncement(announcementId, input)),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.globalAnnouncements() });
+    },
+  });
+}
+
+export function useDeleteGlobalAnnouncementMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ announcementId }: { announcementId: string }) =>
+      queryFn(api.data.deleteGlobalAnnouncement(announcementId)),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.globalAnnouncements() });
+    },
+  });
+}
+
 export function useCreateAnnouncementMutation() {
   const qc = useQueryClient();
   return useMutation({

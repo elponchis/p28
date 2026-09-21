@@ -871,6 +871,10 @@ export const en = {
     noUpcomingEventsSubtitle: 'Events from your groups will show here.',
     opensEventDetail: 'Opens event details',
     globalAnnouncementLabel: 'Global announcement',
+    editGlobalAnnouncement: 'Edit announcement',
+    deleteGlobalAnnouncement: 'Delete announcement',
+    deleteGlobalAnnouncementConfirm:
+      'Delete this announcement? Everyone loses it from their home screen.',
     postGlobalAnnouncementLink: 'Post global announcement',
     postGlobalAnnouncementHint:
       'Opens a form to publish an announcement for everyone on the home feed',

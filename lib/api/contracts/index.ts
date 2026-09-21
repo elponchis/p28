@@ -24,6 +24,7 @@ export type {
   CreateGroupDiscussionInput,
   CreateAnnouncementInput,
   CreateGlobalAnnouncementInput,
+  UpdateGlobalAnnouncementInput,
   GlobalAnnouncement,
   CreateGroupEventInput,
   CreateGroupRecurringMeetingInput,

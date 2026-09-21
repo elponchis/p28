@@ -34,6 +34,7 @@ export type {
   NotificationPreferencesUpdates,
   CreateAnnouncementInput,
   CreateGlobalAnnouncementInput,
+  UpdateGlobalAnnouncementInput,
   GlobalAnnouncement,
   CreateGroupEventInput,
   CreateGroupRecurringMeetingInput,
