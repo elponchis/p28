@@ -749,6 +749,15 @@ export const km: TranslationShape = {
     noteCollectionHint: 'បើកអ្វីៗដែលអ្នកបានសរសេរ',
     noteCollectionEmpty: 'មិនទាន់មានកំណត់ចំណាំទេ។',
     noteCollection: 'កំណត់ចំណាំរបស់ខ្ញុំ',
+    /**
+     * Editorial eyebrows over the home section titles. English in every locale on purpose —
+     * they are a typographic mark on the page, not copy to read.
+     */
+    eyebrowNews: 'NEWS',
+    eyebrowGroups: 'GROUPS',
+    eyebrowWord: "TODAY'S WORD",
+    eyebrowSchedule: 'SCHEDULE',
+    eyebrowNotes: 'MY NOTES',
     noteOpenHint: 'បើកកំណត់ចំណាំដែលអ្នកសរសេរថ្ងៃនោះ',
     myWeekTitle: 'ការឆ្លុះបញ្ចាំងរបស់ខ្ញុំសប្តាហ៍នេះ',
     noteStreak: '🔥 {{count}} ថ្ងៃជាប់គ្នា',

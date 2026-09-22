@@ -864,6 +864,15 @@ export const en = {
     noteCollectionHint: 'Opens everything you have written',
     noteCollectionEmpty: 'Nothing written yet.',
     noteCollection: 'My reflections',
+    /**
+     * Editorial eyebrows over the home section titles. English in every locale on purpose —
+     * they are a typographic mark on the page, not copy to read.
+     */
+    eyebrowNews: 'NEWS',
+    eyebrowGroups: 'GROUPS',
+    eyebrowWord: "TODAY'S WORD",
+    eyebrowSchedule: 'SCHEDULE',
+    eyebrowNotes: 'MY NOTES',
     noteOpenHint: 'Opens the note you wrote that day',
     myWeekTitle: 'My week of reflection',
     noteStreak: '🔥 {{count}} days running',

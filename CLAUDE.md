@@ -181,6 +181,7 @@ const errorMessage = isError && error && 'message' in error ? getUserFacingError
 - 테두리 — `colors.outlineVariant` 1px. 그림자는 새로 추가하지 않습니다.
 - 한 화면에 주 강조는 하나. 파랑과 앰버를 같은 위계로 나란히 쓰지 않습니다.
 - `fontFamily.serif` 는 말씀 인용과 그룹 이름에만.
+- 홈 화면 섹션 제목도 serif — 에디토리얼 헤더(2px 규칙선 + 영문 라벨 + serif 20 제목)의 일부입니다.
 - 누르는 요소는 최소 44px.
 
 ### git

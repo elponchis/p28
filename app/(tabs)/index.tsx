@@ -414,6 +414,7 @@ export default function HomeScreen() {
           <View style={[styles.quadrant, columnPad(0), sectionGap(0)]}>
             <View>
               <SectionHeader
+                eyebrow={t('home.eyebrowGroups')}
                 title={t('home.yourGroups')}
                 actionLabel={myGroups.length > 0 ? t('home.seeAll') : undefined}
                 onAction={
@@ -454,7 +455,7 @@ export default function HomeScreen() {
           {/* The day's passage sits beside the groups, not at the bottom of the scroll. */}
           <View style={[styles.quadrant, columnPad(1), sectionGap(1)]}>
             <View>
-              <SectionHeader title={t('home.reflectionTitle')} />
+              <SectionHeader eyebrow={t('home.eyebrowWord')} title={t('home.reflectionTitle')} />
               <ReflectionPlate
                 quote={todaysVerse ? `“${todaysVerse.passage}”` : t('home.reflectionQuote')}
                 attribution={
@@ -472,6 +473,7 @@ export default function HomeScreen() {
           <View style={[styles.quadrant, columnPad(2), sectionGap(2)]}>
             <View>
               <SectionHeader
+                eyebrow={t('home.eyebrowNews')}
                 title={t('announcements.latestUpdatesSectionTitle')}
                 badge={Math.max(0, latestAnnouncements.length - LATEST_UPDATES_ON_HOME)}
                 actionLabel={latestAnnouncements.length > 0 ? t('home.seeAll') : undefined}
@@ -530,6 +532,7 @@ export default function HomeScreen() {
           <View style={[styles.quadrant, columnPad(3), sectionGap(3)]}>
             <View>
               <SectionHeader
+                eyebrow={t('home.eyebrowSchedule')}
                 title={t('home.upcomingEvents')}
                 actionLabel={
                   !upcomingLoading && !upcomingIsError && upcomingEvents.length > 0

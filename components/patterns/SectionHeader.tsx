@@ -1,6 +1,11 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import { colors, fontFamily, radius, spacing } from '@/theme/tokens';
+
+/** Between the rule and the eyebrow under it. Off the spacing scale, from the type spec. */
+const RULE_TO_EYEBROW = 10;
+/** 0.12em at 11px. Letter spacing is absolute in React Native, so the em is resolved here. */
+const EYEBROW_TRACKING = 11 * 0.12;
 
 export interface SectionHeaderProps {
   title: string;
@@ -9,12 +14,45 @@ export interface SectionHeaderProps {
   onAction?: () => void;
   /** How many more there are than the section shows. Hidden when zero. */
   badge?: number;
+  /**
+   * A short English word set over the title — NEWS, GROUPS — which also switches the header to
+   * the editorial treatment: a rule across the top of the column and a serif title under it.
+   * Home passes one for every section; the other screens keep the plain header.
+   */
+  eyebrow?: string;
 }
 
-export function SectionHeader({ title, actionLabel, onAction, badge }: SectionHeaderProps) {
+/**
+ * The rule and the small label that open an editorial section. Exported for the one heading that
+ * is not a `SectionHeader` — the week card's, which lives inside its own card.
+ */
+export function SectionEyebrow({ label, style }: { label: string; style?: StyleProp<ViewStyle> }) {
   return (
-    <View style={styles.row}>
-      <Text style={styles.title}>{title}</Text>
+    <View style={style}>
+      <View style={styles.rule} />
+      <Text style={styles.eyebrow}>{label}</Text>
+    </View>
+  );
+}
+
+/** The serif title of an editorial section, for headings built outside this component. */
+export const editorialSectionTitle = {
+  fontFamily: fontFamily.serif,
+  fontSize: 20,
+  color: colors.onSurface,
+  lineHeight: 28,
+} as const;
+
+export function SectionHeader({
+  title,
+  actionLabel,
+  onAction,
+  badge,
+  eyebrow,
+}: SectionHeaderProps) {
+  const row = (
+    <View style={[styles.row, eyebrow ? styles.editorialRow : null]}>
+      <Text style={[styles.title, eyebrow ? styles.editorialTitle : null]}>{title}</Text>
       {badge != null && badge > 0 ? (
         <View style={styles.badge}>
           <Text style={styles.badgeText}>{badge > 99 ? '99+' : badge}</Text>
@@ -31,6 +69,15 @@ export function SectionHeader({ title, actionLabel, onAction, badge }: SectionHe
           <Text style={styles.actionText}>{actionLabel}</Text>
         </Pressable>
       ) : null}
+    </View>
+  );
+
+  if (!eyebrow) return row;
+
+  return (
+    <View style={styles.editorialBlock}>
+      <SectionEyebrow label={eyebrow} />
+      {row}
     </View>
   );
 }
@@ -52,6 +99,33 @@ const styles = StyleSheet.create({
   spacer: {
     flex: 1,
   },
+
+  /** The block carries the top margin in editorial mode, so the rule is what the gap measures to. */
+  editorialBlock: {
+    marginTop: spacing.lg,
+  },
+  /** A flat bar across the column — square ends, the full width of the section. */
+  rule: {
+    height: 2,
+    backgroundColor: colors.accent,
+    borderRadius: 0,
+    alignSelf: 'stretch',
+  },
+  eyebrow: {
+    fontFamily: fontFamily.sansMedium,
+    fontSize: 11,
+    letterSpacing: EYEBROW_TRACKING,
+    color: colors.secondary,
+    marginTop: RULE_TO_EYEBROW,
+    marginBottom: spacing.xxs,
+  },
+  editorialRow: {
+    marginTop: 0,
+    // The title and "see all" sit on one line of type, not centred against each other.
+    alignItems: 'baseline',
+  },
+  editorialTitle: editorialSectionTitle,
+
   /** How many more wait behind "see all". */
   badge: {
     minWidth: 20,

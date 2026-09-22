@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
+import { editorialSectionTitle, SectionEyebrow } from '@/components/patterns/SectionHeader';
 import { VerseNoteCollectionSheet } from '@/components/patterns/VerseNoteCollectionSheet';
 import { VerseNoteSheet } from '@/components/patterns/VerseNoteSheet';
 import { usePersonalVerseNotesQuery } from '@/hooks/useApiQueries';
@@ -36,13 +37,18 @@ export function MyVerseWeekCard({ userId, verse }: MyVerseWeekCardProps) {
 
   return (
     <View style={styles.card}>
-      <View style={styles.headRow}>
-        <Text style={styles.title}>{t('home.myWeekTitle')}</Text>
-        {streak > 0 ? (
-          <View style={styles.streak}>
-            <Text style={styles.streakText}>{t('home.noteStreak', { count: String(streak) })}</Text>
-          </View>
-        ) : null}
+      <View style={styles.heading}>
+        <SectionEyebrow label={t('home.eyebrowNotes')} />
+        <View style={styles.headRow}>
+          <Text style={styles.title}>{t('home.myWeekTitle')}</Text>
+          {streak > 0 ? (
+            <View style={styles.streak}>
+              <Text style={styles.streakText}>
+                {t('home.noteStreak', { count: String(streak) })}
+              </Text>
+            </View>
+          ) : null}
+        </View>
       </View>
 
       <View style={styles.week}>
@@ -130,17 +136,17 @@ const styles = StyleSheet.create({
     padding: spacing.screenHorizontal,
     gap: spacing.sm,
   },
+  /** Held together so the card's own gap does not open up between the rule and the label. */
+  heading: {
+    alignSelf: 'stretch',
+  },
   headRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'baseline',
     justifyContent: 'space-between',
     gap: spacing.xs,
   },
-  title: {
-    fontFamily: fontFamily.sans,
-    fontSize: 12,
-    color: colors.onSurfaceVariant,
-  },
+  title: editorialSectionTitle,
   streak: {
     backgroundColor: colors.amberSoft,
     borderRadius: radius.chip,

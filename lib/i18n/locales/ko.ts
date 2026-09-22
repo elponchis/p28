@@ -743,6 +743,15 @@ export const ko: TranslationShape = {
     noteCollectionHint: '지금까지 쓴 메모를 모두 엽니다',
     noteCollectionEmpty: '아직 쓴 메모가 없어요.',
     noteCollection: '나의 묵상기록',
+    /**
+     * Editorial eyebrows over the home section titles. English in every locale on purpose —
+     * they are a typographic mark on the page, not copy to read.
+     */
+    eyebrowNews: 'NEWS',
+    eyebrowGroups: 'GROUPS',
+    eyebrowWord: "TODAY'S WORD",
+    eyebrowSchedule: 'SCHEDULE',
+    eyebrowNotes: 'MY NOTES',
     noteOpenHint: '그날 쓴 메모를 엽니다',
     myWeekTitle: '이번 주 나의 묵상',
     noteStreak: '🔥 {{count}}일 연속',
