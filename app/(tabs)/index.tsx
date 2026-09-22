@@ -271,38 +271,74 @@ export default function HomeScreen() {
           {/* The greeting and, beside it, the one action that belongs to the whole platform.
               Composing a platform-wide announcement — the announcements themselves are in
               Latest updates below, with everything else worth reading. */}
-          <View style={styles.headerGreeting}>
-            <View style={styles.header}>
-              <Text style={styles.welcomeText}>
-                {displayName ? `${t('home.welcomeBack')}` : t('home.welcomeDefault')}
-              </Text>
-              {displayName ? <Text style={styles.nameText}>{displayName}.</Text> : null}
+          <View style={twoColumn ? styles.headerColumn : undefined}>
+            <View style={styles.headerGreeting}>
+              <View style={[styles.header, styles.headerText]}>
+                <Text style={styles.welcomeText}>
+                  {displayName ? `${t('home.welcomeBack')}` : t('home.welcomeDefault')}
+                </Text>
+                {displayName ? <Text style={styles.nameText}>{displayName}.</Text> : null}
+              </View>
+
+              {userId && !superAdminRoleLoading && isSuperAdmin ? (
+                <Pressable
+                  onPress={() => {
+                    setGlobalFormError(null);
+                    setEditingGlobalId(null);
+                    setGlobalSheetOpen(true);
+                  }}
+                  style={({ pressed }) => [
+                    styles.globalAnnouncementLinkRow,
+                    pressed && { opacity: 0.78 },
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('home.postGlobalAnnouncementLink')}
+                  accessibilityHint={t('home.postGlobalAnnouncementHint')}
+                >
+                  <Ionicons name="globe-outline" size={15} color={colors.accent} />
+                  <Text style={styles.globalAnnouncementLinkText}>
+                    {t('home.postGlobalAnnouncementLink')}
+                  </Text>
+                </Pressable>
+              ) : null}
             </View>
 
-            {userId && !superAdminRoleLoading && isSuperAdmin ? (
-              <Pressable
-                onPress={() => {
-                  setGlobalFormError(null);
-                  setEditingGlobalId(null);
-                  setGlobalSheetOpen(true);
-                }}
-                style={({ pressed }) => [
-                  styles.globalAnnouncementLinkRow,
-                  pressed && { opacity: 0.78 },
-                ]}
-                accessibilityRole="button"
-                accessibilityLabel={t('home.postGlobalAnnouncementLink')}
-                accessibilityHint={t('home.postGlobalAnnouncementHint')}
-              >
-                <Ionicons name="globe-outline" size={17} color={colors.accent} />
-                <Text style={styles.globalAnnouncementLinkText}>
-                  {t('home.postGlobalAnnouncementLink')}
+            {/* A platform-wide announcement is addressed to everyone, but the week card owns the
+                    right half of this row, so it runs down the left half with the greeting. */}
+            {globalAnnouncementsIsError ? (
+              <View style={styles.sectionPadded}>
+                <Text style={styles.inlineError} accessibilityLiveRegion="polite">
+                  {globalAnnouncementsError != null && isApiError(globalAnnouncementsError)
+                    ? getUserFacingError(globalAnnouncementsError)
+                    : t('common.error')}
                 </Text>
-              </Pressable>
+              </View>
+            ) : globalAnnouncements.length > 0 ? (
+              <View style={[styles.sectionPadded, styles.globalAnnouncementStack]}>
+                {globalAnnouncements.map((ga) => (
+                  <GlobalAnnouncementCard
+                    key={ga.id}
+                    title={ga.title}
+                    description={ga.description}
+                    onEdit={
+                      isSuperAdmin
+                        ? () => {
+                            setGlobalFormError(null);
+                            setEditingGlobalId(ga.id);
+                            setGlobalSheetOpen(true);
+                          }
+                        : undefined
+                    }
+                    onDelete={
+                      isSuperAdmin ? () => void handleGlobalAnnouncementDelete(ga.id) : undefined
+                    }
+                  />
+                ))}
+              </View>
             ) : null}
           </View>
           {twoColumn ? (
-            <View style={[styles.headerNoteColumn, styles.sectionPadded, styles.headerNote]}>
+            <View style={[styles.headerColumn, styles.sectionPadded, styles.headerNote]}>
               {myVerseWeek}
             </View>
           ) : null}
@@ -321,40 +357,6 @@ export default function HomeScreen() {
           errorMessage={globalFormError}
           initialValues={editingGlobal}
         />
-
-        {/* A platform-wide announcement is addressed to everyone, so it sits across the top
-            rather than inside one quadrant. */}
-        {globalAnnouncementsIsError ? (
-          <View style={styles.sectionPadded}>
-            <Text style={styles.inlineError} accessibilityLiveRegion="polite">
-              {globalAnnouncementsError != null && isApiError(globalAnnouncementsError)
-                ? getUserFacingError(globalAnnouncementsError)
-                : t('common.error')}
-            </Text>
-          </View>
-        ) : globalAnnouncements.length > 0 ? (
-          <View style={[styles.sectionPadded, styles.globalAnnouncementStack]}>
-            {globalAnnouncements.map((ga) => (
-              <GlobalAnnouncementCard
-                key={ga.id}
-                title={ga.title}
-                description={ga.description}
-                onEdit={
-                  isSuperAdmin
-                    ? () => {
-                        setGlobalFormError(null);
-                        setEditingGlobalId(ga.id);
-                        setGlobalSheetOpen(true);
-                      }
-                    : undefined
-                }
-                onDelete={
-                  isSuperAdmin ? () => void handleGlobalAnnouncementDelete(ga.id) : undefined
-                }
-              />
-            ))}
-          </View>
-        ) : null}
 
         <View style={styles.grid}>
           {/* My Groups — horizontal scroll */}
@@ -566,17 +568,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     flexWrap: 'wrap',
-    flexGrow: 1,
-    flexShrink: 1,
-    flexBasis: 'auto',
-    minWidth: 0,
   },
-  /** In the header the card gives up half-width so the greeting's button fits on its line. */
-  headerNoteColumn: {
-    flexGrow: 0,
-    flexShrink: 0,
-    flexBasis: QUADRANT_MIN_WIDTH,
-    maxWidth: '100%',
+  /** The button follows the greeting on the same line, so the greeting drops its right padding. */
+  headerText: {
+    paddingRight: 0,
   },
   headerRow: {
     flexDirection: 'row',
@@ -616,7 +611,7 @@ const styles = StyleSheet.create({
   globalAnnouncementLinkRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: spacing.xxs,
     marginTop: spacing.lg,
     marginLeft: spacing.xs,
     alignSelf: 'flex-start',
@@ -624,12 +619,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.outlineVariant,
     borderRadius: radius.md,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xxs,
+    paddingHorizontal: spacing.sm,
   },
   globalAnnouncementLinkText: {
     fontFamily: fontFamily.sansMedium,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
     color: colors.accent,
   },

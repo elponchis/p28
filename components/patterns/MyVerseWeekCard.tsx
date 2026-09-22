@@ -2,12 +2,11 @@ import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
-import { VerseNoteReaderSheet } from '@/components/patterns/VerseNoteReaderSheet';
+import { VerseNoteCollectionSheet } from '@/components/patterns/VerseNoteCollectionSheet';
 import { VerseNoteSheet } from '@/components/patterns/VerseNoteSheet';
 import { usePersonalVerseNotesQuery } from '@/hooks/useApiQueries';
-import type { DailyVerse, PersonalVerseNote } from '@/lib/api';
+import type { DailyVerse } from '@/lib/api';
 import { seoulDateKey } from '@/lib/dailyVerse';
-import { formatVerseNoteDate } from '@/lib/dates';
 import { t } from '@/lib/i18n';
 import { noteStreak, todaysNote, weekStrip, WEEKDAY_KEYS } from '@/lib/verseNoteWeek';
 import { colors, fontFamily, radius, spacing } from '@/theme/tokens';
@@ -19,8 +18,6 @@ export interface MyVerseWeekCardProps {
 }
 
 const CIRCLE = 28;
-/** How many past notes the card lists before offering the rest. */
-const COLLECTION_PREVIEW = 5;
 
 /**
  * A private week of notes on the day's verse — nobody else sees these. Separate from the group's
@@ -28,8 +25,7 @@ const COLLECTION_PREVIEW = 5;
  */
 export function MyVerseWeekCard({ userId, verse }: MyVerseWeekCardProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [reading, setReading] = useState<PersonalVerseNote | null>(null);
-  const [showAll, setShowAll] = useState(false);
+  const [collectionOpen, setCollectionOpen] = useState(false);
 
   // Every note the reader has: the week strip takes what it needs from the same list.
   const { data: notes = [] } = usePersonalVerseNotesQuery(userId);
@@ -37,7 +33,6 @@ export function MyVerseWeekCard({ userId, verse }: MyVerseWeekCardProps) {
   const days = useMemo(() => weekStrip(notes), [notes]);
   const streak = useMemo(() => noteStreak(notes), [notes]);
   const today = useMemo(() => todaysNote(notes), [notes]);
-  const listed = showAll ? notes : notes.slice(0, COLLECTION_PREVIEW);
 
   return (
     <View style={styles.card}>
@@ -95,45 +90,20 @@ export function MyVerseWeekCard({ userId, verse }: MyVerseWeekCardProps) {
         </Text>
       </Pressable>
 
-      {/* Everything written so far: the day and the verse, and the note itself on a tap. */}
+      {/* Everything written so far, kept behind one button so the card stays a card. */}
       {notes.length > 0 ? (
-        <View style={styles.collection}>
-          <Text style={styles.collectionTitle}>{t('home.noteCollection')}</Text>
-          {listed.map((note) => (
-            <Pressable
-              key={note.id}
-              onPress={() => setReading(note)}
-              style={({ pressed }) => [styles.collectionRow, pressed && styles.pressed]}
-              accessibilityRole="button"
-              accessibilityLabel={`${formatVerseNoteDate(note.noteDate)} ${note.verseRef}`}
-              accessibilityHint={t('home.noteOpenHint')}
-            >
-              <Text style={styles.collectionDate}>{formatVerseNoteDate(note.noteDate)}</Text>
-              <Text style={styles.collectionRef} numberOfLines={1}>
-                {note.verseRef}
-              </Text>
-              <Ionicons name="chevron-forward" size={15} color={colors.onSurfaceVariant} />
-            </Pressable>
-          ))}
-          {notes.length > COLLECTION_PREVIEW ? (
-            <Pressable
-              onPress={() => setShowAll((v) => !v)}
-              style={({ pressed }) => [styles.collectionMore, pressed && styles.pressed]}
-              accessibilityRole="button"
-              accessibilityLabel={
-                showAll
-                  ? t('home.noteCollapse')
-                  : t('home.noteMore', { count: String(notes.length - COLLECTION_PREVIEW) })
-              }
-            >
-              <Text style={styles.collectionMoreText}>
-                {showAll
-                  ? t('home.noteCollapse')
-                  : t('home.noteMore', { count: String(notes.length - COLLECTION_PREVIEW) })}
-              </Text>
-            </Pressable>
-          ) : null}
-        </View>
+        <Pressable
+          onPress={() => setCollectionOpen(true)}
+          style={({ pressed }) => [styles.collectionButton, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel={t('home.noteCollection')}
+          accessibilityHint={t('home.noteCollectionHint')}
+        >
+          <Ionicons name="book-outline" size={15} color={colors.accent} />
+          <Text style={styles.collectionButtonText}>
+            {t('home.noteCollection')} {notes.length}
+          </Text>
+        </Pressable>
       ) : null}
 
       <VerseNoteSheet
@@ -145,7 +115,11 @@ export function MyVerseWeekCard({ userId, verse }: MyVerseWeekCardProps) {
         existingBody={today?.body ?? ''}
       />
 
-      <VerseNoteReaderSheet note={reading} onRequestClose={() => setReading(null)} />
+      <VerseNoteCollectionSheet
+        visible={collectionOpen}
+        onRequestClose={() => setCollectionOpen(false)}
+        notes={notes}
+      />
     </View>
   );
 }
@@ -250,41 +224,15 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.85,
   },
-  collection: {
-    borderTopWidth: 1,
-    borderTopColor: colors.outlineVariant,
-    paddingTop: spacing.sm,
-    gap: spacing.xxs,
-  },
-  collectionTitle: {
-    fontFamily: fontFamily.sans,
-    fontSize: 12,
-    color: colors.onSurfaceVariant,
-    marginBottom: spacing.xxs,
-  },
-  collectionRow: {
+  collectionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    justifyContent: 'center',
+    gap: spacing.xxs,
     paddingVertical: spacing.xs,
   },
-  collectionDate: {
+  collectionButtonText: {
     fontFamily: fontFamily.sansMedium,
-    fontSize: 14,
-    color: colors.onSurface,
-  },
-  collectionRef: {
-    flex: 1,
-    minWidth: 0,
-    fontFamily: fontFamily.sans,
-    fontSize: 14,
-    color: colors.onSurfaceVariant,
-  },
-  collectionMore: {
-    paddingVertical: spacing.xs,
-  },
-  collectionMoreText: {
-    fontFamily: fontFamily.sans,
     fontSize: 14,
     color: colors.accent,
   },
