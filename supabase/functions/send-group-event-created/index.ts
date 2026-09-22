@@ -137,7 +137,10 @@ async function sendGroupEventCreatedPushes(supabase: SupabaseClient, eventId: st
     .eq('group_id', ev.group_id);
   if (mErr) return { error: mErr.message };
 
-  const userIds = (members ?? []).map((m: { user_id: string }) => m.user_id);
+  // Not the person who created the event; same rule as the in-app notification trigger.
+  const userIds = (members ?? [])
+    .map((m: { user_id: string }) => m.user_id)
+    .filter((uid: string) => uid !== ev.created_by_user_id);
   if (userIds.length === 0) {
     return {
       stats: {

@@ -21,6 +21,7 @@ import {
 type AnnouncementRow = {
   id: string;
   group_id: string;
+  created_by_user_id: string;
   title: string;
   body: string;
   meeting_link?: string | null;
@@ -107,7 +108,7 @@ Deno.serve(async (req) => {
 async function sendAnnouncementPushes(supabase: SupabaseClient, announcementId: string) {
   const { data: ann, error: fetchErr } = await supabase
     .from('announcements')
-    .select('id, group_id, title, body, meeting_link')
+    .select('id, group_id, created_by_user_id, title, body, meeting_link')
     .eq('id', announcementId)
     .eq('status', 'published')
     .maybeSingle();
@@ -123,7 +124,12 @@ async function sendAnnouncementPushes(supabase: SupabaseClient, announcementId: 
     .eq('group_id', row.group_id);
   if (mErr) return mErr.message;
 
-  const userIds = (members ?? []).map((m: { user_id: string }) => m.user_id);
+  // Not the author: they know, they just wrote it. The in-app trigger leaves them out too, and a
+  // push that arrives for your own posting while the bell stays empty is what made this look
+  // broken from the outside.
+  const userIds = (members ?? [])
+    .map((m: { user_id: string }) => m.user_id)
+    .filter((uid: string) => uid !== row.created_by_user_id);
   if (userIds.length === 0) return null;
 
   const { data: prefs } = await supabase
