@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
+import { isAnnouncementTruncated } from '@/lib/announcementPreview';
 import { t } from '@/lib/i18n';
 import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
@@ -10,6 +11,8 @@ export interface GlobalAnnouncementCardProps {
   /** Super admins get these; everyone else reads the card. */
   onEdit?: () => void;
   onDelete?: () => void;
+  /** Opens the whole announcement. Offered when a line cannot hold it. */
+  onOpen?: () => void;
 }
 
 export function GlobalAnnouncementCard({
@@ -17,7 +20,10 @@ export function GlobalAnnouncementCard({
   description,
   onEdit,
   onDelete,
+  onOpen,
 }: GlobalAnnouncementCardProps) {
+  // The card is a fixed height on purpose: home should not grow with whatever was posted.
+  const truncated = isAnnouncementTruncated(title, description);
   return (
     <View
       style={styles.card}
@@ -34,35 +40,49 @@ export function GlobalAnnouncementCard({
       <View style={styles.content}>
         <View style={styles.eyebrowRow}>
           <Text style={styles.eyebrow}>{t('home.globalAnnouncementLabel')}</Text>
-          {onEdit || onDelete ? (
-            <View style={styles.adminActions}>
-              {onEdit ? (
-                <Pressable
-                  onPress={onEdit}
-                  style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('home.editGlobalAnnouncement')}
-                  hitSlop={8}
-                >
-                  <Ionicons name="create-outline" size={18} color={colors.onSurfaceVariant} />
-                </Pressable>
-              ) : null}
-              {onDelete ? (
-                <Pressable
-                  onPress={onDelete}
-                  style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('home.deleteGlobalAnnouncement')}
-                  hitSlop={8}
-                >
-                  <Ionicons name="trash-outline" size={18} color={colors.error} />
-                </Pressable>
-              ) : null}
-            </View>
-          ) : null}
+          <View style={styles.adminActions}>
+            {truncated && onOpen ? (
+              <Pressable
+                onPress={onOpen}
+                style={({ pressed }) => [styles.seeAll, pressed && styles.pressed]}
+                accessibilityRole="button"
+                accessibilityLabel={t('home.seeAll')}
+                accessibilityHint={t('home.globalAnnouncementOpenHint')}
+                hitSlop={8}
+              >
+                <Text style={styles.seeAllText}>{t('home.seeAll')}</Text>
+              </Pressable>
+            ) : null}
+            {onEdit ? (
+              <Pressable
+                onPress={onEdit}
+                style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+                accessibilityRole="button"
+                accessibilityLabel={t('home.editGlobalAnnouncement')}
+                hitSlop={8}
+              >
+                <Ionicons name="create-outline" size={18} color={colors.onSurfaceVariant} />
+              </Pressable>
+            ) : null}
+            {onDelete ? (
+              <Pressable
+                onPress={onDelete}
+                style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+                accessibilityRole="button"
+                accessibilityLabel={t('home.deleteGlobalAnnouncement')}
+                hitSlop={8}
+              >
+                <Ionicons name="trash-outline" size={18} color={colors.error} />
+              </Pressable>
+            ) : null}
+          </View>
         </View>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.description}>{description}</Text>
+        <Text style={styles.title} numberOfLines={1}>
+          {title}
+        </Text>
+        <Text style={styles.description} numberOfLines={1}>
+          {description}
+        </Text>
       </View>
     </View>
   );
@@ -103,6 +123,15 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     padding: spacing.xxs,
+  },
+  seeAll: {
+    paddingHorizontal: spacing.xxs,
+    paddingVertical: 2,
+  },
+  seeAllText: {
+    fontFamily: fontFamily.sansMedium,
+    fontSize: 12,
+    color: colors.accent,
   },
   pressed: {
     opacity: 0.7,

@@ -63,29 +63,29 @@ export function MyVerseWeekCard({ userId, verse }: MyVerseWeekCardProps) {
         ))}
       </View>
 
-      {today ? (
-        <Text style={styles.noteBody} numberOfLines={2}>
-          {today.body}
-        </Text>
-      ) : (
-        <Text style={styles.notePrompt}>{t('home.noteEmpty')}</Text>
-      )}
-
-      {/* Everything written so far, kept behind one small button so the card stays a card. */}
-      {notes.length > 0 ? (
-        <Pressable
-          onPress={() => setCollectionOpen(true)}
-          style={({ pressed }) => [styles.collectionButton, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel={t('home.noteCollection')}
-          accessibilityHint={t('home.noteCollectionHint')}
-        >
-          <Ionicons name="book-outline" size={13} color={colors.accent} />
-          <Text style={styles.collectionButtonText}>
-            {t('home.noteCollection')} {notes.length}
+      <View style={styles.noteRow}>
+        {today ? (
+          <Text style={styles.noteBody} numberOfLines={2}>
+            {today.body}
           </Text>
-        </Pressable>
-      ) : null}
+        ) : (
+          <Text style={styles.notePrompt}>{t('home.noteEmpty')}</Text>
+        )}
+
+        {/* Everything written so far, behind one button, on this line rather than its own. */}
+        {notes.length > 0 ? (
+          <Pressable
+            onPress={() => setCollectionOpen(true)}
+            style={({ pressed }) => [styles.collectionButton, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel={t('home.noteCollection')}
+            accessibilityHint={t('home.noteCollectionHint')}
+          >
+            <Ionicons name="book-outline" size={13} color={colors.accent} />
+            <Text style={styles.collectionButtonText}>{t('home.noteCollection')}</Text>
+          </Pressable>
+        ) : null}
+      </View>
 
       <Pressable
         onPress={() => setSheetOpen(true)}
@@ -185,12 +185,16 @@ const styles = StyleSheet.create({
     color: colors.onSurfaceVariant,
   },
   noteBody: {
+    flex: 1,
+    minWidth: 0,
     fontFamily: fontFamily.sans,
     fontSize: 14,
     lineHeight: 20,
     color: colors.onSurface,
   },
   notePrompt: {
+    flex: 1,
+    minWidth: 0,
     fontFamily: fontFamily.sans,
     fontSize: 14,
     lineHeight: 20,
@@ -224,12 +228,22 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.85,
   },
+  noteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
   collectionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
+    flexShrink: 0,
     gap: spacing.xxs,
-    paddingVertical: 2,
+    paddingVertical: spacing.xxs,
+    paddingHorizontal: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
+    borderRadius: radius.chip,
+    backgroundColor: colors.surface,
   },
   collectionButtonText: {
     fontFamily: fontFamily.sansMedium,

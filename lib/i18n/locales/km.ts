@@ -776,6 +776,7 @@ export const km: TranslationShape = {
     noUpcomingEvents: 'មិនមានព្រឹត្តិការណ៍ខាងមុខ',
     noUpcomingEventsSubtitle: 'ព្រឹត្តិការណ៍ពីក្រុមរបស់អ្នកនឹងបង្ហាញនៅទីនេះ។',
     opensEventDetail: 'បើកព័ត៌មានលម្អិតព្រឹត្តិការណ៍',
+    globalAnnouncementOpenHint: 'បើកសេចក្តីប្រកាសទាំងមូល',
     globalAnnouncementLabel: 'សេចក្តីជូនដំណឹងសម្រាប់គ្រប់គ្នា',
     editGlobalAnnouncement: 'កែសម្រួលសេចក្តីប្រកាស',
     deleteGlobalAnnouncement: 'លុបសេចក្តីប្រកាស',

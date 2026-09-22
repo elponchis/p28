@@ -21,6 +21,7 @@ import { EmptyState } from '@/components/patterns/EmptyState';
 import { JoinedGroupUpcomingEventCard } from '@/components/patterns/JoinedGroupUpcomingEventCard';
 import { GlobalAnnouncementCard } from '@/components/patterns/GlobalAnnouncementCard';
 import { GlobalAnnouncementFormSheet } from '@/components/patterns/GlobalAnnouncementFormSheet';
+import { GlobalAnnouncementReaderSheet } from '@/components/patterns/GlobalAnnouncementReaderSheet';
 import { LatestAnnouncementRow } from '@/components/patterns/LatestAnnouncementRow';
 import { MyVerseWeekCard } from '@/components/patterns/MyVerseWeekCard';
 import { useAuth } from '@/hooks/useAuth';
@@ -152,6 +153,7 @@ export default function HomeScreen() {
   const [globalSheetOpen, setGlobalSheetOpen] = useState(false);
   const [globalFormError, setGlobalFormError] = useState<string | null>(null);
   const [editingGlobalId, setEditingGlobalId] = useState<string | null>(null);
+  const [readingGlobalId, setReadingGlobalId] = useState<string | null>(null);
 
   const { data: profile } = useProfileQuery(userId);
   const { data: myGroups = [], isLoading: groupsLoading } = useGroupsForUserQuery(userId);
@@ -185,6 +187,7 @@ export default function HomeScreen() {
 
   // The same sheet writes a new announcement and edits an existing one; this says which.
   const editingGlobal = globalAnnouncements.find((ga) => ga.id === editingGlobalId) ?? null;
+  const readingGlobal = globalAnnouncements.find((ga) => ga.id === readingGlobalId) ?? null;
 
   const handleGlobalAnnouncementSubmit = useCallback(
     async (payload: { title: string; description: string }) => {
@@ -332,6 +335,7 @@ export default function HomeScreen() {
                     onDelete={
                       isSuperAdmin ? () => void handleGlobalAnnouncementDelete(ga.id) : undefined
                     }
+                    onOpen={() => setReadingGlobalId(ga.id)}
                   />
                 ))}
               </View>
@@ -356,6 +360,11 @@ export default function HomeScreen() {
           }
           errorMessage={globalFormError}
           initialValues={editingGlobal}
+        />
+
+        <GlobalAnnouncementReaderSheet
+          announcement={readingGlobal}
+          onRequestClose={() => setReadingGlobalId(null)}
         />
 
         <View style={styles.grid}>
