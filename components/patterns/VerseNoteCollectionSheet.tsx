@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useFadeSheetAnimation } from '@/hooks/useFadeSheetAnimation';
 import type { PersonalVerseNote } from '@/lib/api';
@@ -17,16 +16,16 @@ export interface VerseNoteCollectionSheetProps {
 }
 
 /**
- * 나의 묵상집 — every note the reader has written, a day and a verse per line. Picking one opens
- * it in place, so the list and the note it came from never lose each other.
+ * 나의 묵상기록 — every note the reader has written, opened in the middle of the screen like a
+ * journal rather than sliding up from the bottom. Picking a day turns to that page; the arrow
+ * turns back.
  */
 export function VerseNoteCollectionSheet({
   visible,
   onRequestClose,
   notes,
 }: VerseNoteCollectionSheetProps) {
-  const insets = useSafeAreaInsets();
-  const { sheetSlideAnim, sheetFadeAnim } = useFadeSheetAnimation(visible);
+  const { sheetFadeAnim } = useFadeSheetAnimation(visible);
   const [open, setOpen] = useState<PersonalVerseNote | null>(null);
 
   useEffect(() => {
@@ -48,66 +47,64 @@ export function VerseNoteCollectionSheet({
             pointerEvents="none"
           />
         </Pressable>
-        <Animated.View style={[styles.sheet, { transform: [{ translateY: sheetSlideAnim }] }]}>
-          <View style={[styles.sheetInner, { paddingBottom: insets.bottom + spacing.xl }]}>
-            <View style={styles.handle} />
 
-            <View style={styles.headerRow}>
-              {open ? (
-                <Pressable
-                  onPress={() => setOpen(null)}
-                  hitSlop={12}
-                  accessibilityLabel={t('home.noteCollection')}
-                  accessibilityRole="button"
-                >
-                  <Ionicons name="chevron-back" size={24} color={colors.onSurface} />
-                </Pressable>
-              ) : null}
-              <View style={styles.headerText}>
-                <Text style={styles.headerTitle}>
-                  {open ? formatVerseNoteDate(open.noteDate) : t('home.noteCollection')}
-                </Text>
-                {open ? <Text style={styles.headerVerse}>{open.verseRef}</Text> : null}
-              </View>
+        <Animated.View style={[styles.dialog, { opacity: sheetFadeAnim }]}>
+          <View style={styles.header}>
+            {open ? (
               <Pressable
-                onPress={onRequestClose}
+                onPress={() => setOpen(null)}
                 hitSlop={12}
-                accessibilityLabel={t('common.cancel')}
+                accessibilityLabel={t('home.noteCollection')}
                 accessibilityRole="button"
               >
-                <Ionicons name="close" size={26} color={colors.onSurface} />
+                <Ionicons name="chevron-back" size={22} color={colors.onSurfaceVariant} />
               </Pressable>
-            </View>
-
-            <ScrollView
-              style={styles.scroll}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.scrollContent}
+            ) : null}
+            <Text style={styles.headerTitle}>{t('home.noteCollection')}</Text>
+            <Pressable
+              onPress={onRequestClose}
+              hitSlop={12}
+              accessibilityLabel={t('common.cancel')}
+              accessibilityRole="button"
             >
-              {open ? (
-                <Text style={styles.body}>{open.body}</Text>
-              ) : notes.length === 0 ? (
-                <Text style={styles.empty}>{t('home.noteCollectionEmpty')}</Text>
-              ) : (
-                notes.map((note) => (
-                  <Pressable
-                    key={note.id}
-                    onPress={() => setOpen(note)}
-                    style={({ pressed }) => [styles.row, pressed && styles.pressed]}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${formatVerseNoteDate(note.noteDate)} ${note.verseRef}`}
-                    accessibilityHint={t('home.noteOpenHint')}
-                  >
-                    <Text style={styles.rowDate}>{formatVerseNoteDate(note.noteDate)}</Text>
-                    <Text style={styles.rowRef} numberOfLines={1}>
-                      {note.verseRef}
-                    </Text>
-                    <Ionicons name="chevron-forward" size={15} color={colors.onSurfaceVariant} />
-                  </Pressable>
-                ))
-              )}
-            </ScrollView>
+              <Ionicons name="close" size={22} color={colors.onSurfaceVariant} />
+            </Pressable>
           </View>
+
+          <ScrollView
+            style={styles.scroll}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
+            {open ? (
+              // One page of the journal: the day, what it was written on, and the words.
+              <View style={styles.page}>
+                <Text style={styles.pageDate}>{formatVerseNoteDate(open.noteDate)}</Text>
+                <Text style={styles.pageVerse}>{open.verseRef}</Text>
+                <View style={styles.pageRule} />
+                <Text style={styles.pageBody}>{open.body}</Text>
+              </View>
+            ) : notes.length === 0 ? (
+              <Text style={styles.empty}>{t('home.noteCollectionEmpty')}</Text>
+            ) : (
+              notes.map((note) => (
+                <Pressable
+                  key={note.id}
+                  onPress={() => setOpen(note)}
+                  style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${formatVerseNoteDate(note.noteDate)} ${note.verseRef}`}
+                  accessibilityHint={t('home.noteOpenHint')}
+                >
+                  <Text style={styles.rowDate}>{formatVerseNoteDate(note.noteDate)}</Text>
+                  <Text style={styles.rowRef} numberOfLines={1}>
+                    {note.verseRef}
+                  </Text>
+                  <Ionicons name="chevron-forward" size={15} color={colors.onSurfaceVariant} />
+                </Pressable>
+              ))
+            )}
+          </ScrollView>
         </Animated.View>
       </View>
     </Modal>
@@ -117,54 +114,47 @@ export function VerseNoteCollectionSheet({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'flex-end',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.screenHorizontal,
   },
   backdrop: {
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
-  sheet: {
-    maxHeight: '85%',
-    backgroundColor: colors.surfaceContainerLowest,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
+  /** A page held in the middle of the screen, not a drawer pulled up from the edge. */
+  dialog: {
+    width: '100%',
+    maxWidth: 520,
+    maxHeight: '80%',
+    backgroundColor: colors.surface,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
   },
-  sheetInner: {
-    paddingHorizontal: spacing.screenHorizontal,
-  },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: radius.sm,
-    backgroundColor: colors.outlineVariant,
-    alignSelf: 'center',
-    marginTop: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  headerRow: {
+  header: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  headerText: {
-    flex: 1,
-    minWidth: 0,
-    gap: spacing.xxs,
+    paddingBottom: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.outlineVariant,
+    marginBottom: spacing.sm,
   },
   headerTitle: {
-    ...typography.titleMd,
-    color: colors.onSurface,
-  },
-  headerVerse: {
+    flex: 1,
+    minWidth: 0,
     fontFamily: fontFamily.serif,
-    fontSize: 14,
-    color: colors.onSurfaceVariant,
+    fontSize: 19,
+    color: colors.onSurface,
   },
   scroll: {
     flexGrow: 0,
   },
   scrollContent: {
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.xs,
   },
   row: {
     flexDirection: 'row',
@@ -175,27 +165,48 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.outlineVariant,
   },
   rowDate: {
-    fontFamily: fontFamily.sansMedium,
-    fontSize: 14,
+    fontFamily: fontFamily.serif,
+    fontSize: 15,
     color: colors.onSurface,
   },
   rowRef: {
     flex: 1,
     minWidth: 0,
     fontFamily: fontFamily.sans,
-    fontSize: 14,
+    fontSize: 13,
     color: colors.onSurfaceVariant,
   },
   pressed: {
     opacity: 0.7,
   },
-  body: {
-    ...typography.bodyLg,
+  page: {
+    gap: spacing.xxs,
+  },
+  pageDate: {
+    fontFamily: fontFamily.serifBold,
+    fontSize: 21,
     color: colors.onSurface,
-    lineHeight: 24,
+  },
+  pageVerse: {
+    fontFamily: fontFamily.serif,
+    fontSize: 14,
+    color: colors.onSurfaceVariant,
+  },
+  pageRule: {
+    height: 1,
+    backgroundColor: colors.outlineVariant,
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  pageBody: {
+    fontFamily: fontFamily.serif,
+    fontSize: 16,
+    lineHeight: 28,
+    color: colors.onSurface,
   },
   empty: {
     ...typography.bodyMd,
     color: colors.onSurfaceVariant,
+    paddingVertical: spacing.md,
   },
 });
