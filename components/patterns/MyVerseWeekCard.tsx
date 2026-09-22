@@ -71,6 +71,22 @@ export function MyVerseWeekCard({ userId, verse }: MyVerseWeekCardProps) {
         <Text style={styles.notePrompt}>{t('home.noteEmpty')}</Text>
       )}
 
+      {/* Everything written so far, kept behind one small button so the card stays a card. */}
+      {notes.length > 0 ? (
+        <Pressable
+          onPress={() => setCollectionOpen(true)}
+          style={({ pressed }) => [styles.collectionButton, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel={t('home.noteCollection')}
+          accessibilityHint={t('home.noteCollectionHint')}
+        >
+          <Ionicons name="book-outline" size={13} color={colors.accent} />
+          <Text style={styles.collectionButtonText}>
+            {t('home.noteCollection')} {notes.length}
+          </Text>
+        </Pressable>
+      ) : null}
+
       <Pressable
         onPress={() => setSheetOpen(true)}
         disabled={!verse}
@@ -89,22 +105,6 @@ export function MyVerseWeekCard({ userId, verse }: MyVerseWeekCardProps) {
           {today ? t('home.noteContinue') : t('home.noteWrite')}
         </Text>
       </Pressable>
-
-      {/* Everything written so far, kept behind one button so the card stays a card. */}
-      {notes.length > 0 ? (
-        <Pressable
-          onPress={() => setCollectionOpen(true)}
-          style={({ pressed }) => [styles.collectionButton, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel={t('home.noteCollection')}
-          accessibilityHint={t('home.noteCollectionHint')}
-        >
-          <Ionicons name="book-outline" size={15} color={colors.accent} />
-          <Text style={styles.collectionButtonText}>
-            {t('home.noteCollection')} {notes.length}
-          </Text>
-        </Pressable>
-      ) : null}
 
       <VerseNoteSheet
         visible={sheetOpen}
@@ -227,13 +227,13 @@ const styles = StyleSheet.create({
   collectionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    alignSelf: 'flex-start',
     gap: spacing.xxs,
-    paddingVertical: spacing.xs,
+    paddingVertical: 2,
   },
   collectionButtonText: {
     fontFamily: fontFamily.sansMedium,
-    fontSize: 14,
+    fontSize: 12,
     color: colors.accent,
   },
 });
