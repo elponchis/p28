@@ -25,6 +25,7 @@ import { GlobalAnnouncementReaderSheet } from '@/components/patterns/GlobalAnnou
 import { LatestAnnouncementRow } from '@/components/patterns/LatestAnnouncementRow';
 import { MyVerseWeekCard } from '@/components/patterns/MyVerseWeekCard';
 import { useAuth } from '@/hooks/useAuth';
+import { useCardHover } from '@/hooks/useCardHover';
 import {
   useProfileQuery,
   useGroupsForUserQuery,
@@ -49,6 +50,8 @@ import type { JoinedGroupUpcomingEventRow } from '@/lib/upcomingJoinedGroupEvent
 import { SIDEBAR_WIDTH } from '@/components/navigation/DesktopSidebar';
 import {
   breakpoints,
+  cardBase,
+  cardHover,
   colors,
   fontFamily,
   radius,
@@ -59,6 +62,10 @@ import {
 
 /** Narrower than this and a quadrant drops onto its own row instead of sharing one. */
 const QUADRANT_MIN_WIDTH = 380;
+/** Between the left and right columns, so the two halves read as separate columns of cards. */
+const COLUMN_GUTTER = 48;
+/** Between one section's last card and the next section's title. */
+const SECTION_GAP = 40;
 /** Home shows the newest one; "see all" has the rest. */
 const LATEST_UPDATES_ON_HOME = 1;
 /** Group cards inside one quadrant. */
@@ -88,7 +95,11 @@ function useGroupCardWidth() {
   const twoColumn = useTwoColumnHome();
   if (Platform.OS !== 'web') return GROUP_CARD_MIN_WIDTH;
   const quadrant = twoColumn ? content / 2 : content;
-  const usable = quadrant - spacing.screenHorizontal * 2 - spacing.md * (GROUPS_PER_ROW - 1);
+  // A column is padded by the screen edge on one side and half the gutter on the other.
+  const padding = twoColumn
+    ? spacing.screenHorizontal + COLUMN_GUTTER / 2
+    : spacing.screenHorizontal * 2;
+  const usable = quadrant - padding - spacing.md * (GROUPS_PER_ROW - 1);
   return Math.max(GROUP_CARD_MIN_WIDTH, Math.floor(usable / GROUPS_PER_ROW));
 }
 const GROUP_CARD_IMAGE_HEIGHT = 120;
@@ -99,6 +110,7 @@ const UPCOMING_EVENT_CARD_WIDTH = 300;
 function GroupCarouselCard({ group }: { group: Group }) {
   const { push } = useRouter();
   const width = useGroupCardWidth();
+  const { hovered, hoverProps } = useCardHover();
 
   return (
     <Pressable
@@ -106,8 +118,9 @@ function GroupCarouselCard({ group }: { group: Group }) {
       style={({ pressed }) => [pressed && { opacity: 0.85 }]}
       accessibilityLabel={`${group.name}`}
       accessibilityHint={t('home.opensGroup')}
+      {...hoverProps}
     >
-      <View style={[carouselStyles.card, { width }]}>
+      <View style={[carouselStyles.card, { width }, hovered && carouselStyles.cardHovered]}>
         {group.bannerImageUrl ? (
           <Image
             source={{ uri: group.bannerImageUrl }}
@@ -142,6 +155,23 @@ function GroupCarouselCard({ group }: { group: Group }) {
         </View>
       </View>
     </Pressable>
+  );
+}
+
+/**
+ * The card the latest updates share. However many rows it holds, it is one card — the rows are
+ * divided by hairlines inside it, so the column never turns into a stack of separate cards.
+ */
+function LatestUpdatesCard({ children }: { children: React.ReactNode }) {
+  const { hovered, hoverProps } = useCardHover();
+
+  return (
+    <View
+      style={[styles.latestUpdatesCard, hovered && styles.latestUpdatesCardHovered]}
+      {...hoverProps}
+    >
+      {children}
+    </View>
   );
 }
 
@@ -245,6 +275,18 @@ export default function HomeScreen() {
   const todaysVerse = useMemo(() => verseForDay(dailyVerses), [dailyVerses]);
 
   const twoColumn = useTwoColumnHome();
+  /**
+   * Horizontal padding for one column. The screen edge keeps its 20; the two inner edges each
+   * take half the gutter, so the space between the columns is {@link COLUMN_GUTTER}.
+   */
+  const columnPad = (index: number) => {
+    if (!twoColumn) return styles.columnSingle;
+    return index % 2 === 0 ? styles.columnLeft : styles.columnRight;
+  };
+  /** Sections below the first row stand {@link SECTION_GAP} clear of the section above them. */
+  const sectionGap = (index: number) =>
+    (twoColumn ? index >= 2 : index >= 1) ? styles.sectionGap : null;
+
   // Beside the welcome when there is a right-hand column; under the verse card when there is not.
   const myVerseWeek = userId ? <MyVerseWeekCard userId={userId} verse={todaysVerse} /> : null;
 
@@ -274,9 +316,9 @@ export default function HomeScreen() {
           {/* The greeting and, beside it, the one action that belongs to the whole platform.
               Composing a platform-wide announcement — the announcements themselves are in
               Latest updates below, with everything else worth reading. */}
-          <View style={twoColumn ? styles.headerColumn : undefined}>
+          <View style={[twoColumn ? styles.headerColumn : null, columnPad(0)]}>
             <View style={styles.headerGreeting}>
-              <View style={[styles.header, styles.headerText]}>
+              <View style={styles.header}>
                 <Text style={styles.welcomeText}>
                   {displayName ? `${t('home.welcomeBack')}` : t('home.welcomeDefault')}
                 </Text>
@@ -309,7 +351,7 @@ export default function HomeScreen() {
             {/* A platform-wide announcement is addressed to everyone, but the week card owns the
                     right half of this row, so it runs down the left half with the greeting. */}
             {globalAnnouncementsIsError ? (
-              <View style={styles.sectionPadded}>
+              <View>
                 <Text style={styles.inlineError} accessibilityLiveRegion="polite">
                   {globalAnnouncementsError != null && isApiError(globalAnnouncementsError)
                     ? getUserFacingError(globalAnnouncementsError)
@@ -317,7 +359,7 @@ export default function HomeScreen() {
                 </Text>
               </View>
             ) : globalAnnouncements.length > 0 ? (
-              <View style={[styles.sectionPadded, styles.globalAnnouncementStack]}>
+              <View style={styles.globalAnnouncementStack}>
                 {globalAnnouncements.map((ga) => (
                   <GlobalAnnouncementCard
                     key={ga.id}
@@ -342,7 +384,7 @@ export default function HomeScreen() {
             ) : null}
           </View>
           {twoColumn ? (
-            <View style={[styles.headerColumn, styles.sectionPadded, styles.headerNote]}>
+            <View style={[styles.headerColumn, columnPad(1), styles.headerNote]}>
               {myVerseWeek}
             </View>
           ) : null}
@@ -369,8 +411,8 @@ export default function HomeScreen() {
 
         <View style={styles.grid}>
           {/* My Groups — horizontal scroll */}
-          <View style={styles.quadrant}>
-            <View style={styles.sectionPadded}>
+          <View style={[styles.quadrant, columnPad(0), sectionGap(0)]}>
+            <View>
               <SectionHeader
                 title={t('home.yourGroups')}
                 actionLabel={myGroups.length > 0 ? t('home.seeAll') : undefined}
@@ -387,7 +429,7 @@ export default function HomeScreen() {
                 <ActivityIndicator size="small" color={colors.primary} />
               </View>
             ) : myGroups.length === 0 ? (
-              <View style={styles.sectionPadded}>
+              <View>
                 <EmptyState
                   iconName="people-outline"
                   title={t('home.noGroupsYet')}
@@ -403,7 +445,6 @@ export default function HomeScreen() {
                 keyExtractor={(item) => item.id}
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.carouselContent}
                 ItemSeparatorComponent={() => <View style={styles.carouselSeparator} />}
                 scrollEnabled
               />
@@ -411,8 +452,8 @@ export default function HomeScreen() {
           </View>
 
           {/* The day's passage sits beside the groups, not at the bottom of the scroll. */}
-          <View style={styles.quadrant}>
-            <View style={styles.sectionPadded}>
+          <View style={[styles.quadrant, columnPad(1), sectionGap(1)]}>
+            <View>
               <SectionHeader title={t('home.reflectionTitle')} />
               <ReflectionPlate
                 quote={todaysVerse ? `“${todaysVerse.passage}”` : t('home.reflectionQuote')}
@@ -428,8 +469,8 @@ export default function HomeScreen() {
 
           {/* The latest published announcement from each joined group. Only the newest one is
             shown here — the rest are one tap away, counted on the header. */}
-          <View style={styles.quadrant}>
-            <View style={styles.sectionPadded}>
+          <View style={[styles.quadrant, columnPad(2), sectionGap(2)]}>
+            <View>
               <SectionHeader
                 title={t('announcements.latestUpdatesSectionTitle')}
                 badge={Math.max(0, latestAnnouncements.length - LATEST_UPDATES_ON_HOME)}
@@ -444,7 +485,7 @@ export default function HomeScreen() {
                 <ActivityIndicator size="small" color={colors.primary} />
               </View>
             ) : latestAnnouncementsIsError ? (
-              <View style={styles.sectionPadded}>
+              <View>
                 <Text style={styles.inlineError} accessibilityLiveRegion="polite">
                   {latestAnnouncementsError != null && isApiError(latestAnnouncementsError)
                     ? getUserFacingError(latestAnnouncementsError)
@@ -452,7 +493,7 @@ export default function HomeScreen() {
                 </Text>
               </View>
             ) : latestAnnouncements.length === 0 ? (
-              <View style={styles.sectionPadded}>
+              <View>
                 <EmptyState
                   iconName="megaphone-outline"
                   title={t('announcements.noAnnouncements')}
@@ -460,32 +501,34 @@ export default function HomeScreen() {
                 />
               </View>
             ) : (
-              <View style={[styles.sectionPadded, styles.latestUpdatesList]}>
-                {latestAnnouncements.slice(0, LATEST_UPDATES_ON_HOME).map((item) => (
-                  <View key={item.id} style={styles.latestUpdateBlock}>
-                    <LatestAnnouncementRow
-                      tagLabel={item.groupName}
-                      title={item.title}
-                      body={item.body}
-                      createdAt={item.createdAt}
-                      onPress={() =>
-                        router.push(
-                          `/group/announcement/${item.id}?groupId=${encodeURIComponent(item.groupId)}`
-                        )
-                      }
-                      accessibilityLabel={`${item.groupName}. ${item.title}`}
-                      meetingLink={item.meetingLink ?? undefined}
-                      showMeetingLink={!!item.meetingLink?.trim()}
-                    />
-                  </View>
+              // Several updates are one card divided by hairlines, never a stack of cards.
+              <LatestUpdatesCard>
+                {latestAnnouncements.slice(0, LATEST_UPDATES_ON_HOME).map((item, index) => (
+                  <LatestAnnouncementRow
+                    key={item.id}
+                    grouped
+                    showDivider={index > 0}
+                    tagLabel={item.groupName}
+                    title={item.title}
+                    body={item.body}
+                    createdAt={item.createdAt}
+                    onPress={() =>
+                      router.push(
+                        `/group/announcement/${item.id}?groupId=${encodeURIComponent(item.groupId)}`
+                      )
+                    }
+                    accessibilityLabel={`${item.groupName}. ${item.title}`}
+                    meetingLink={item.meetingLink ?? undefined}
+                    showMeetingLink={!!item.meetingLink?.trim()}
+                  />
                 ))}
-              </View>
+              </LatestUpdatesCard>
             )}
           </View>
 
           {/* Upcoming events from joined groups */}
-          <View style={styles.quadrant}>
-            <View style={styles.sectionPadded}>
+          <View style={[styles.quadrant, columnPad(3), sectionGap(3)]}>
+            <View>
               <SectionHeader
                 title={t('home.upcomingEvents')}
                 actionLabel={
@@ -505,7 +548,7 @@ export default function HomeScreen() {
                 <ActivityIndicator size="small" color={colors.primary} />
               </View>
             ) : upcomingIsError ? (
-              <View style={styles.sectionPadded}>
+              <View>
                 <Text style={styles.inlineError} accessibilityLiveRegion="polite">
                   {upcomingError != null && isApiError(upcomingError)
                     ? getUserFacingError(upcomingError)
@@ -513,7 +556,9 @@ export default function HomeScreen() {
                 </Text>
               </View>
             ) : upcomingEvents.length === 0 ? (
-              <View style={styles.sectionPadded}>
+              // Nothing to show is still a card, so the column does not end in bare text.
+              <View style={styles.emptyUpcomingCard}>
+                <Ionicons name="calendar-outline" size={20} color={colors.onSurfaceVariant} />
                 <Text style={styles.emptyUpcomingTitle}>{t('home.noUpcomingEvents')}</Text>
                 <Text style={styles.emptyUpcomingSub}>{t('home.noUpcomingEventsSubtitle')}</Text>
               </View>
@@ -525,7 +570,6 @@ export default function HomeScreen() {
                 extraData={rsvpByEventId}
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.carouselContent}
                 ItemSeparatorComponent={() => <View style={styles.carouselSeparator} />}
                 scrollEnabled
               />
@@ -547,7 +591,6 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    paddingHorizontal: spacing.screenHorizontal,
     paddingTop: spacing.lg,
   },
   welcomeText: {
@@ -567,8 +610,24 @@ const styles = StyleSheet.create({
     color: colors.onSurface,
   },
 
-  sectionPadded: {
+  /**
+   * A column's horizontal padding. The screen edge keeps 20; the inner edge takes half the
+   * gutter, so the two columns end up COLUMN_GUTTER apart and every card in a column lines up.
+   */
+  columnLeft: {
+    paddingLeft: spacing.screenHorizontal,
+    paddingRight: COLUMN_GUTTER / 2,
+  },
+  columnRight: {
+    paddingLeft: COLUMN_GUTTER / 2,
+    paddingRight: spacing.screenHorizontal,
+  },
+  columnSingle: {
     paddingHorizontal: spacing.screenHorizontal,
+  },
+  /** SectionHeader brings its own top margin; this is the rest of the gap between sections. */
+  sectionGap: {
+    marginTop: SECTION_GAP - spacing.lg,
   },
 
   /** The welcome and the week card share the top row when the grid has two columns. */
@@ -577,10 +636,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     flexWrap: 'wrap',
-  },
-  /** The button follows the greeting on the same line, so the greeting drops its right padding. */
-  headerText: {
-    paddingRight: 0,
   },
   headerRow: {
     flexDirection: 'row',
@@ -669,17 +724,24 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: spacing.md,
   },
-  latestUpdatesList: {
-    gap: spacing.md,
+  /** Every update shown lives in this one card, divided by hairlines rather than stacked. */
+  latestUpdatesCard: {
+    ...cardBase,
+    overflow: 'hidden',
   },
-  latestUpdateBlock: {
-    gap: spacing.xxs,
-  },
+  latestUpdatesCardHovered: cardHover,
 
+  emptyUpcomingCard: {
+    ...cardBase,
+    padding: spacing.screenHorizontal,
+    gap: spacing.xs,
+    alignItems: 'flex-start',
+  },
   emptyUpcomingTitle: {
-    ...typography.titleMd,
+    fontFamily: fontFamily.sansSemiBold,
+    fontSize: 15,
+    fontWeight: '600',
     color: colors.onSurface,
-    marginBottom: spacing.xxs,
   },
   emptyUpcomingSub: {
     ...typography.bodyMd,
@@ -695,9 +757,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  carouselContent: {
-    paddingHorizontal: spacing.screenHorizontal,
-  },
   carouselSeparator: {
     width: spacing.md,
   },
@@ -705,12 +764,11 @@ const styles = StyleSheet.create({
 
 const carouselStyles = StyleSheet.create({
   card: {
-    backgroundColor: colors.surfaceContainerLowest,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.outlineVariant,
+    ...cardBase,
     overflow: 'hidden',
+    cursor: 'pointer',
   },
+  cardHovered: cardHover,
   image: {
     width: '100%',
     height: GROUP_CARD_IMAGE_HEIGHT,

@@ -4,11 +4,12 @@ import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
+import { useCardHover } from '@/hooks/useCardHover';
 import type { EventRsvpResponse } from '@/lib/api';
 import { formatGroupEventDateTime } from '@/lib/dates';
 import { t } from '@/lib/i18n';
 import type { JoinedGroupUpcomingEventRow } from '@/lib/upcomingJoinedGroupEvents';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { cardBase, cardHover, colors, radius, spacing, typography } from '@/theme/tokens';
 
 export interface JoinedGroupUpcomingEventCardProps {
   event: JoinedGroupUpcomingEventRow;
@@ -62,6 +63,7 @@ export function JoinedGroupUpcomingEventCard({
   rsvpResponse = null,
 }: JoinedGroupUpcomingEventCardProps) {
   const { push } = useRouter();
+  const { hovered, hoverProps } = useCardHover();
   const when = formatGroupEventDateTime(event.startsAt);
   const rsvpA11y =
     rsvpResponse === 'going'
@@ -78,8 +80,9 @@ export function JoinedGroupUpcomingEventCard({
       style={({ pressed }) => [pressed && { opacity: 0.92 }]}
       accessibilityLabel={`${event.title}, ${event.groupName}, ${when}${rsvpA11y ? `, ${rsvpA11y}` : ''}`}
       accessibilityHint={t('home.opensEventDetail')}
+      {...hoverProps}
     >
-      <View style={[styles.card, { width }]}>
+      <View style={[styles.card, { width }, hovered && styles.cardHovered]}>
         {event.groupBannerImageUrl ? (
           <Image
             source={{ uri: event.groupBannerImageUrl }}
@@ -123,16 +126,17 @@ export function JoinedGroupUpcomingEventCard({
 
 const styles = StyleSheet.create({
   card: {
+    ...cardBase,
     flexDirection: 'row',
-    backgroundColor: colors.surfaceContainerLow,
-    borderRadius: radius.xl,
     borderCurve: 'continuous',
     overflow: 'hidden',
     padding: spacing.sm,
     gap: spacing.md,
     alignItems: 'center',
     position: 'relative',
+    cursor: 'pointer',
   },
+  cardHovered: cardHover,
   image: {
     width: 88,
     height: 88,

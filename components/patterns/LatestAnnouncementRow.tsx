@@ -3,9 +3,10 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { TagChip } from '@/components/patterns/TagChip';
+import { useCardHover } from '@/hooks/useCardHover';
 import { formatGroupEventCalendarBlock } from '@/lib/dates';
 import { t } from '@/lib/i18n';
-import { colors, fontFamily, radius, spacing } from '@/theme/tokens';
+import { cardBase, cardHover, colors, fontFamily, radius, spacing } from '@/theme/tokens';
 
 export interface LatestAnnouncementRowProps {
   title: string;
@@ -21,6 +22,13 @@ export interface LatestAnnouncementRowProps {
   showMeetingLink?: boolean;
   /** Group or channel the item belongs to, shown as a small chip at the right of the row. */
   tagLabel?: string;
+  /**
+   * One of several rows sharing a single card. The row drops its own edge and is separated from
+   * the one above it by a hairline instead, so a list reads as one card rather than a stack.
+   */
+  grouped?: boolean;
+  /** Set on every grouped row but the first — the rule that divides it from the row above. */
+  showDivider?: boolean;
 }
 
 export function LatestAnnouncementRow({
@@ -34,7 +42,10 @@ export function LatestAnnouncementRow({
   meetingLink,
   showMeetingLink = false,
   tagLabel,
+  grouped = false,
+  showDivider = false,
 }: LatestAnnouncementRowProps) {
+  const { hovered, hoverProps } = useCardHover();
   const { month, day } = formatGroupEventCalendarBlock(createdAt);
   const link = meetingLink?.trim();
   const hasMeetingFooter = showMeetingLink && !!link;
@@ -43,7 +54,14 @@ export function LatestAnnouncementRow({
   };
 
   return (
-    <View style={styles.wrap}>
+    <View
+      style={[
+        styles.wrap,
+        grouped && styles.wrapGrouped,
+        showDivider && styles.wrapDivided,
+        !grouped && hovered && styles.wrapHovered,
+      ]}
+    >
       <Pressable
         onPress={onPress}
         style={({ pressed }) => [
@@ -53,6 +71,7 @@ export function LatestAnnouncementRow({
         accessibilityLabel={accessibilityLabel ?? title}
         accessibilityHint={accessibilityHint}
         accessibilityRole="button"
+        {...hoverProps}
       >
         <View style={styles.dateCol}>
           <Text style={styles.month}>{month}</Text>
@@ -102,15 +121,24 @@ export function LatestAnnouncementRow({
 const styles = StyleSheet.create({
   // A bordered card, whether or not the meeting footer is attached below the row.
   wrap: {
+    ...cardBase,
     marginBottom: 0,
-    borderRadius: radius.card,
     overflow: 'hidden',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.outlineVariant,
     borderCurve: 'continuous',
   },
+  wrapHovered: cardHover,
+  /** Inside a shared card the row owns no edge of its own — the card around it does. */
+  wrapGrouped: {
+    borderWidth: 0,
+    borderRadius: 0,
+  },
+  /** The hairline that divides one grouped row from the one above it. */
+  wrapDivided: {
+    borderTopWidth: 1,
+    borderTopColor: colors.outlineVariant,
+  },
   row: {
+    cursor: 'pointer',
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.screenHorizontal,

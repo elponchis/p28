@@ -396,6 +396,31 @@ export const listAccents = {
 
 export const minTouchTarget = 44;
 
+// ---------------------------------------------------------------------------
+// Card shape
+// ---------------------------------------------------------------------------
+
+/**
+ * The one card the home screen is built from: white, a single hairline, 16px corners, no
+ * shadow. Spread it into a card's own style (`{ ...cardBase, ... }`) so every section reads as
+ * the same object rather than four near-misses. The dark verse plate is the deliberate
+ * exception — it is the one card meant to stand apart.
+ */
+export const cardBase = {
+  backgroundColor: colors.surface,
+  borderWidth: 1,
+  borderColor: colors.outlineVariant,
+  borderRadius: radius.card,
+} as const;
+
+/**
+ * A pressable card under a mouse: only the edge darkens. No shadow and nothing moves, so a
+ * hovered row does not shift the cards around it.
+ */
+export const cardHover = {
+  borderColor: colors.ink300,
+} as const;
+
 export const authScreen = {
   inputStyle: {
     paddingHorizontal: 20,
@@ -444,6 +469,8 @@ export const tokens = {
   typography,
   shadow,
   fontFamily,
+  cardBase,
+  cardHover,
   minTouchTarget,
   avatarSizes,
   listAccents,

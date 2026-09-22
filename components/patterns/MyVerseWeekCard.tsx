@@ -9,7 +9,7 @@ import type { DailyVerse } from '@/lib/api';
 import { seoulDateKey } from '@/lib/dailyVerse';
 import { t } from '@/lib/i18n';
 import { noteStreak, todaysNote, weekStrip, WEEKDAY_KEYS } from '@/lib/verseNoteWeek';
-import { colors, fontFamily, radius, spacing } from '@/theme/tokens';
+import { cardBase, colors, fontFamily, radius, spacing } from '@/theme/tokens';
 
 export interface MyVerseWeekCardProps {
   userId: string;
@@ -126,10 +126,7 @@ export function MyVerseWeekCard({ userId, verse }: MyVerseWeekCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.outlineVariant,
-    borderRadius: radius.card,
+    ...cardBase,
     padding: spacing.screenHorizontal,
     gap: spacing.sm,
   },

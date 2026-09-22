@@ -42,6 +42,12 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     marginBottom: spacing.md,
     marginTop: spacing.lg,
+    /**
+     * A "see all" link is a touch taller than the title beside it, so a header that has one used
+     * to sit half a pixel lower than one that does not — enough to show as a step between two
+     * columns of sections. A fixed height puts every title on the same line.
+     */
+    minHeight: 28,
   },
   spacer: {
     flex: 1,
@@ -65,6 +71,9 @@ const styles = StyleSheet.create({
     fontSize: 19,
     fontWeight: '600',
     color: colors.onSurface,
+    // Fills the row's height exactly, so the title's top edge is the row's top edge and the gap
+    // above it is the one the screen asked for rather than that minus half a line.
+    lineHeight: 28,
   },
   actionBtn: {
     paddingVertical: 4,
