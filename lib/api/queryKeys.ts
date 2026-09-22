@@ -59,6 +59,8 @@ export const queryKeys = {
   latestPublishedAnnouncementsPerJoinedGroup: (userId: string, groupIdsKey: string) =>
     ['latestPublishedAnnouncementsPerJoinedGroup', userId, groupIdsKey] as const,
   announcement: (id: string) => ['announcement', id] as const,
+  personalVerseNotes: (userId: string, fromDate: string) =>
+    ['personalVerseNotes', userId, fromDate] as const,
   dailyVerses: (locale: string) => ['dailyVerses', locale] as const,
   globalAnnouncements: () => ['globalAnnouncements'] as const,
   groupEvents: (groupId: string, discover?: boolean) =>

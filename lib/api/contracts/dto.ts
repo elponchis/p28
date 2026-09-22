@@ -133,6 +133,24 @@ export interface CreateGlobalAnnouncementInput {
   description: string;
 }
 
+/** A reader's own note on the day's verse. Private to them. */
+export interface PersonalVerseNote {
+  id: string;
+  userId: string;
+  /** Seoul calendar day, YYYY-MM-DD. */
+  noteDate: string;
+  /** The verse showing when it was written, e.g. '로마서 10:17'. */
+  verseRef: string;
+  body: string;
+  updatedAt: string;
+}
+
+export interface SavePersonalVerseNoteInput {
+  noteDate: string;
+  verseRef: string;
+  body: string;
+}
+
 /** One verse in the home screen's daily rotation. */
 export interface DailyVerse {
   id: string;

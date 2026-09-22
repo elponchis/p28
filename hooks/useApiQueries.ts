@@ -629,6 +629,37 @@ export function useAnnouncementQuery(
   });
 }
 
+export function usePersonalVerseNotesQuery(
+  userId: string | undefined,
+  fromDate: string,
+  toDate: string
+) {
+  return useQuery({
+    queryKey: queryKeys.personalVerseNotes(userId ?? '', fromDate),
+    queryFn: () =>
+      queryFn(api.data.listPersonalVerseNotes(userId!, fromDate, toDate)) as Promise<
+        import('@/lib/api').PersonalVerseNote[]
+      >,
+    enabled: !!userId,
+  });
+}
+
+export function useSavePersonalVerseNoteMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      userId,
+      input,
+    }: {
+      userId: string;
+      input: import('@/lib/api').SavePersonalVerseNoteInput;
+    }) => queryFn(api.data.savePersonalVerseNote(userId, input)),
+    onSuccess: (_data, { userId }) => {
+      qc.invalidateQueries({ queryKey: ['personalVerseNotes', userId] });
+    },
+  });
+}
+
 export function useDailyVersesQuery(locale: string) {
   return useQuery({
     queryKey: queryKeys.dailyVerses(locale),

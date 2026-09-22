@@ -35,6 +35,8 @@ export type {
   CreateAnnouncementInput,
   CreateGlobalAnnouncementInput,
   DailyVerse,
+  PersonalVerseNote,
+  SavePersonalVerseNoteInput,
   UpdateGlobalAnnouncementInput,
   GlobalAnnouncement,
   CreateGroupEventInput,

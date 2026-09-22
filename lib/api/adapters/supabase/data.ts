@@ -41,6 +41,8 @@ import type {
   CreateAnnouncementInput,
   CreateGlobalAnnouncementInput,
   DailyVerse,
+  PersonalVerseNote,
+  SavePersonalVerseNoteInput,
   UpdateGlobalAnnouncementInput,
   GlobalAnnouncement,
   CreateGroupDiscussionInput,
@@ -559,6 +561,26 @@ type GroupDevotionRow = {
 
 const GROUP_DEVOTION_COLUMNS =
   'id, group_id, devotion_date, reference, passage, created_by_user_id, updated_at';
+
+const PERSONAL_VERSE_NOTE_COLUMNS = 'id, user_id, note_date, verse_ref, body, updated_at';
+
+interface PersonalVerseNoteRow {
+  id: string;
+  user_id: string;
+  note_date: string;
+  verse_ref: string;
+  body: string;
+  updated_at: string;
+}
+
+const mapPersonalVerseNoteRow = (row: PersonalVerseNoteRow): PersonalVerseNote => ({
+  id: row.id,
+  userId: row.user_id,
+  noteDate: row.note_date,
+  verseRef: row.verse_ref,
+  body: row.body,
+  updatedAt: row.updated_at,
+});
 
 function mapGroupDevotionRow(row: GroupDevotionRow): GroupDevotion {
   return {
@@ -2498,6 +2520,53 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
           .single();
         if (error) return toApiError(error);
         return mapAnnouncementRow(row as AnnouncementRow, null);
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async listPersonalVerseNotes(
+      userId: string,
+      fromDate: string,
+      toDate: string
+    ): Promise<PersonalVerseNote[] | ApiError> {
+      try {
+        const { data, error } = await getClient()
+          .from('personal_verse_notes')
+          .select(PERSONAL_VERSE_NOTE_COLUMNS)
+          .eq('user_id', userId)
+          .gte('note_date', fromDate)
+          .lte('note_date', toDate)
+          .order('note_date', { ascending: false });
+        if (error) return toApiError(error);
+        return (data ?? []).map(mapPersonalVerseNoteRow);
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async savePersonalVerseNote(
+      userId: string,
+      input: SavePersonalVerseNoteInput
+    ): Promise<PersonalVerseNote | ApiError> {
+      try {
+        const body = input.body.trim();
+        if (!body) return { message: 'Write something first', code: 'VALIDATION_ERROR' };
+        const { data, error } = await getClient()
+          .from('personal_verse_notes')
+          .upsert(
+            {
+              user_id: userId,
+              note_date: input.noteDate,
+              verse_ref: input.verseRef,
+              body,
+            },
+            { onConflict: 'user_id,note_date' }
+          )
+          .select(PERSONAL_VERSE_NOTE_COLUMNS)
+          .single();
+        if (error) return toApiError(error);
+        return mapPersonalVerseNoteRow(data);
       } catch (e) {
         return toApiError(e);
       }

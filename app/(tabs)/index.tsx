@@ -22,6 +22,7 @@ import { JoinedGroupUpcomingEventCard } from '@/components/patterns/JoinedGroupU
 import { GlobalAnnouncementCard } from '@/components/patterns/GlobalAnnouncementCard';
 import { GlobalAnnouncementFormSheet } from '@/components/patterns/GlobalAnnouncementFormSheet';
 import { LatestAnnouncementRow } from '@/components/patterns/LatestAnnouncementRow';
+import { MyVerseWeekCard } from '@/components/patterns/MyVerseWeekCard';
 import { useAuth } from '@/hooks/useAuth';
 import {
   useProfileQuery,
@@ -63,12 +64,29 @@ const LATEST_UPDATES_ON_HOME = 1;
 const GROUPS_PER_ROW = 2;
 const GROUP_CARD_MIN_WIDTH = 200;
 
+/** How much room the content has, once the desktop sidebar has taken its share. */
+function useHomeContentWidth() {
+  const { width } = useWindowDimensions();
+  if (Platform.OS !== 'web') return width;
+  const sidebar = width >= breakpoints.sidebar ? SIDEBAR_WIDTH : 0;
+  return Math.min(width - sidebar, tabScreenContent.maxWidth);
+}
+
+/**
+ * True when the grid puts two quadrants on a row. The welcome row asks the same question, so the
+ * week card sits beside the welcome exactly when there is a right-hand column for it to sit in.
+ */
+function useTwoColumnHome() {
+  const content = useHomeContentWidth();
+  return Platform.OS === 'web' && content >= QUADRANT_MIN_WIDTH * 2;
+}
+
 /** Sizes a group card so a full row of them fills the quadrant it sits in. */
 function useGroupCardWidth() {
-  const { width } = useWindowDimensions();
-  if (Platform.OS !== 'web' || width < breakpoints.sidebar) return GROUP_CARD_MIN_WIDTH;
-  const content = Math.min(width - SIDEBAR_WIDTH, tabScreenContent.maxWidth);
-  const quadrant = content >= QUADRANT_MIN_WIDTH * 2 ? content / 2 : content;
+  const content = useHomeContentWidth();
+  const twoColumn = useTwoColumnHome();
+  if (Platform.OS !== 'web') return GROUP_CARD_MIN_WIDTH;
+  const quadrant = twoColumn ? content / 2 : content;
   const usable = quadrant - spacing.screenHorizontal * 2 - spacing.md * (GROUPS_PER_ROW - 1);
   return Math.max(GROUP_CARD_MIN_WIDTH, Math.floor(usable / GROUPS_PER_ROW));
 }
@@ -223,6 +241,10 @@ export default function HomeScreen() {
   // Falls back to the verse the app shipped with while the list is empty.
   const todaysVerse = useMemo(() => verseForDay(dailyVerses), [dailyVerses]);
 
+  const twoColumn = useTwoColumnHome();
+  // Beside the welcome when there is a right-hand column; under the verse card when there is not.
+  const myVerseWeek = userId ? <MyVerseWeekCard userId={userId} verse={todaysVerse} /> : null;
+
   const renderGroupItem = ({ item }: { item: Group }) => <GroupCarouselCard group={item} />;
 
   const renderUpcomingEventItem = useCallback(
@@ -245,40 +267,50 @@ export default function HomeScreen() {
     >
       <Animated.View entering={FadeIn.duration(300)} style={tabScreenContent}>
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.welcomeText}>
-            {displayName ? `${t('home.welcomeBack')}` : t('home.welcomeDefault')}
-          </Text>
-          {displayName ? <Text style={styles.nameText}>{displayName}.</Text> : null}
-        </View>
+        <View style={twoColumn ? styles.headerRow : undefined}>
+          <View style={twoColumn ? styles.headerColumn : undefined}>
+            <View style={styles.header}>
+              <Text style={styles.welcomeText}>
+                {displayName ? `${t('home.welcomeBack')}` : t('home.welcomeDefault')}
+              </Text>
+              {displayName ? <Text style={styles.nameText}>{displayName}.</Text> : null}
+            </View>
 
-        {/* Composing a platform-wide announcement. The announcements themselves are in
-            Latest updates just below, with everything else worth reading. */}
-        {userId ? (
-          <View style={styles.sectionPadded}>
-            {!superAdminRoleLoading && isSuperAdmin ? (
-              <Pressable
-                onPress={() => {
-                  setGlobalFormError(null);
-                  setEditingGlobalId(null);
-                  setGlobalSheetOpen(true);
-                }}
-                style={({ pressed }) => [
-                  styles.globalAnnouncementLinkRow,
-                  pressed && { opacity: 0.78 },
-                ]}
-                accessibilityRole="button"
-                accessibilityLabel={t('home.postGlobalAnnouncementLink')}
-                accessibilityHint={t('home.postGlobalAnnouncementHint')}
-              >
-                <Ionicons name="globe-outline" size={17} color={colors.accent} />
-                <Text style={styles.globalAnnouncementLinkText}>
-                  {t('home.postGlobalAnnouncementLink')}
-                </Text>
-              </Pressable>
+            {/* Composing a platform-wide announcement. The announcements themselves are in
+                Latest updates just below, with everything else worth reading. Inside the left
+                column so the week card beside it cannot push it down. */}
+            {userId ? (
+              <View style={styles.sectionPadded}>
+                {!superAdminRoleLoading && isSuperAdmin ? (
+                  <Pressable
+                    onPress={() => {
+                      setGlobalFormError(null);
+                      setEditingGlobalId(null);
+                      setGlobalSheetOpen(true);
+                    }}
+                    style={({ pressed }) => [
+                      styles.globalAnnouncementLinkRow,
+                      pressed && { opacity: 0.78 },
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('home.postGlobalAnnouncementLink')}
+                    accessibilityHint={t('home.postGlobalAnnouncementHint')}
+                  >
+                    <Ionicons name="globe-outline" size={17} color={colors.accent} />
+                    <Text style={styles.globalAnnouncementLinkText}>
+                      {t('home.postGlobalAnnouncementLink')}
+                    </Text>
+                  </Pressable>
+                ) : null}
+              </View>
             ) : null}
           </View>
-        ) : null}
+          {twoColumn ? (
+            <View style={[styles.headerColumn, styles.sectionPadded, styles.headerNote]}>
+              {myVerseWeek}
+            </View>
+          ) : null}
+        </View>
 
         <GlobalAnnouncementFormSheet
           visible={globalSheetOpen}
@@ -329,6 +361,64 @@ export default function HomeScreen() {
         ) : null}
 
         <View style={styles.grid}>
+          {/* My Groups — horizontal scroll */}
+          <View style={styles.quadrant}>
+            <View style={styles.sectionPadded}>
+              <SectionHeader
+                title={t('home.yourGroups')}
+                actionLabel={myGroups.length > 0 ? t('home.seeAll') : undefined}
+                onAction={
+                  myGroups.length > 0
+                    ? () => router.navigate('/(tabs)/groups?filter=joined')
+                    : undefined
+                }
+              />
+            </View>
+
+            {groupsLoading ? (
+              <View style={styles.loadingRow}>
+                <ActivityIndicator size="small" color={colors.primary} />
+              </View>
+            ) : myGroups.length === 0 ? (
+              <View style={styles.sectionPadded}>
+                <EmptyState
+                  iconName="people-outline"
+                  title={t('home.noGroupsYet')}
+                  subtitle={t('home.noGroupsSubtitle')}
+                  actionLabel={t('home.browseGroups')}
+                  onAction={() => router.navigate('/(tabs)/groups')}
+                />
+              </View>
+            ) : (
+              <FlatList
+                data={myGroups}
+                renderItem={renderGroupItem}
+                keyExtractor={(item) => item.id}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.carouselContent}
+                ItemSeparatorComponent={() => <View style={styles.carouselSeparator} />}
+                scrollEnabled
+              />
+            )}
+          </View>
+
+          {/* The day's passage sits beside the groups, not at the bottom of the scroll. */}
+          <View style={styles.quadrant}>
+            <View style={styles.sectionPadded}>
+              <SectionHeader title={t('home.reflectionTitle')} />
+              <ReflectionPlate
+                quote={todaysVerse ? `“${todaysVerse.passage}”` : t('home.reflectionQuote')}
+                attribution={
+                  todaysVerse ? `— ${todaysVerse.reference}` : t('home.reflectionAttribution')
+                }
+                source={todaysVerse ? VERSE_ATTRIBUTION : undefined}
+                variant="dark"
+              />
+              {twoColumn ? null : <View style={styles.stackedNote}>{myVerseWeek}</View>}
+            </View>
+          </View>
+
           {/* The latest published announcement from each joined group. Only the newest one is
             shown here — the rest are one tap away, counted on the header. */}
           <View style={styles.quadrant}>
@@ -383,63 +473,6 @@ export default function HomeScreen() {
                   </View>
                 ))}
               </View>
-            )}
-          </View>
-
-          {/* The day's passage sits beside the news, not at the bottom of the scroll. */}
-          <View style={styles.quadrant}>
-            <View style={styles.sectionPadded}>
-              <SectionHeader title={t('home.reflectionTitle')} />
-              <ReflectionPlate
-                quote={todaysVerse ? `“${todaysVerse.passage}”` : t('home.reflectionQuote')}
-                attribution={
-                  todaysVerse ? `— ${todaysVerse.reference}` : t('home.reflectionAttribution')
-                }
-                source={todaysVerse ? VERSE_ATTRIBUTION : undefined}
-                variant="dark"
-              />
-            </View>
-          </View>
-
-          {/* My Groups — horizontal scroll */}
-          <View style={styles.quadrant}>
-            <View style={styles.sectionPadded}>
-              <SectionHeader
-                title={t('home.yourGroups')}
-                actionLabel={myGroups.length > 0 ? t('home.seeAll') : undefined}
-                onAction={
-                  myGroups.length > 0
-                    ? () => router.navigate('/(tabs)/groups?filter=joined')
-                    : undefined
-                }
-              />
-            </View>
-
-            {groupsLoading ? (
-              <View style={styles.loadingRow}>
-                <ActivityIndicator size="small" color={colors.primary} />
-              </View>
-            ) : myGroups.length === 0 ? (
-              <View style={styles.sectionPadded}>
-                <EmptyState
-                  iconName="people-outline"
-                  title={t('home.noGroupsYet')}
-                  subtitle={t('home.noGroupsSubtitle')}
-                  actionLabel={t('home.browseGroups')}
-                  onAction={() => router.navigate('/(tabs)/groups')}
-                />
-              </View>
-            ) : (
-              <FlatList
-                data={myGroups}
-                renderItem={renderGroupItem}
-                keyExtractor={(item) => item.id}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.carouselContent}
-                ItemSeparatorComponent={() => <View style={styles.carouselSeparator} />}
-                scrollEnabled
-              />
             )}
           </View>
 
@@ -529,6 +562,24 @@ const styles = StyleSheet.create({
 
   sectionPadded: {
     paddingHorizontal: spacing.screenHorizontal,
+  },
+
+  /** The welcome and the week card share the top row when the grid has two columns. */
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  headerColumn: {
+    flexGrow: 1,
+    flexBasis: QUADRANT_MIN_WIDTH,
+    minWidth: QUADRANT_MIN_WIDTH,
+    maxWidth: '100%',
+  },
+  headerNote: {
+    paddingTop: spacing.lg,
+  },
+  stackedNote: {
+    marginTop: spacing.md,
   },
 
   /**
