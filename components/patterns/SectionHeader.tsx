@@ -1,5 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { getLocale } from '@/lib/i18n';
+import { showsSectionEyebrow } from '@/lib/sectionEyebrow';
 import { colors, fontFamily, radius, spacing } from '@/theme/tokens';
 
 /** Between the rule and the eyebrow under it. Off the spacing scale, from the type spec. */
@@ -37,11 +39,16 @@ export function SectionEyebrow({
   rule?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
+  const showLabel = showsSectionEyebrow(getLocale());
+  if (!rule && !showLabel) return null;
+
   return (
     <View style={style}>
-      {rule ? <View style={styles.rule} /> : null}
+      {rule ? <View style={[styles.rule, showLabel ? null : styles.ruleAlone]} /> : null}
       {/* With no rule above it there is nothing to stand clear of, so the label starts the block. */}
-      <Text style={[styles.eyebrow, rule ? null : styles.eyebrowNoRule]}>{label}</Text>
+      {showLabel ? (
+        <Text style={[styles.eyebrow, rule ? null : styles.eyebrowNoRule]}>{label}</Text>
+      ) : null}
     </View>
   );
 }
@@ -129,6 +136,10 @@ const styles = StyleSheet.create({
     color: colors.secondary,
     marginTop: RULE_TO_EYEBROW,
     marginBottom: spacing.xxs,
+  },
+  /** No label under it, so the rule keeps the same breathing room the label would have had. */
+  ruleAlone: {
+    marginBottom: RULE_TO_EYEBROW,
   },
   eyebrowNoRule: {
     marginTop: 0,
