@@ -175,10 +175,35 @@ const noteDateFormatter = new Intl.DateTimeFormat(undefined, {
 });
 
 /**
+ * Korean says a past year as two digits — 27년 1월 1일 — where English wants all four.
+ */
+const noteDateYearStyle = new Intl.DateTimeFormat().resolvedOptions().locale.startsWith('ko')
+  ? ('2-digit' as const)
+  : ('numeric' as const);
+
+const noteDateWithYearFormatter = new Intl.DateTimeFormat(undefined, {
+  year: noteDateYearStyle,
+  month: 'long',
+  day: 'numeric',
+});
+
+const seoulYearFormatter = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Seoul',
+  year: 'numeric',
+});
+
+/**
  * A verse note's day, e.g. "9월 22일". The stored value is already a Seoul calendar date, so it
  * is read as a plain date rather than an instant — no timezone shifts it a day either way.
+ *
+ * A note from another year leads with the year ("27년 1월 1일"), because by then "1월 1일"
+ * alone would be ambiguous.
  */
-export function formatVerseNoteDate(noteDate: string): string {
+export function formatVerseNoteDate(noteDate: string, today: Date = new Date()): string {
   const [y, m, d] = noteDate.split('-').map(Number);
-  return noteDateFormatter.format(new Date(y, m - 1, d));
+  const asDate = new Date(y, m - 1, d);
+  const thisYear = Number(seoulYearFormatter.format(today));
+  return y === thisYear
+    ? noteDateFormatter.format(asDate)
+    : noteDateWithYearFormatter.format(asDate);
 }

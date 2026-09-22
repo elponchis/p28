@@ -1,5 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Animated,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  type ScrollViewProps,
+} from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { useFadeSheetAnimation } from '@/hooks/useFadeSheetAnimation';
@@ -7,6 +16,13 @@ import type { PersonalVerseNote } from '@/lib/api';
 import { formatVerseNoteDate } from '@/lib/dates';
 import { t } from '@/lib/i18n';
 import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
+
+/** A day in the list, fixed so five of them make a predictable window. */
+const ROW_HEIGHT = 46;
+const VISIBLE_ROWS = 5;
+
+/** react-native-web turns  into data-* attributes; React Native's types omit it. */
+const alwaysShowScrollbar = { dataSet: { scroll: 'always' } } as unknown as ScrollViewProps;
 
 export interface VerseNoteCollectionSheetProps {
   visible: boolean;
@@ -72,8 +88,10 @@ export function VerseNoteCollectionSheet({
           </View>
 
           <ScrollView
-            style={styles.scroll}
-            showsVerticalScrollIndicator={false}
+            style={[styles.scroll, open ? null : styles.scrollList]}
+            showsVerticalScrollIndicator
+            // Keeps the bar beside the list on web instead of only while scrolling.
+            {...alwaysShowScrollbar}
             contentContainerStyle={styles.scrollContent}
           >
             {open ? (
@@ -153,14 +171,18 @@ const styles = StyleSheet.create({
   scroll: {
     flexGrow: 0,
   },
+  /** Five days at a time; the rest are a scroll away rather than a longer window. */
+  scrollList: {
+    maxHeight: ROW_HEIGHT * VISIBLE_ROWS,
+  },
   scrollContent: {
     paddingBottom: spacing.xs,
   },
   row: {
+    height: ROW_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    paddingVertical: spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.outlineVariant,
   },
