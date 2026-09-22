@@ -168,3 +168,17 @@ export function isIsoDate(value: string): boolean {
   if (Number.isNaN(parsed.getTime())) return false;
   return parsed.toISOString().slice(0, 10) === value;
 }
+
+const noteDateFormatter = new Intl.DateTimeFormat(undefined, {
+  month: 'long',
+  day: 'numeric',
+});
+
+/**
+ * A verse note's day, e.g. "9월 22일". The stored value is already a Seoul calendar date, so it
+ * is read as a plain date rather than an instant — no timezone shifts it a day either way.
+ */
+export function formatVerseNoteDate(noteDate: string): string {
+  const [y, m, d] = noteDate.split('-').map(Number);
+  return noteDateFormatter.format(new Date(y, m - 1, d));
+}

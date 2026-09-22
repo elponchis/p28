@@ -268,7 +268,10 @@ export default function HomeScreen() {
       <Animated.View entering={FadeIn.duration(300)} style={tabScreenContent}>
         {/* Header */}
         <View style={twoColumn ? styles.headerRow : undefined}>
-          <View style={twoColumn ? styles.headerColumn : undefined}>
+          {/* The greeting and, beside it, the one action that belongs to the whole platform.
+              Composing a platform-wide announcement — the announcements themselves are in
+              Latest updates below, with everything else worth reading. */}
+          <View style={styles.headerGreeting}>
             <View style={styles.header}>
               <Text style={styles.welcomeText}>
                 {displayName ? `${t('home.welcomeBack')}` : t('home.welcomeDefault')}
@@ -276,37 +279,30 @@ export default function HomeScreen() {
               {displayName ? <Text style={styles.nameText}>{displayName}.</Text> : null}
             </View>
 
-            {/* Composing a platform-wide announcement. The announcements themselves are in
-                Latest updates just below, with everything else worth reading. Inside the left
-                column so the week card beside it cannot push it down. */}
-            {userId ? (
-              <View style={styles.sectionPadded}>
-                {!superAdminRoleLoading && isSuperAdmin ? (
-                  <Pressable
-                    onPress={() => {
-                      setGlobalFormError(null);
-                      setEditingGlobalId(null);
-                      setGlobalSheetOpen(true);
-                    }}
-                    style={({ pressed }) => [
-                      styles.globalAnnouncementLinkRow,
-                      pressed && { opacity: 0.78 },
-                    ]}
-                    accessibilityRole="button"
-                    accessibilityLabel={t('home.postGlobalAnnouncementLink')}
-                    accessibilityHint={t('home.postGlobalAnnouncementHint')}
-                  >
-                    <Ionicons name="globe-outline" size={17} color={colors.accent} />
-                    <Text style={styles.globalAnnouncementLinkText}>
-                      {t('home.postGlobalAnnouncementLink')}
-                    </Text>
-                  </Pressable>
-                ) : null}
-              </View>
+            {userId && !superAdminRoleLoading && isSuperAdmin ? (
+              <Pressable
+                onPress={() => {
+                  setGlobalFormError(null);
+                  setEditingGlobalId(null);
+                  setGlobalSheetOpen(true);
+                }}
+                style={({ pressed }) => [
+                  styles.globalAnnouncementLinkRow,
+                  pressed && { opacity: 0.78 },
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={t('home.postGlobalAnnouncementLink')}
+                accessibilityHint={t('home.postGlobalAnnouncementHint')}
+              >
+                <Ionicons name="globe-outline" size={17} color={colors.accent} />
+                <Text style={styles.globalAnnouncementLinkText}>
+                  {t('home.postGlobalAnnouncementLink')}
+                </Text>
+              </Pressable>
             ) : null}
           </View>
           {twoColumn ? (
-            <View style={[styles.headerColumn, styles.sectionPadded, styles.headerNote]}>
+            <View style={[styles.headerNoteColumn, styles.sectionPadded, styles.headerNote]}>
               {myVerseWeek}
             </View>
           ) : null}
@@ -565,6 +561,23 @@ const styles = StyleSheet.create({
   },
 
   /** The welcome and the week card share the top row when the grid has two columns. */
+  /** The greeting and the platform action sit on one line, the button to the right of it. */
+  headerGreeting: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 'auto',
+    minWidth: 0,
+  },
+  /** In the header the card gives up half-width so the greeting's button fits on its line. */
+  headerNoteColumn: {
+    flexGrow: 0,
+    flexShrink: 0,
+    flexBasis: QUADRANT_MIN_WIDTH,
+    maxWidth: '100%',
+  },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -604,7 +617,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    marginTop: spacing.md,
+    marginTop: spacing.lg,
+    marginLeft: spacing.xs,
     alignSelf: 'flex-start',
     backgroundColor: colors.surface,
     borderWidth: 1,

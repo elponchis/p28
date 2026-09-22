@@ -260,11 +260,10 @@ export interface DataContract {
   /** Invokes Edge Function to send push notifications for a published announcement (idempotent). */
   publishAnnouncement(announcementId: string): Promise<void | ApiError>;
 
-  /** The reader's own notes between two Seoul dates, newest first. Their rows only (RLS). */
+  /** The reader's own notes, newest first. Their rows only (RLS). */
   listPersonalVerseNotes(
     userId: string,
-    fromDate: string,
-    toDate: string
+    options?: { fromDate?: string; toDate?: string; limit?: number }
   ): Promise<PersonalVerseNote[] | ApiError>;
   /** Writes the note for that day, replacing what was there. */
   savePersonalVerseNote(

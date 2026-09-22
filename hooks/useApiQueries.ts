@@ -631,13 +631,13 @@ export function useAnnouncementQuery(
 
 export function usePersonalVerseNotesQuery(
   userId: string | undefined,
-  fromDate: string,
-  toDate: string
+  options?: { fromDate?: string; toDate?: string; limit?: number }
 ) {
+  const scope = `${options?.fromDate ?? ''}..${options?.toDate ?? ''}:${options?.limit ?? ''}`;
   return useQuery({
-    queryKey: queryKeys.personalVerseNotes(userId ?? '', fromDate),
+    queryKey: queryKeys.personalVerseNotes(userId ?? '', scope),
     queryFn: () =>
-      queryFn(api.data.listPersonalVerseNotes(userId!, fromDate, toDate)) as Promise<
+      queryFn(api.data.listPersonalVerseNotes(userId!, options)) as Promise<
         import('@/lib/api').PersonalVerseNote[]
       >,
     enabled: !!userId,

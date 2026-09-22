@@ -2527,17 +2527,18 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
 
     async listPersonalVerseNotes(
       userId: string,
-      fromDate: string,
-      toDate: string
+      options?: { fromDate?: string; toDate?: string; limit?: number }
     ): Promise<PersonalVerseNote[] | ApiError> {
       try {
-        const { data, error } = await getClient()
+        let query = getClient()
           .from('personal_verse_notes')
           .select(PERSONAL_VERSE_NOTE_COLUMNS)
           .eq('user_id', userId)
-          .gte('note_date', fromDate)
-          .lte('note_date', toDate)
           .order('note_date', { ascending: false });
+        if (options?.fromDate) query = query.gte('note_date', options.fromDate);
+        if (options?.toDate) query = query.lte('note_date', options.toDate);
+        if (options?.limit) query = query.limit(options.limit);
+        const { data, error } = await query;
         if (error) return toApiError(error);
         return (data ?? []).map(mapPersonalVerseNoteRow);
       } catch (e) {
