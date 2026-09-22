@@ -36,11 +36,48 @@ describe('inAppNotificationPresentation', () => {
     expect(p.route).toEqual({ pathname: '/(tabs)' });
   });
 
+  it('sends a discussion reply to the thread', () => {
+    const p = inAppNotificationPresentation({
+      kind: 'discussion_post',
+      groupId: 'g1',
+      discussionId: 'd1',
+    });
+    expect(p.iconName).toBe('chatbubbles-outline');
+    expect(p.route).toEqual({ pathname: '/group/discussion/[id]', params: { id: 'd1' } });
+  });
+
+  it('sends an accepted friend request to that person', () => {
+    const p = inAppNotificationPresentation({ kind: 'friend_accepted', actorUserId: 'u9' });
+    expect(p.iconName).toBe('person-add-outline');
+    expect(p.route).toEqual({ pathname: '/profile/[userId]', params: { userId: 'u9' } });
+  });
+
+  it('sends an assignment to the assignment, carrying its group', () => {
+    const p = inAppNotificationPresentation({
+      kind: 'assignment',
+      groupId: 'g1',
+      assignmentId: 'as1',
+    });
+    expect(p.iconName).toBe('document-text-outline');
+    expect(p.route).toEqual({
+      pathname: '/group/[id]/assignment/[assignmentId]',
+      params: { id: 'g1', assignmentId: 'as1' },
+    });
+  });
+
   it('gives every kind its own label', () => {
     const labels = (
-      ['announcement', 'group_event', 'chat_message', 'global_announcement'] as const
+      [
+        'announcement',
+        'group_event',
+        'chat_message',
+        'global_announcement',
+        'discussion_post',
+        'friend_accepted',
+        'assignment',
+      ] as const
     ).map((kind) => inAppNotificationPresentation({ kind }).kindLabel);
-    expect(new Set(labels).size).toBe(4);
+    expect(new Set(labels).size).toBe(7);
     expect(labels.every((l) => l.length > 0)).toBe(true);
   });
 
@@ -51,6 +88,12 @@ describe('inAppNotificationPresentation', () => {
     // An announcement needs its group too: the screen cannot open one without knowing where it is.
     expect(
       inAppNotificationPresentation({ kind: 'announcement', announcementId: 'a1' }).route
+    ).toBeNull();
+    expect(inAppNotificationPresentation({ kind: 'discussion_post' }).route).toBeNull();
+    expect(inAppNotificationPresentation({ kind: 'friend_accepted' }).route).toBeNull();
+    // An assignment needs its group too — the route is nested under it.
+    expect(
+      inAppNotificationPresentation({ kind: 'assignment', assignmentId: 'as1' }).route
     ).toBeNull();
   });
 });

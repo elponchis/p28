@@ -584,7 +584,10 @@ export type InAppNotificationKind =
   | 'announcement'
   | 'group_event'
   | 'chat_message'
-  | 'global_announcement';
+  | 'global_announcement'
+  | 'discussion_post'
+  | 'friend_accepted'
+  | 'assignment';
 
 export interface InAppNotification {
   id: string;
@@ -598,6 +601,13 @@ export interface InAppNotification {
   chatId?: string;
   chatMessageId?: string;
   globalAnnouncementId?: string;
+  /** The thread a discussion_post notification opens. */
+  discussionId?: string;
+  discussionPostId?: string;
+  friendRequestId?: string;
+  assignmentId?: string;
+  /** Who did it, where the notification is about a person: the friend who accepted. */
+  actorUserId?: string;
   title: string;
   summary: string;
   createdAt: string;

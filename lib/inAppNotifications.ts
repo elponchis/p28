@@ -17,10 +17,22 @@ export type NotificationRoute =
   | { pathname: '/(tabs)'; params?: undefined }
   | { pathname: '/group/announcement/[id]'; params: { id: string; groupId: string } }
   | { pathname: '/group/event/[id]'; params: { id: string } }
-  | { pathname: '/messages/chat/[id]'; params: { id: string } };
+  | { pathname: '/messages/chat/[id]'; params: { id: string } }
+  | { pathname: '/group/discussion/[id]'; params: { id: string } }
+  | {
+      pathname: '/group/[id]/assignment/[assignmentId]';
+      params: { id: string; assignmentId: string };
+    }
+  | { pathname: '/profile/[userId]'; params: { userId: string } };
 
 export interface NotificationPresentation {
-  iconName: 'megaphone-outline' | 'calendar-outline' | 'chatbubble-ellipses-outline';
+  iconName:
+    | 'megaphone-outline'
+    | 'calendar-outline'
+    | 'chatbubble-ellipses-outline'
+    | 'chatbubbles-outline'
+    | 'person-add-outline'
+    | 'document-text-outline';
   /** "Announcement", "Event", "Message" — what kind of thing this is. */
   kindLabel: string;
   openHint: string;
@@ -29,9 +41,50 @@ export interface NotificationPresentation {
 }
 
 export function inAppNotificationPresentation(
-  item: Pick<InAppNotification, 'kind' | 'groupId' | 'announcementId' | 'groupEventId' | 'chatId'>
+  item: Pick<
+    InAppNotification,
+    | 'kind'
+    | 'groupId'
+    | 'announcementId'
+    | 'groupEventId'
+    | 'chatId'
+    | 'discussionId'
+    | 'assignmentId'
+    | 'actorUserId'
+  >
 ): NotificationPresentation {
   switch (item.kind) {
+    case 'discussion_post':
+      return {
+        iconName: 'chatbubbles-outline',
+        kindLabel: t('notifications.kindDiscussionPost'),
+        openHint: t('notifications.openDiscussionHint'),
+        route: item.discussionId
+          ? { pathname: '/group/discussion/[id]', params: { id: item.discussionId } }
+          : null,
+      };
+    case 'friend_accepted':
+      return {
+        iconName: 'person-add-outline',
+        kindLabel: t('notifications.kindFriendAccepted'),
+        openHint: t('notifications.openFriendProfileHint'),
+        route: item.actorUserId
+          ? { pathname: '/profile/[userId]', params: { userId: item.actorUserId } }
+          : null,
+      };
+    case 'assignment':
+      return {
+        iconName: 'document-text-outline',
+        kindLabel: t('notifications.kindAssignment'),
+        openHint: t('notifications.openAssignmentHint'),
+        route:
+          item.assignmentId && item.groupId
+            ? {
+                pathname: '/group/[id]/assignment/[assignmentId]',
+                params: { id: item.groupId, assignmentId: item.assignmentId },
+              }
+            : null,
+      };
     case 'global_announcement':
       return {
         iconName: 'megaphone-outline',

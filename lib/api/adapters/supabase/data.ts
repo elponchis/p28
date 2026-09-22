@@ -772,12 +772,17 @@ type InAppNotificationRow = {
   user_id: string;
   group_id: string | null;
   group_name: string;
-  kind: 'announcement' | 'group_event' | 'chat_message' | 'global_announcement';
+  kind: InAppNotification['kind'];
   announcement_id: string | null;
   group_event_id: string | null;
   chat_id?: string | null;
   chat_message_id?: string | null;
   global_announcement_id?: string | null;
+  discussion_id?: string | null;
+  discussion_post_id?: string | null;
+  friend_request_id?: string | null;
+  assignment_id?: string | null;
+  actor_user_id?: string | null;
   title: string;
   summary: string;
   created_at: string;
@@ -795,6 +800,11 @@ function mapInAppNotificationRow(row: InAppNotificationRow): InAppNotification {
     chatId: row.chat_id ?? undefined,
     chatMessageId: row.chat_message_id ?? undefined,
     globalAnnouncementId: row.global_announcement_id ?? undefined,
+    discussionId: row.discussion_id ?? undefined,
+    discussionPostId: row.discussion_post_id ?? undefined,
+    friendRequestId: row.friend_request_id ?? undefined,
+    assignmentId: row.assignment_id ?? undefined,
+    actorUserId: row.actor_user_id ?? undefined,
     title: row.title,
     summary: row.summary,
     createdAt: row.created_at,
@@ -6209,7 +6219,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
         const { data: rows, error } = await getClient()
           .from('in_app_notifications')
           .select(
-            'id, user_id, group_id, group_name, kind, announcement_id, group_event_id, chat_id, chat_message_id, global_announcement_id, title, summary, created_at, read_at'
+            'id, user_id, group_id, group_name, kind, announcement_id, group_event_id, chat_id, chat_message_id, global_announcement_id, discussion_id, discussion_post_id, friend_request_id, assignment_id, actor_user_id, title, summary, created_at, read_at'
           )
           .eq('user_id', userId)
           .order('created_at', { ascending: false })

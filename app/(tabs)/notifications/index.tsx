@@ -12,23 +12,44 @@ import {
 } from '@/hooks/useApiQueries';
 import type { InAppNotification } from '@/lib/api';
 import { formatRelativeTime } from '@/lib/dates';
+import { getUserFacingError } from '@/lib/errors';
 import { inAppNotificationPresentation } from '@/lib/inAppNotifications';
 import { t } from '@/lib/i18n';
-import { colors, radius, shadow, spacing, tabScreenContent, typography } from '@/theme/tokens';
+import {
+  colors,
+  minTouchTarget,
+  radius,
+  shadow,
+  spacing,
+  tabScreenContent,
+  typography,
+} from '@/theme/tokens';
 
 export default function NotificationsScreen() {
   const { session } = useAuth();
   const userId = session?.user?.id;
   const router = useRouter();
   const { data: pendingCount } = usePendingFriendRequestCountQuery(userId);
-  const { data: inAppItems = [], isLoading: inAppLoading } = useInAppNotificationsQuery(userId);
+  const {
+    data: inAppItems = [],
+    isLoading: inAppLoading,
+    isError: inAppFailed,
+    error: inAppError,
+    refetch: refetchInApp,
+  } = useInAppNotificationsQuery(userId);
   const markRead = useMarkInAppNotificationsReadMutation();
   const dismiss = useDismissInAppNotificationsMutation();
 
   const hasFriendNotifications = pendingCount != null && pendingCount > 0;
   const hasGroupActivity = inAppItems.length > 0;
   const hasAnyContent = hasFriendNotifications || hasGroupActivity;
-  const showEmpty = !hasAnyContent && !inAppLoading;
+  /**
+   * "Nothing here" and "we could not ask" look the same to a reader, and the second one sent
+   * someone hunting for a broken feature that was only empty. The empty state is now claimed
+   * only when the list actually came back.
+   */
+  const showError = inAppFailed && !hasGroupActivity;
+  const showEmpty = !hasAnyContent && !inAppLoading && !inAppFailed;
 
   const handleOpenInApp = useCallback(
     (item: InAppNotification) => {
@@ -131,9 +152,12 @@ export default function NotificationsScreen() {
                       ? ` · ${t('notifications.inGroupNamed', { name: item.groupName.trim() })}`
                       : ''}
                   </Text>
-                  <Text style={styles.summaryText} numberOfLines={3}>
-                    {item.summary}
-                  </Text>
+                  {/* An accepted friend request is a name and nothing else — no blank line. */}
+                  {item.summary.trim().length > 0 ? (
+                    <Text style={styles.summaryText} numberOfLines={3}>
+                      {item.summary}
+                    </Text>
+                  ) : null}
                   <Text style={styles.timeText}>{formatRelativeTime(item.createdAt)}</Text>
                 </View>
                 <Pressable
@@ -149,6 +173,27 @@ export default function NotificationsScreen() {
               </Pressable>
             );
           })}
+        </View>
+      ) : null}
+
+      {showError ? (
+        <View style={styles.errorState}>
+          <Ionicons name="cloud-offline-outline" size={40} color={colors.ink300} />
+          <Text style={styles.errorTitle} accessibilityLiveRegion="polite">
+            {t('notifications.activityLoadFailed')}
+          </Text>
+          <Text style={styles.errorDetail}>
+            {inAppError ? getUserFacingError(inAppError) : t('common.error')}
+          </Text>
+          <Pressable
+            onPress={() => void refetchInApp()}
+            style={({ pressed }) => [styles.retryButton, pressed && styles.cardPressed]}
+            accessibilityRole="button"
+            accessibilityLabel={t('notifications.retry')}
+            accessibilityHint={t('notifications.activityRetryHint')}
+          >
+            <Text style={styles.retryLabel}>{t('notifications.retry')}</Text>
+          </Pressable>
         </View>
       ) : null}
 
@@ -276,6 +321,37 @@ const styles = StyleSheet.create({
   loadingText: {
     ...typography.caption,
     color: colors.textSecondary,
+  },
+  errorState: {
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.lg,
+  },
+  errorTitle: {
+    ...typography.titleMd,
+    color: colors.onSurface,
+    textAlign: 'center',
+  },
+  errorDetail: {
+    ...typography.bodyMd,
+    color: colors.onSurfaceVariant,
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.lg,
+    minHeight: minTouchTarget,
+    justifyContent: 'center',
+    borderRadius: radius.button,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
+    backgroundColor: colors.surface,
+  },
+  retryLabel: {
+    ...typography.labelLg,
+    color: colors.accent,
   },
   emptyState: {
     alignItems: 'center',
