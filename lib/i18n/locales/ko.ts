@@ -774,6 +774,7 @@ export const ko: TranslationShape = {
     editGlobalAnnouncement: '공지 편집',
     deleteGlobalAnnouncement: '공지 삭제',
     deleteGlobalAnnouncementConfirm: '이 전체 공지를 삭제할까요? 모든 사람의 홈에서 사라집니다.',
+    postGlobalAnnouncementShort: '전체 공지 작성',
     postGlobalAnnouncementLink: '전체 공지 작성',
     postGlobalAnnouncementHint: '모든 사용자 홈 상단에 표시되는 공지 작성 화면을 엽니다',
     globalAnnouncementSheetTitle: '전체 공지',

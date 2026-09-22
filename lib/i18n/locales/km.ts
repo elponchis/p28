@@ -780,6 +780,7 @@ export const km: TranslationShape = {
     editGlobalAnnouncement: 'កែសម្រួលសេចក្តីប្រកាស',
     deleteGlobalAnnouncement: 'លុបសេចក្តីប្រកាស',
     deleteGlobalAnnouncementConfirm: 'លុបសេចក្តីប្រកាសនេះ? វានឹងបាត់ពីទំព័រដើមរបស់អ្នករាល់គ្នា។',
+    postGlobalAnnouncementShort: 'ប្រកាស',
     postGlobalAnnouncementLink: 'បង្កើតសេចក្តីជូនដំណឹងសម្រាប់គ្រប់គ្នា',
     postGlobalAnnouncementHint:
       'បើកទម្រង់ដើម្បីបោះពុម្ពសេចក្តីជូនដំណឹងនៅផ្ទះសម្រាប់អ្នកប្រើទាំងអស់',

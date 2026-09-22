@@ -575,7 +575,7 @@ const styles = StyleSheet.create({
   },
   headerRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'stretch',
   },
   headerColumn: {
     flexGrow: 1,
@@ -619,7 +619,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.outlineVariant,
     borderRadius: radius.md,
-    paddingVertical: spacing.xxs,
+    paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm,
   },
   globalAnnouncementLinkText: {
@@ -630,6 +630,7 @@ const styles = StyleSheet.create({
   },
   globalAnnouncementStack: {
     gap: spacing.md,
+    marginTop: 'auto',
   },
 
   reflectionSection: {

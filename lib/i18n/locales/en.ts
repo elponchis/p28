@@ -896,6 +896,7 @@ export const en = {
     deleteGlobalAnnouncement: 'Delete announcement',
     deleteGlobalAnnouncementConfirm:
       'Delete this announcement? Everyone loses it from their home screen.',
+    postGlobalAnnouncementShort: 'Announce',
     postGlobalAnnouncementLink: 'Post global announcement',
     postGlobalAnnouncementHint:
       'Opens a form to publish an announcement for everyone on the home feed',
