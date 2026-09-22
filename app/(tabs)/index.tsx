@@ -586,17 +586,17 @@ const styles = StyleSheet.create({
    * Two cards across on a desktop row, one below the other on a phone. Each quadrant keeps its
    * own horizontal padding, so the gutter between columns is the two paddings meeting.
    */
+  // Each quadrant's SectionHeader already carries its own top margin, so the grid adds none of
+  // its own — two stacked 24s read as a gap twice the size the rows need.
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: spacing.lg,
   },
   quadrant: {
     flexGrow: 1,
     flexBasis: QUADRANT_MIN_WIDTH,
     minWidth: QUADRANT_MIN_WIDTH,
     maxWidth: '100%',
-    marginBottom: spacing.lg,
   },
 
   // An outlined button, sized to its own content so it never stretches across the screen.
