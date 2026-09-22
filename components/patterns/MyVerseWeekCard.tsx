@@ -38,7 +38,7 @@ export function MyVerseWeekCard({ userId, verse }: MyVerseWeekCardProps) {
   return (
     <View style={styles.card}>
       <View style={styles.heading}>
-        <SectionEyebrow label={t('home.eyebrowNotes')} />
+        <SectionEyebrow label={t('home.eyebrowNotes')} rule={false} />
         <View style={styles.headRow}>
           <Text style={styles.title}>{t('home.myWeekTitle')}</Text>
           {streak > 0 ? (

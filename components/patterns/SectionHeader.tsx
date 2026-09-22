@@ -24,13 +24,24 @@ export interface SectionHeaderProps {
 
 /**
  * The rule and the small label that open an editorial section. Exported for the one heading that
- * is not a `SectionHeader` — the week card's, which lives inside its own card.
+ * is not a `SectionHeader` — the week card's, which lives inside its own card and so sets `rule`
+ * to false: the card already has an edge of its own, and a second line under it reads as a
+ * mistake rather than a section break.
  */
-export function SectionEyebrow({ label, style }: { label: string; style?: StyleProp<ViewStyle> }) {
+export function SectionEyebrow({
+  label,
+  rule = true,
+  style,
+}: {
+  label: string;
+  rule?: boolean;
+  style?: StyleProp<ViewStyle>;
+}) {
   return (
     <View style={style}>
-      <View style={styles.rule} />
-      <Text style={styles.eyebrow}>{label}</Text>
+      {rule ? <View style={styles.rule} /> : null}
+      {/* With no rule above it there is nothing to stand clear of, so the label starts the block. */}
+      <Text style={[styles.eyebrow, rule ? null : styles.eyebrowNoRule]}>{label}</Text>
     </View>
   );
 }
@@ -119,10 +130,19 @@ const styles = StyleSheet.create({
     marginTop: RULE_TO_EYEBROW,
     marginBottom: spacing.xxs,
   },
+  eyebrowNoRule: {
+    marginTop: 0,
+  },
   editorialRow: {
     marginTop: 0,
     // The title and "see all" sit on one line of type, not centred against each other.
     alignItems: 'baseline',
+    /**
+     * Exactly the title's line, so the row is the same height whether or not a "see all" sits in
+     * it. Baseline alignment puts the link's descender below the title's, which grew the row by
+     * two pixels and left those sections with 18 under the title where the others had 16.
+     */
+    height: 28,
   },
   editorialTitle: editorialSectionTitle,
 
