@@ -71,7 +71,7 @@ Realtime channel IDs follow the pattern `messages:group:{groupId}`, `messages:di
 
 ### Design System
 
-Tokens in `theme/tokens.ts` (colors, spacing, radius, typography, shadow). Aesthetic is "Calm & Glass" — deep blue primary (`#002046`) with a warm gold secondary (`#775a19`), glassmorphism surfaces, generous spacing.
+Tokens in `theme/tokens.ts` (colors, spacing, radius, typography, shadow); the values behind the role names come from `theme/palette.generated.ts`. The aesthetic and the rules for picking a role live in "디자인 — 블루오션 테마" below — that section is the source of truth. Don't restate colour values here; they go stale.
 
 Primitive components (`Button`, `Card`, `Input`, `ListItem`, `Avatar`, `StackedAvatars`, `Badge`, `IconButton`) are exported from `components/primitives/index.ts`. Pattern components (higher-level, composed) live in `components/patterns/`.
 
@@ -85,7 +85,8 @@ Supabase migrations are in `supabase/migrations/` numbered sequentially. The sch
 - **Social**: friendships, friend_requests
 - **Chat**: chats, members, messages + reactions, folders + items
 - **LMS**: courses, lessons, assignments (+ questions, answer keys), submissions
-- **Notifications**: announcements + deliveries, global_announcements, in_app_notifications, push_tokens
+- **Notifications**: announcements + deliveries, global_announcements, in_app_notifications,
+  push_tokens (Expo/native), web_push_subscriptions (browser — the path this app actually delivers on)
 
 ## Coding Standards
 

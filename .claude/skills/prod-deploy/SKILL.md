@@ -1,10 +1,11 @@
 ---
 name: prod-deploy
-description: Ship the open PRs of this repo to production — decide a merge order, rehearse every
-  merge together on a scratch worktree, verify that combined tree (jest, tsc, web export, migration
-  dry-run), merge on GitHub in the same order, confirm the live p28.vercel.app bundle has the new
-  code, then move the deployed Jira tickets to 완료. Use when asked to deploy/release to prod
-  ("prod로 배포", "PR 머지해서 배포").
+description: Ship this repo to production — whether that is a direct push of the working branch to
+  main (the usual path here) or merging open PRs. Verify the exact tree that will become main
+  (jest, tsc, web export, migration dry-run), push or merge in an order that makes Vercel build a
+  Production deploy, confirm the live p28.vercel.app bundle has the new code, then move the
+  deployed Jira tickets to 완료. Use when asked to deploy/release to prod ("배포해", "prod로 배포",
+  "PR 머지해서 배포").
 metadata:
   version: '1.0.0'
 ---
@@ -20,6 +21,17 @@ main은 Vercel 프로덕션(p28.vercel.app)에 바로 배포된다. 그래서 "P
 도구: `gh`는 Windows에서 PATH에 없을 수 있으니 `"/c/Program Files/GitHub CLI/gh.exe"`.
 Jira는 `scripts/jira.cjs`(규칙은 `.claude/rules/jira-ticket-automation.md`).
 
+## 0. 어느 경로인가
+
+```bash
+gh pr list --state open --json number,title      # 비어 있으면 직접 push 경로다
+```
+
+- **직접 push (이 저장소의 평소 경로)**: 작업 브랜치를 그대로 내보낸다. 3단계 리허설은 건너뛰고
+  4단계 검증을 작업 브랜치에서 돌린 뒤, **main 먼저, 그다음 같은 SHA를 작업 브랜치로** 밀고
+  6단계로 간다. 순서가 핵심이다 — 6단계의 Preview 함정 참고.
+- **PR 머지**: 열린 PR이 있을 때. 1단계부터 순서대로.
+
 ## 1. 무엇이 나가는지 파악
 
 ```bash
@@ -31,7 +43,7 @@ for b in <각 head 브랜치>; do
 done
 ```
 
-- **스택 PR**: base가 main이 아닌 PR(예: #6 → KAN-26)은 부모 다음에 머지한다.
+- **스택 PR**: base가 main이 아닌 PR은 부모 다음에 머지한다.
 - **마이그레이션**: `supabase/migrations/` 번호 순서대로 들어가게 브랜치 순서를 정한다.
 - 브랜치 이름·PR 제목에서 Jira 키를 모아 둔다(7단계에서 씀). 키가 없는 PR도 있다.
 

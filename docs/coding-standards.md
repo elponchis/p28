@@ -68,7 +68,7 @@ Order groups strictly:
 
 - **Tokens:** `StyleSheet.create` for component styles. Colors, spacing, radius, typography, shadow, `minTouchTarget`, `avatarSizes` — from `@/theme/tokens`. Avoid magic numbers.
 - **Design intent:** `design.json` at repo root describes the visual system; prefer tokens in code, but check `design.json` for hierarchy and component intent when building new UI.
-- **Aesthetic:** Product direction is “Calm & Glass” (see `CLAUDE.md`) — align with existing primitives and patterns.
+- **Aesthetic:** Product direction is the 블루오션 theme — see “디자인 — 블루오션 테마” in `CLAUDE.md`, which is the source of truth. Align with existing primitives and patterns.
 - **Accessibility:** Every interactive control needs `accessibilityLabel`; add `accessibilityHint` when the action is not obvious. Respect minimum touch targets from tokens.
 
 ---

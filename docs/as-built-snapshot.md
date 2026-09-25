@@ -28,7 +28,7 @@ _Generated to align agent context with the codebase. Last reviewed: 2026-03-24._
 - Contracts: `lib/api/contracts/*`; DTOs camelCase; DB snake_case in adapter only.
 - Server state: React Query hooks in `hooks/useApiQueries.ts`; **do not** call `api.data.*` from screens.
 - i18n: `t()` — `en`, `ko`, `km`.
-- Theming: `@/theme/tokens`; design direction evolved toward “Calm & Glass” / spacious layout (see `CLAUDE.md`).
+- Theming: `@/theme/tokens`, whose values come from `theme/palette.generated.ts`; design direction is the 블루오션 theme (see “디자인 — 블루오션 테마” in `CLAUDE.md`).
 
 ## Migrations
 
