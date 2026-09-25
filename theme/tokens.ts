@@ -332,6 +332,32 @@ export const typography = {
     fontSize: 16,
     fontWeight: '500' as const,
   },
+
+  // ---------------------------------------------------------------------------
+  // Editorial section heading — the rule + eyebrow + serif title on the home grid
+  // ---------------------------------------------------------------------------
+
+  /**
+   * The serif title of a home section. Serif outside scripture and group names is a deliberate
+   * exception, recorded in CLAUDE.md; the line height matches the header row so the title's top
+   * edge is the row's top edge.
+   */
+  sectionTitle: {
+    fontFamily: fontFamily.serif,
+    fontSize: 20,
+    fontWeight: '400' as const,
+    lineHeight: 28,
+  },
+  /**
+   * The small English label set over a section title. Tracking is the spec's 0.12em resolved to
+   * pixels — React Native's letterSpacing is absolute, not relative to the font size.
+   */
+  sectionEyebrow: {
+    fontFamily: fontFamily.sansMedium,
+    fontSize: 11,
+    fontWeight: '500' as const,
+    letterSpacing: 11 * 0.12,
+  },
 } as const;
 
 // ---------------------------------------------------------------------------

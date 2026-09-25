@@ -82,6 +82,26 @@ const SKIP_DIRS = new Set([
 const EXTS = new Set(['.ts', '.tsx', '.js', '.jsx']);
 const SKIP_FILES = [/tokens\.(ts|js|json)$/, /palette\.generated\.ts$/, /-theme\.mjs$/, /-tokens\.mjs$/, /-artboards\.mjs$/, /\.d\.ts$/, /__tests__/];
 
+/**
+ * 스케일 밖이지만 의도한 값. 줄 번호가 아니라 파일·종류·값으로 짚기 때문에 코드가 움직여도
+ * 따라갑니다. `why`는 선택이 아닙니다 — 이유 없는 예외는 예외가 아니라 빚이고, 다음 사람이
+ * 지워도 되는지 판단할 수 없게 됩니다. 값을 스케일 안으로 옮길 수 있으면 여기 적지 말고
+ * 옮기세요. 이 목록이 길어지면 스케일이 틀린 것입니다.
+ */
+const ALLOW = [
+  {
+    file: 'components/patterns/SectionHeader.tsx',
+    kind: 'spacing',
+    value: 'paddingVertical: 1',
+    why:
+      '안 읽음 개수 배지 — 12px 숫자 하나를 감싸는 pill. 1px은 글자가 테두리에 닿지 않을 ' +
+      '만큼만 띄우는 값이고, 여백 스케일의 최소 단위(4)는 이 크기의 pill에 과하다.',
+  },
+];
+
+const allowed = (f) =>
+  ALLOW.some((a) => a.file === f.file && a.kind === f.kind && String(a.value) === String(f.value));
+
 /* ---------- 가장 가까운 토큰 ---------- */
 
 const toRgb = (hex) => {
@@ -189,7 +209,7 @@ function checkFile(file) {
 /* ---------- 실행 ---------- */
 
 const files = walk(ROOT);
-const all = files.flatMap(checkFile);
+const all = files.flatMap(checkFile).filter((f) => !allowed(f));
 
 if (AS_JSON) {
   console.log(JSON.stringify({ tokens: path.relative(ROOT, TOKENS_PATH), scanned: files.length, findings: all }, null, 2));

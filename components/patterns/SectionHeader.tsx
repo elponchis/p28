@@ -2,12 +2,10 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import { getLocale } from '@/lib/i18n';
 import { showsSectionEyebrow } from '@/lib/sectionEyebrow';
-import { colors, fontFamily, radius, spacing } from '@/theme/tokens';
+import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
 
 /** Between the rule and the eyebrow under it. Off the spacing scale, from the type spec. */
 const RULE_TO_EYEBROW = 10;
-/** 0.12em at 11px. Letter spacing is absolute in React Native, so the em is resolved here. */
-const EYEBROW_TRACKING = 11 * 0.12;
 
 export interface SectionHeaderProps {
   title: string;
@@ -55,10 +53,8 @@ export function SectionEyebrow({
 
 /** The serif title of an editorial section, for headings built outside this component. */
 export const editorialSectionTitle = {
-  fontFamily: fontFamily.serif,
-  fontSize: 20,
+  ...typography.sectionTitle,
   color: colors.onSurface,
-  lineHeight: 28,
 } as const;
 
 export function SectionHeader({
@@ -122,17 +118,14 @@ const styles = StyleSheet.create({
   editorialBlock: {
     marginTop: spacing.lg,
   },
-  /** A flat bar across the column — square ends, the full width of the section. */
+  /** A flat bar across the column — square ends (a View has no corners), full section width. */
   rule: {
     height: 2,
     backgroundColor: colors.accent,
-    borderRadius: 0,
     alignSelf: 'stretch',
   },
   eyebrow: {
-    fontFamily: fontFamily.sansMedium,
-    fontSize: 11,
-    letterSpacing: EYEBROW_TRACKING,
+    ...typography.sectionEyebrow,
     color: colors.secondary,
     marginTop: RULE_TO_EYEBROW,
     marginBottom: spacing.xxs,
