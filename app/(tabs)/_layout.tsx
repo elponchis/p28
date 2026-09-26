@@ -11,6 +11,7 @@ import { useLocale } from '@/contexts/LocaleContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useDesktopFullWidth } from '@/hooks/useDesktopFullWidth';
 import { useNotificationsBadge } from '@/hooks/useNotificationsBadge';
+import { useWebDocumentTitle } from '@/hooks/useWebDocumentTitle';
 import { useInAppBadgeClearTimestamp } from '@/hooks/useInAppBadgeClearTimestamp';
 import { useInAppNotificationsRealtime } from '@/hooks/useInAppNotificationsRealtime';
 import { useChatsForUserQuery } from '@/hooks/useApiQueries';
@@ -28,6 +29,21 @@ export default function TabLayout() {
   const { recordNotificationsTabVisited } = useInAppBadgeClearTimestamp(userId);
   const notificationsBadge = useNotificationsBadge(userId);
   const headerShownOnClient = useClientOnlyValue(false, true);
+  // The visible header no longer names the section on desktop, so the browser tab does.
+  const tabSegment = segments[1];
+  useWebDocumentTitle(
+    tabSegment === 'groups'
+      ? t('tabs.groups')
+      : tabSegment === 'watch'
+        ? t('tabs.watch')
+        : tabSegment === 'messages'
+          ? t('tabs.messages')
+          : tabSegment === 'notifications'
+            ? t('tabs.notifications')
+            : tabSegment === 'profile'
+              ? t('tabs.profile')
+              : t('tabs.home')
+  );
   useInAppNotificationsRealtime(userId);
   const { data: chats = [] } = useChatsForUserQuery(userId);
   const unreadConversationCount = useMemo(
