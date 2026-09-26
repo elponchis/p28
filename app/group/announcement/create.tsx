@@ -182,6 +182,7 @@ export default function CreateAnnouncementScreen() {
             }
             onPress={handlePublishPress}
             disabled={createMutation.isPending}
+            style={styles.publish}
             accessibilityLabel={t('announcements.publish')}
             accessibilityHint={t('announcements.confirmPublishMessage')}
           />
@@ -229,6 +230,14 @@ const styles = StyleSheet.create({
     ...typography.bodyStrong,
     color: colors.textPrimary,
     marginTop: spacing.xs,
+  },
+  /**
+   * The fields are separated by their labels' top margin, and the button has no label — so it
+   * sat flush against the last input. `scrollContent`'s gap does not help here: every field is
+   * inside one DesktopContentContainer, so the gap only ever applies to that single child.
+   */
+  publish: {
+    marginTop: spacing.lg,
   },
   input: {
     ...typography.bodyMd,

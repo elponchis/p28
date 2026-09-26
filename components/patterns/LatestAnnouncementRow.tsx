@@ -6,7 +6,15 @@ import { TagChip } from '@/components/patterns/TagChip';
 import { useCardHover } from '@/hooks/useCardHover';
 import { formatGroupEventCalendarBlock } from '@/lib/dates';
 import { t } from '@/lib/i18n';
-import { cardBase, cardHover, colors, fontFamily, radius, spacing } from '@/theme/tokens';
+import {
+  cardBase,
+  cardHover,
+  colors,
+  fontFamily,
+  minTouchTarget,
+  radius,
+  spacing,
+} from '@/theme/tokens';
 
 export interface LatestAnnouncementRowProps {
   title: string;
@@ -73,33 +81,30 @@ export function LatestAnnouncementRow({
         accessibilityRole="button"
         {...hoverProps}
       >
-        <View style={styles.dateCol}>
-          <Text style={styles.month}>{month}</Text>
-          <Text style={styles.day}>{day}</Text>
-        </View>
-        <View style={styles.dateRule} />
         <View style={styles.body}>
-          <View style={styles.titleRow}>
-            <Text style={styles.itemTitle} numberOfLines={2}>
-              {title}
+          {/* Date, group and the chevron share one small line, so the heading below them gets
+              the card's whole width. Side by side they squeezed the title to a few characters
+              on a phone. */}
+          <View style={styles.metaRow}>
+            <Text style={styles.date}>
+              {month} {day}
             </Text>
+            {tagLabel ? <TagChip label={tagLabel} /> : null}
             {statusBadgeLabel ? (
               <View style={styles.statusBadge}>
                 <Text style={styles.statusBadgeText}>{statusBadgeLabel}</Text>
               </View>
             ) : null}
+            <View style={styles.metaSpacer} />
+            <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceVariant} />
           </View>
+          <Text style={styles.itemTitle} numberOfLines={2}>
+            {title}
+          </Text>
           <Text style={styles.preview} numberOfLines={2}>
             {body}
           </Text>
         </View>
-        {tagLabel ? <TagChip label={tagLabel} /> : null}
-        <Ionicons
-          name="chevron-forward"
-          size={22}
-          color={colors.onSurfaceVariant}
-          style={styles.chevron}
-        />
       </Pressable>
       {hasMeetingFooter ? (
         <Pressable
@@ -139,47 +144,31 @@ const styles = StyleSheet.create({
   },
   row: {
     cursor: 'pointer',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.screenHorizontal,
-    paddingVertical: spacing.screenHorizontal,
-    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
     borderCurve: 'continuous',
   },
-  dateCol: {
-    width: 58,
+  /** Date, group chip and chevron on one line above the heading. */
+  metaRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.xs,
   },
-  /** Separates the date from the title; the one element the card gained. */
-  dateRule: {
-    width: 1,
-    height: 42,
-    backgroundColor: colors.outlineVariant,
+  metaSpacer: {
+    flex: 1,
+    minWidth: 0,
   },
-  month: {
-    fontFamily: fontFamily.sansBold,
+  date: {
+    fontFamily: fontFamily.sansMedium,
     fontSize: 12,
-    fontWeight: '700',
     color: colors.onSurfaceVariant,
     letterSpacing: 0.2,
     textTransform: 'uppercase',
   },
-  day: {
-    fontFamily: fontFamily.serifBold,
-    fontSize: 27,
-    fontWeight: '700',
-    color: colors.onSurface,
-    lineHeight: 32,
-    marginTop: spacing.xxs,
-  },
   body: {
     flex: 1,
     minWidth: 0,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.xs,
   },
   itemTitle: {
     flex: 1,
@@ -196,9 +185,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.xxs,
     lineHeight: 20,
   },
-  chevron: {
-    opacity: 0.3,
-  },
   statusBadge: {
     flexShrink: 0,
     backgroundColor: colors.amberSoft,
@@ -212,22 +198,30 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.onSecondaryContainer,
   },
+  /**
+   * A button sitting inside the card, not the card's bottom edge. Full-bleed with a divider it
+   * read as another band of the card; inset, rounded and self-sized it reads as something to
+   * press.
+   */
   meetingLinkFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
+    alignSelf: 'flex-start',
+    gap: spacing.xs,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.md,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    minHeight: minTouchTarget,
     backgroundColor: colors.amberSoft,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.recurringMeetingCardDivider,
+    borderRadius: radius.button,
+    cursor: 'pointer',
     borderCurve: 'continuous',
   },
   meetingLinkText: {
     fontFamily: fontFamily.sansMedium,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '500',
     color: colors.onSecondaryContainer,
-    flex: 1,
   },
 });
