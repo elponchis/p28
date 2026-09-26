@@ -108,6 +108,14 @@ export const colors = {
   warning: palette.sandInk,
   /** Kept — the canvas palette has no red. */
   error: '#ba1a1a',
+  /**
+   * Error fills and the text on them. Literal hex rather than `palette.*` for the same reason
+   * `error` is: the canvas has no red at all, so there is no generated token to point at. Do not
+   * move these into `palette.generated.ts` — that file is overwritten on the next extract.
+   */
+  errorContainer: '#FCE8E8',
+  /** 7.84:1 on `errorContainer`, 9.22:1 on `surface` — darker than `error`, which is 5.49:1. */
+  onErrorContainer: '#8E1616',
   info: palette.brandDeep,
 
   // Focus ring

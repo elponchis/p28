@@ -179,6 +179,9 @@ const errorMessage = isError && error && 'message' in error ? getUserFacingError
 - 기본 동작(버튼, 선택된 탭, 링크, 안 읽음 표시) — `colors.primary`, 그 위 글자 `colors.onPrimary`.
 - 앰버는 채움으로만 — `colors.secondaryContainer` / `colors.amberSoft`, 그 위 글자 `colors.onSecondaryContainer`.
 - 보조 글자 — `colors.onSurfaceVariant`. 투명도로 글자를 흐리게 만들지 않습니다.
+- 회색은 중립 회색이나 순수 검정 대신 파랑 기운이 있는 surface 토큰을 씁니다. 팔레트의
+  회색은 `ground`·`line`·`muted`·`neutralSoft`까지 전부 파랑 쪽으로 기울어 있어서, 중립
+  회색을 섞으면 그 자리만 탁해 보입니다.
 - 테두리 — `colors.outlineVariant` 1px. 그림자는 새로 추가하지 않습니다.
 - 한 화면에 주 강조는 하나. 파랑과 앰버를 같은 위계로 나란히 쓰지 않습니다.
 - `fontFamily.serif` 는 말씀 인용과 그룹 이름에만.
@@ -196,3 +199,7 @@ node scripts/normalize-artboards.mjs <아트보드 폴더>
 node scripts/extract-tokens.mjs <아트보드 폴더>
 node scripts/check-theme.mjs
 ```
+
+`extract-tokens.mjs` 는 `theme/tokens.json` 을 덮어씁니다. 앱에는 있지만 캔버스에 없는 값은
+옆의 `theme/tokens.extra.json` 에 적어 두세요 — 손으로 관리하는 파일이라 재추출해도 남고,
+`check-theme.mjs` 가 둘을 합쳐서 기준으로 씁니다. 캔버스에 그 값이 생기면 extra 에서 지웁니다.

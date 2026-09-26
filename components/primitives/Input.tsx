@@ -79,7 +79,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryFixed,
   },
   inputError: {
-    backgroundColor: '#FCE8E8',
+    backgroundColor: colors.errorContainer,
+    color: colors.onErrorContainer,
   },
   errorText: {
     ...typography.caption,

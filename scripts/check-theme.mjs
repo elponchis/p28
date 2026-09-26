@@ -30,13 +30,37 @@ const TOKENS_PATH = ['theme/tokens.json', 'src/theme/tokens.json', 'app/theme/to
 if (!TOKENS_PATH) {
   console.error(
     'theme/tokens.json 을 찾지 못했습니다.\n' +
-    '먼저 캔버스에서 토큰을 뽑으세요:\n' +
-    '  node scripts/extract-tokens.mjs <아트보드 폴더>'
+      '먼저 캔버스에서 토큰을 뽑으세요:\n' +
+      '  node scripts/extract-tokens.mjs <아트보드 폴더>'
   );
   process.exit(2);
 }
 
-const T = JSON.parse(fs.readFileSync(TOKENS_PATH, 'utf8'));
+/**
+ * tokens.json 옆의 tokens.extra.json 을 합쳐 읽습니다. 캔버스 export 가 앱이 실제로 쓰는
+ * 스케일보다 좁을 때, 앱 쪽을 캔버스에 맞춰 바꾸는 대신 여기에 적어 둡니다. extra 는 손으로
+ * 관리하는 파일이라 재추출해도 덮어쓰이지 않습니다.
+ *
+ * 같은 이름이 양쪽에 있으면 캔버스가 이깁니다 — extra 는 더하는 용도지, 캔버스를 무르는
+ * 수단이 아닙니다. space 는 배열이라 합집합으로 합칩니다.
+ */
+function mergeTokens(base, extra) {
+  if (!extra) return base;
+  const out = { ...base };
+  for (const [group, value] of Object.entries(extra)) {
+    if (Array.isArray(value)) {
+      out[group] = [...new Set([...(base[group] ?? []), ...value])].sort((a, b) => a - b);
+    } else if (value && typeof value === 'object') {
+      out[group] = { ...value, ...(base[group] ?? {}) };
+    }
+  }
+  return out;
+}
+
+const EXTRA_PATH = path.join(path.dirname(TOKENS_PATH), 'tokens.extra.json');
+const EXTRA = fs.existsSync(EXTRA_PATH) ? JSON.parse(fs.readFileSync(EXTRA_PATH, 'utf8')) : null;
+
+const T = mergeTokens(JSON.parse(fs.readFileSync(TOKENS_PATH, 'utf8')), EXTRA);
 const PALETTE = T.color;
 const PALETTE_SET = new Set(Object.values(PALETTE).map((v) => v.toUpperCase()));
 const FONT_SIZES = Object.values(T.fontSize);
@@ -76,11 +100,28 @@ const ROLE_FOR = {
 const roleOf = (name) => ROLE_FOR[name] ?? `palette.${name} (맞는 역할 없음 — 보고)`;
 
 const SKIP_DIRS = new Set([
-  'node_modules', '.git', '.expo', '.expo-shared', 'dist', 'build',
-  'android', 'ios', 'coverage', '.next', 'supabase',
+  'node_modules',
+  '.git',
+  '.expo',
+  '.expo-shared',
+  'dist',
+  'build',
+  'android',
+  'ios',
+  'coverage',
+  '.next',
+  'supabase',
 ]);
 const EXTS = new Set(['.ts', '.tsx', '.js', '.jsx']);
-const SKIP_FILES = [/tokens\.(ts|js|json)$/, /palette\.generated\.ts$/, /-theme\.mjs$/, /-tokens\.mjs$/, /-artboards\.mjs$/, /\.d\.ts$/, /__tests__/];
+const SKIP_FILES = [
+  /tokens\.(ts|js|json)$/,
+  /palette\.generated\.ts$/,
+  /-theme\.mjs$/,
+  /-tokens\.mjs$/,
+  /-artboards\.mjs$/,
+  /\.d\.ts$/,
+  /__tests__/,
+];
 
 /**
  * 스케일 밖이지만 의도한 값. 줄 번호가 아니라 파일·종류·값으로 짚기 때문에 코드가 움직여도
@@ -97,6 +138,14 @@ const ALLOW = [
       '안 읽음 개수 배지 — 12px 숫자 하나를 감싸는 pill. 1px은 글자가 테두리에 닿지 않을 ' +
       '만큼만 띄우는 값이고, 여백 스케일의 최소 단위(4)는 이 크기의 pill에 과하다.',
   },
+  {
+    file: 'components/patterns/VideoEmbedPlayer.tsx',
+    kind: 'color',
+    value: '#000',
+    why:
+      '16:9 영상 컨테이너와 webview의 레터박스 바탕. 팔레트의 회색은 전부 파랑 기운이라 ' +
+      '영상 옆에 두면 검정이 아니라 파란 띠로 보인다. 레터박스는 순수 검정이어야 한다.',
+  },
 ];
 
 const allowed = (f) =>
@@ -106,7 +155,11 @@ const allowed = (f) =>
 
 const toRgb = (hex) => {
   let h = hex.replace('#', '');
-  if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+  if (h.length === 3)
+    h = h
+      .split('')
+      .map((c) => c + c)
+      .join('');
   return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
 };
 
@@ -150,7 +203,8 @@ function walk(dir, out = []) {
 
 const HEX = /#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b/g;
 const FONT_SIZE = /\bfontSize\s*:\s*(\d+(?:\.\d+)?)/g;
-const SPACING = /\b(padding|paddingTop|paddingBottom|paddingLeft|paddingRight|paddingHorizontal|paddingVertical|margin|marginTop|marginBottom|marginLeft|marginRight|marginHorizontal|marginVertical|gap|rowGap|columnGap)\s*:\s*(\d+(?:\.\d+)?)/g;
+const SPACING =
+  /\b(padding|paddingTop|paddingBottom|paddingLeft|paddingRight|paddingHorizontal|paddingVertical|margin|marginTop|marginBottom|marginLeft|marginRight|marginHorizontal|marginVertical|gap|rowGap|columnGap)\s*:\s*(\d+(?:\.\d+)?)/g;
 const RADIUS = /\bborderRadius\s*:\s*(\d+(?:\.\d+)?)/g;
 
 function checkFile(file) {
@@ -168,7 +222,10 @@ function checkFile(file) {
       if (PALETTE_SET.has(hex)) continue;
       const near = nearestColor(hex);
       findings.push({
-        ...at, kind: 'color', value: m[0], suggest: roleOf(near.name),
+        ...at,
+        kind: 'color',
+        value: m[0],
+        suggest: roleOf(near.name),
         note: near.exact ? '예전 팔레트 — 그대로 치환' : `가장 가까운 토큰 (거리 ${near.distance})`,
       });
     }
@@ -178,8 +235,11 @@ function checkFile(file) {
       if (FONT_SIZES.includes(n)) continue;
       const near = nearestOf(FONT_SIZES, n);
       findings.push({
-        ...at, kind: 'fontSize', value: m[1],
-        suggest: `fontSize.${FONT_SIZE_NAME[near]} (${near})`, note: '타입 스케일 밖',
+        ...at,
+        kind: 'fontSize',
+        value: m[1],
+        suggest: `fontSize.${FONT_SIZE_NAME[near]} (${near})`,
+        note: '타입 스케일 밖',
       });
     }
 
@@ -187,8 +247,11 @@ function checkFile(file) {
       const n = Number(m[2]);
       if (SPACES.includes(n)) continue;
       findings.push({
-        ...at, kind: 'spacing', value: `${m[1]}: ${m[2]}`,
-        suggest: `${nearestOf(SPACES, n)}`, note: '여백 스케일 밖',
+        ...at,
+        kind: 'spacing',
+        value: `${m[1]}: ${m[2]}`,
+        suggest: `${nearestOf(SPACES, n)}`,
+        note: '여백 스케일 밖',
       });
     }
 
@@ -197,8 +260,11 @@ function checkFile(file) {
       if (RADII.includes(n) || n === 999) continue;
       const near = nearestOf(RADII, n);
       findings.push({
-        ...at, kind: 'radius', value: m[1],
-        suggest: `radius.${RADIUS_NAME[near]} (${near})`, note: '모서리 스케일 밖',
+        ...at,
+        kind: 'radius',
+        value: m[1],
+        suggest: `radius.${RADIUS_NAME[near]} (${near})`,
+        note: '모서리 스케일 밖',
       });
     }
   });
@@ -212,7 +278,13 @@ const files = walk(ROOT);
 const all = files.flatMap(checkFile).filter((f) => !allowed(f));
 
 if (AS_JSON) {
-  console.log(JSON.stringify({ tokens: path.relative(ROOT, TOKENS_PATH), scanned: files.length, findings: all }, null, 2));
+  console.log(
+    JSON.stringify(
+      { tokens: path.relative(ROOT, TOKENS_PATH), scanned: files.length, findings: all },
+      null,
+      2
+    )
+  );
   process.exit(all.length ? 1 : 0);
 }
 
@@ -220,7 +292,12 @@ const byKind = all.reduce((acc, f) => ((acc[f.kind] = (acc[f.kind] || 0) + 1), a
 
 console.log(`\n기준: ${path.relative(ROOT, TOKENS_PATH)} (캔버스에서 추출)`);
 console.log(`파일 ${files.length}개 검사 · 토큰을 벗어난 값 ${all.length}건`);
-if (all.length) console.log(Object.entries(byKind).map(([k, v]) => `  ${k} ${v}`).join('\n'));
+if (all.length)
+  console.log(
+    Object.entries(byKind)
+      .map(([k, v]) => `  ${k} ${v}`)
+      .join('\n')
+  );
 
 if (!QUIET && all.length) {
   const byFile = all.reduce((acc, f) => ((acc[f.file] ||= []).push(f), acc), {});
