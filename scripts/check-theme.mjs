@@ -111,6 +111,9 @@ const SKIP_DIRS = new Set([
   'coverage',
   '.next',
   'supabase',
+  // 스킬이 들고 다니는 소스 스냅샷. 앱이 쓰는 코드가 아니고, 다른 호스트에 이식되는
+  // 코드라 이 프로젝트의 토큰을 따를 이유도 없다. 허용 목록이 아니라 스캔에서 뺀다.
+  'chat-kit',
 ]);
 const EXTS = new Set(['.ts', '.tsx', '.js', '.jsx']);
 const SKIP_FILES = [

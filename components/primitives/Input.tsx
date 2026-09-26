@@ -80,11 +80,10 @@ const styles = StyleSheet.create({
   },
   inputError: {
     backgroundColor: colors.errorContainer,
-    color: colors.onErrorContainer,
   },
   errorText: {
     ...typography.caption,
-    color: colors.error,
+    color: colors.onErrorContainer,
     marginTop: spacing.xs,
   },
 });
