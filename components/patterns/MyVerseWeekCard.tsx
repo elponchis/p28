@@ -44,7 +44,10 @@ export function MyVerseWeekCard({ userId, verse }: MyVerseWeekCardProps) {
           {streak > 0 ? (
             <View style={styles.streak}>
               <Text style={styles.streakText}>
-                {t('home.noteStreak', { count: String(streak) })}
+                {/* "1 days" is not English; the singular gets its own string. */}
+                {streak === 1
+                  ? t('home.noteStreakOne')
+                  : t('home.noteStreak', { count: String(streak) })}
               </Text>
             </View>
           ) : null}

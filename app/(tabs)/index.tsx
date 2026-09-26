@@ -89,6 +89,31 @@ function useTwoColumnHome() {
   return Platform.OS === 'web' && content >= QUADRANT_MIN_WIDTH * 2;
 }
 
+/** The welcome line at its most comfortable, and the smallest it may shrink to before wrapping. */
+const WELCOME_FONT_MAX = 32;
+const WELCOME_FONT_MIN = 20;
+/** Gowun Batang's average advance width at 1em, measured across the greeting strings it renders. */
+const WELCOME_CHAR_WIDTH = 0.58;
+
+/**
+ * A font size that keeps "Welcome home, <name>." on one line.
+ *
+ * `numberOfLines={1}` alone would truncate a long name with an ellipsis, and `adjustsFontSizeToFit`
+ * is iOS-only, so the size is derived from how much room the greeting actually has: the column it
+ * sits in, minus the platform-announcement button beside it.
+ */
+function useWelcomeFontSize(text: string): number {
+  const content = useHomeContentWidth();
+  const twoColumn = useTwoColumnHome();
+  const column = twoColumn ? content / 2 : content;
+  const usable = column - spacing.screenHorizontal - COLUMN_GUTTER / 2 - WELCOME_BUTTON_ALLOWANCE;
+  const fits = usable / Math.max(text.length, 1) / WELCOME_CHAR_WIDTH;
+  return Math.round(Math.max(WELCOME_FONT_MIN, Math.min(WELCOME_FONT_MAX, fits)));
+}
+
+/** Room kept beside the greeting for the "Post notice" button, which shares its line. */
+const WELCOME_BUTTON_ALLOWANCE = 150;
+
 /** Sizes a group card so a full row of them fills the quadrant it sits in. */
 function useGroupCardWidth() {
   const content = useHomeContentWidth();
@@ -287,6 +312,10 @@ export default function HomeScreen() {
   const sectionGap = (index: number) =>
     (twoColumn ? index >= 2 : index >= 1) ? styles.sectionGap : null;
 
+  const welcomeFontSize = useWelcomeFontSize(
+    displayName ? `${t('home.welcomeBack')} ${displayName}.` : t('home.welcomeDefault')
+  );
+
   // Beside the welcome when there is a right-hand column; under the verse card when there is not.
   const myVerseWeek = userId ? <MyVerseWeekCard userId={userId} verse={todaysVerse} /> : null;
 
@@ -319,10 +348,12 @@ export default function HomeScreen() {
           <View style={[twoColumn ? styles.headerColumn : null, columnPad(0)]}>
             <View style={styles.headerGreeting}>
               <View style={styles.header}>
-                <Text style={styles.welcomeText}>
-                  {displayName ? `${t('home.welcomeBack')}` : t('home.welcomeDefault')}
+                {/* One Text, not two stacked ones — the greeting and the name are one line of
+                    type, and a long name shrinks the line instead of wrapping it. */}
+                <Text style={[styles.welcomeText, { fontSize: welcomeFontSize }]} numberOfLines={1}>
+                  {displayName ? `${t('home.welcomeBack')} ` : t('home.welcomeDefault')}
+                  {displayName ? <Text style={styles.nameText}>{displayName}.</Text> : null}
                 </Text>
-                {displayName ? <Text style={styles.nameText}>{displayName}.</Text> : null}
               </View>
 
               {userId && !superAdminRoleLoading && isSuperAdmin ? (
@@ -596,19 +627,17 @@ const styles = StyleSheet.create({
   header: {
     paddingTop: spacing.lg,
   },
+  /** Size comes from `useWelcomeFontSize`; a fixed lineHeight here would not shrink with it. */
   welcomeText: {
     fontFamily: fontFamily.serif,
-    fontSize: 32,
     fontWeight: '400',
-    lineHeight: 43,
     letterSpacing: -0.2,
     color: colors.onSurface,
   },
+  /** Nested inside the greeting, so it inherits the size and only changes weight. */
   nameText: {
     fontFamily: fontFamily.serifBold,
-    fontSize: 32,
     fontWeight: '400',
-    lineHeight: 43,
     letterSpacing: -0.2,
     color: colors.onSurface,
   },
