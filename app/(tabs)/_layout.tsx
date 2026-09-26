@@ -4,6 +4,7 @@ import { Tabs, useSegments } from 'expo-router';
 
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 import { FloatingTabBar } from '@/components/navigation/FloatingTabBar';
+import { BrandHeaderTitle } from '@/components/navigation/BrandHeaderTitle';
 import { ClearNotificationsButton } from '@/components/navigation/ClearNotificationsButton';
 import { NotificationsBellButton } from '@/components/navigation/NotificationsBellButton';
 import { useLocale } from '@/contexts/LocaleContext';
@@ -53,6 +54,13 @@ export default function TabLayout() {
           tabBarInactiveTintColor: colors.ink300,
           tabBarStyle: {},
           headerShown: useClientOnlyValue(false, true),
+          /**
+           * KAN-40. The header used to name the tab you were already looking at — the bottom tab
+           * bar says it on a phone and the sidebar says it on desktop, so the bar carried nothing
+           * you could not already see. Where the sidebar is up, the title goes entirely; the bar
+           * stays for the bell.
+           */
+          headerTitle: isSidebar ? () => null : undefined,
           headerRight: () => <NotificationsBellButton badge={notificationsBadge} />,
           headerStyle: {
             backgroundColor: colors.surface,
@@ -73,6 +81,7 @@ export default function TabLayout() {
           options={{
             title: t('tabs.home'),
             tabBarAccessibilityLabel: t('tabs.home'),
+            headerTitle: isSidebar ? () => null : () => <BrandHeaderTitle />,
           }}
         />
         <Tabs.Screen
