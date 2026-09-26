@@ -10,13 +10,10 @@ import { NotificationsBellButton } from '@/components/navigation/NotificationsBe
 import { useLocale } from '@/contexts/LocaleContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useDesktopFullWidth } from '@/hooks/useDesktopFullWidth';
+import { useNotificationsBadge } from '@/hooks/useNotificationsBadge';
 import { useInAppBadgeClearTimestamp } from '@/hooks/useInAppBadgeClearTimestamp';
 import { useInAppNotificationsRealtime } from '@/hooks/useInAppNotificationsRealtime';
-import {
-  useChatsForUserQuery,
-  useInAppUnreadNotificationCountQuery,
-  usePendingFriendRequestCountQuery,
-} from '@/hooks/useApiQueries';
+import { useChatsForUserQuery } from '@/hooks/useApiQueries';
 import { t } from '@/lib/i18n';
 import { breakpoints, colors, fontFamily } from '@/theme/tokens';
 
@@ -28,12 +25,9 @@ export default function TabLayout() {
   const hideMessagesTabHeader = messagesIdx >= 0 && segments[messagesIdx + 1] === 'chat';
   const { session } = useAuth();
   const userId = session?.user?.id;
-  const { data: pendingCount } = usePendingFriendRequestCountQuery(userId);
-  const { badgeClearedAt, recordNotificationsTabVisited, hydrated } =
-    useInAppBadgeClearTimestamp(userId);
-  const { data: inAppUnread = 0 } = useInAppUnreadNotificationCountQuery(userId, badgeClearedAt, {
-    enabled: !!userId && hydrated,
-  });
+  const { recordNotificationsTabVisited } = useInAppBadgeClearTimestamp(userId);
+  const notificationsBadge = useNotificationsBadge(userId);
+  const headerShownOnClient = useClientOnlyValue(false, true);
   useInAppNotificationsRealtime(userId);
   const { data: chats = [] } = useChatsForUserQuery(userId);
   const unreadConversationCount = useMemo(
@@ -41,9 +35,6 @@ export default function TabLayout() {
     [chats]
   );
   const messagesTabBadge = unreadConversationCount > 0 ? unreadConversationCount : undefined;
-  const notificationsTabBadgeTotal = (pendingCount ?? 0) + inAppUnread;
-  const notificationsBadge =
-    notificationsTabBadgeTotal > 0 ? notificationsTabBadgeTotal : undefined;
   return (
     <View style={style}>
       <Tabs
@@ -53,14 +44,13 @@ export default function TabLayout() {
           tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: colors.ink300,
           tabBarStyle: {},
-          headerShown: useClientOnlyValue(false, true),
           /**
-           * KAN-40. The header used to name the tab you were already looking at — the bottom tab
-           * bar says it on a phone and the sidebar says it on desktop, so the bar carried nothing
-           * you could not already see. Where the sidebar is up, the title goes entirely; the bar
-           * stays for the bell.
+           * KAN-40. The header named the tab you were already looking at — the bottom tab bar
+           * says it on a phone, the sidebar says it on desktop. With the sidebar up the bar had
+           * nothing left to carry once the title went, so the whole bar goes and the notifications
+           * entry moves into the sidebar's footer.
            */
-          headerTitle: isSidebar ? () => null : undefined,
+          headerShown: isSidebar ? false : headerShownOnClient,
           headerRight: () => <NotificationsBellButton badge={notificationsBadge} />,
           headerStyle: {
             backgroundColor: colors.surface,

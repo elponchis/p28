@@ -8,6 +8,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { OpenChatsList } from '@/components/messages';
 import { Avatar } from '@/components/primitives';
 import { useAuth } from '@/hooks/useAuth';
+import { useNotificationsBadge } from '@/hooks/useNotificationsBadge';
 import { useChatsForUserQuery } from '@/hooks/useApiQueries';
 import { t } from '@/lib/i18n';
 import { breakpoints, colors, fontFamily, radius, spacing } from '@/theme/tokens';
@@ -94,6 +95,7 @@ export function DesktopSidebar() {
   const { session } = useAuth();
   const userId = session?.user?.id;
   const { data: chats = [] } = useChatsForUserQuery(userId);
+  const notificationsBadge = useNotificationsBadge(userId);
 
   const unreadConversationCount = useMemo(
     () => chats.filter((c) => (c.unreadCount ?? 0) > 0).length,
@@ -149,6 +151,9 @@ export function DesktopSidebar() {
       : undefined;
 
   const profileFocused = inTabs ? segments[1] === 'profile' : segments[0] === 'profile';
+  const notificationsFocused = inTabs
+    ? segments[1] === 'notifications'
+    : segments[0] === 'notifications';
 
   return (
     <View style={[styles.outer, { paddingTop: insets.top + spacing.lg, width: SIDEBAR_WIDTH }]}>
@@ -189,6 +194,16 @@ export function DesktopSidebar() {
       </View>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.sm }]}>
+        {/* The header bell used to live in a bar above the content; with that bar gone on
+            desktop, notifications belong here beside the profile. */}
+        <SidebarItem
+          label={t('tabs.notifications')}
+          iconFocused="notifications"
+          iconDefault="notifications-outline"
+          isFocused={notificationsFocused}
+          badge={notificationsBadge}
+          onPress={() => router.navigate('/(tabs)/notifications')}
+        />
         <Pressable
           onPress={() => router.navigate('/(tabs)/profile')}
           accessibilityRole="tab"

@@ -3,6 +3,8 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
+import { ClearNotificationsButton } from '@/components/navigation/ClearNotificationsButton';
+import { useDesktopSidebar } from '@/components/navigation/DesktopSidebar';
 import { useAuth } from '@/hooks/useAuth';
 import {
   useDismissInAppNotificationsMutation,
@@ -29,6 +31,7 @@ export default function NotificationsScreen() {
   const { session } = useAuth();
   const userId = session?.user?.id;
   const router = useRouter();
+  const sidebar = useDesktopSidebar();
   const { data: pendingCount } = usePendingFriendRequestCountQuery(userId);
   const {
     data: inAppItems = [],
@@ -116,7 +119,12 @@ export default function NotificationsScreen() {
 
       {hasGroupActivity ? (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('notifications.activitySection')}</Text>
+          <View style={styles.sectionHeadRow}>
+            <Text style={styles.sectionTitle}>{t('notifications.activitySection')}</Text>
+            {/* On desktop there is no header bar left to hold this (KAN-40), so the screen
+                carries it. On a phone the header still has it and this stays hidden. */}
+            {sidebar ? <ClearNotificationsButton userId={userId} /> : null}
+          </View>
           {inAppItems.map((item) => {
             const { iconName, kindLabel, openHint } = inAppNotificationPresentation(item);
             return (
@@ -222,6 +230,13 @@ const styles = StyleSheet.create({
   scrollContentEmpty: {
     flexGrow: 1,
     justifyContent: 'center',
+  },
+  /** The section's title and, where the header bar is gone, its clear-all action. */
+  sectionHeadRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
   },
   section: {
     gap: spacing.sm,
