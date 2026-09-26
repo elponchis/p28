@@ -253,7 +253,9 @@ describe('Supabase data adapter', () => {
       const adapter = createSupabaseDataAdapter(getClient);
       const result = await adapter.uploadProfileImage('user-1', 'file:///tmp/photo.jpg');
       expect(typeof result).toBe('string');
-      expect(result).toBe('https://example.com/avatars/user-1/avatar.jpg');
+      // Versioned: the storage path is reused, so the URL has to change or the old picture
+      // stays cached (KAN-41).
+      expect(result).toMatch(/^https:\/\/example\.com\/avatars\/user-1\/avatar\.jpg\?v=\d+$/);
     });
 
     it('returns ApiError when fetch fails', async () => {
@@ -279,7 +281,7 @@ describe('Supabase data adapter', () => {
       const base64 = Buffer.from('fake-image-bytes').toString('base64');
       const result = await adapter.uploadProfileImage('user-1', 'file:///ignored.jpg', base64);
       expect(typeof result).toBe('string');
-      expect(result).toBe('https://example.com/avatars/user-1/avatar.jpg');
+      expect(result).toMatch(/^https:\/\/example\.com\/avatars\/user-1\/avatar\.jpg\?v=\d+$/);
       expect(bucketMock.upload).toHaveBeenCalledWith(
         'user-1/avatar.jpg',
         expect.any(ArrayBuffer),

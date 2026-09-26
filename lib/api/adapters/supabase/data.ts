@@ -1792,7 +1792,14 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
         if (err) return err;
 
         const { data } = getClient().storage.from('avatars').getPublicUrl(path);
-        return data.publicUrl;
+        /**
+         * The path is stable — `avatar.jpg` per user, overwritten on every change — so without a
+         * version the URL never changes and the CDN and the image cache keep serving the previous
+         * picture. The upload succeeded and nothing on screen moved, which is what "profile
+         * picture not saving" looked like. `avatarPathFromPublicUrl` already strips this query,
+         * so everything reading the path back keeps working.
+         */
+        return `${data.publicUrl}?v=${Date.now()}`;
       } catch (e) {
         return toApiError(e);
       }
