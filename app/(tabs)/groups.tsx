@@ -14,7 +14,6 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { EmptyState } from '@/components/patterns/EmptyState';
 import { GroupCard } from '@/components/patterns/GroupCard';
-import { ReflectionPlate } from '@/components/patterns/ReflectionPlate';
 
 import { useAuth } from '@/hooks/useAuth';
 import { useGroupsQuery, useGroupsForUserQuery, useIsAdminQuery } from '@/hooks/useApiQueries';
@@ -22,7 +21,15 @@ import { getUserFacingError } from '@/lib/errors';
 import { GROUP_TYPES, groupTypeLabel } from '@/lib/groupTypes';
 import { t } from '@/lib/i18n';
 import type { GroupType } from '@/lib/api';
-import { colors, fontFamily, radius, spacing, typography, tabScreenContent } from '@/theme/tokens';
+import {
+  colors,
+  fontFamily,
+  minTouchTarget,
+  radius,
+  spacing,
+  typography,
+  tabScreenContent,
+} from '@/theme/tokens';
 
 type FilterType = 'all' | 'joined' | GroupType;
 
@@ -97,17 +104,34 @@ export default function GroupsScreen() {
       keyboardShouldPersistTaps="handled"
     >
       <Animated.View entering={FadeIn.duration(300)} style={[styles.content, tabScreenContent]}>
-        {/* Hero Header */}
+        {/* Hero Header — one line, no strapline. The page's job is finding a group, so the
+            search field and the admin actions come next rather than a paragraph. */}
         <View style={styles.header}>
-          <Text style={styles.heroTitle}>
-            {t('groups.heroTitle')}
-            {'\n'}
-            <Text style={styles.heroTitleAccent}>{t('groups.heroTitleAccent')}</Text>
-          </Text>
-          <Text style={styles.heroSubtitle}>{t('groups.heroSubtitle')}</Text>
+          <Text style={styles.heroTitle}>{t('groups.heroTitle')}</Text>
+        </View>
 
+        {/* Search, with manage and create sharing its line instead of sitting above it. */}
+        <View style={styles.searchRow}>
+          <View style={styles.searchWrapper}>
+            <Ionicons
+              name="search-outline"
+              size={18}
+              color={colors.onSurfaceVariant}
+              style={styles.searchIcon}
+            />
+            <TextInput
+              style={styles.searchInput}
+              placeholder={t('groups.searchGroupsPlaceholder')}
+              placeholderTextColor={colors.onSurfaceVariant}
+              value={search}
+              onChangeText={setSearch}
+              returnKeyType="search"
+              accessibilityLabel={t('groups.searchGroupsPlaceholder')}
+              accessibilityHint={t('groups.searchGroupsHint')}
+            />
+          </View>
           {isAdmin ? (
-            <View style={styles.adminActions}>
+            <>
               <Pressable
                 onPress={() => push('/group/manage')}
                 style={({ pressed }) => [styles.manageButton, pressed && { opacity: 0.8 }]}
@@ -115,7 +139,6 @@ export default function GroupsScreen() {
                 accessibilityHint={t('groups.manageMyGroupsHint')}
               >
                 <Ionicons name="settings-outline" size={18} color={colors.primary} />
-                <Text style={styles.manageButtonText}>{t('groups.manageMyGroups')}</Text>
               </Pressable>
               <Pressable
                 onPress={() => push('/group/create')}
@@ -126,32 +149,18 @@ export default function GroupsScreen() {
                 <Ionicons name="add" size={18} color={colors.onPrimary} />
                 <Text style={styles.createButtonText}>{t('groups.createGroup')}</Text>
               </Pressable>
-            </View>
+            </>
           ) : null}
         </View>
 
-        {/* Search */}
-        <View style={styles.searchWrapper}>
-          <Ionicons
-            name="search-outline"
-            size={18}
-            color={colors.onSurfaceVariant}
-            style={styles.searchIcon}
-          />
-          <TextInput
-            style={styles.searchInput}
-            placeholder={t('groups.searchGroupsPlaceholder')}
-            placeholderTextColor={colors.onSurfaceVariant}
-            value={search}
-            onChangeText={setSearch}
-            returnKeyType="search"
-            accessibilityLabel={t('groups.searchGroupsPlaceholder')}
-            accessibilityHint={t('groups.searchGroupsHint')}
-          />
-        </View>
-
-        {/* Filter Chips */}
-        <View style={styles.filterRow}>
+        {/* Filter Chips — one line that scrolls. Wrapping pushed the group list down by a whole
+            row on a phone (KAN-43). */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.filterScroll}
+          contentContainerStyle={styles.filterRow}
+        >
           {filterOptions.map((f) => {
             const active = filter === f;
             return (
@@ -167,7 +176,7 @@ export default function GroupsScreen() {
               </Pressable>
             );
           })}
-        </View>
+        </ScrollView>
 
         {/* Error */}
         {isError && error && 'message' in error ? (
@@ -211,17 +220,6 @@ export default function GroupsScreen() {
             ))}
           </View>
         )}
-
-        {/* Reflection Plate */}
-        {!isLoading && displayed.length > 0 ? (
-          <View style={styles.reflectionSection}>
-            <ReflectionPlate
-              quote={t('groups.reflectionQuote')}
-              attribution={t('groups.reflectionAttribution')}
-              variant="dark"
-            />
-          </View>
-        ) : null}
       </Animated.View>
     </ScrollView>
   );
@@ -253,27 +251,12 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
     color: colors.onSurface,
   },
-  heroTitleAccent: {
-    fontFamily: fontFamily.serifItalic,
-    color: colors.primary,
-  },
-  heroSubtitle: {
-    ...typography.bodyMd,
-    color: colors.onSurfaceVariant,
-    lineHeight: 22,
-  },
-  adminActions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginTop: spacing.xs,
-  },
   createButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
+    gap: spacing.xxs,
+    height: minTouchTarget,
+    paddingHorizontal: spacing.sm,
     backgroundColor: colors.primary,
     borderRadius: radius.button,
   },
@@ -281,29 +264,33 @@ const styles = StyleSheet.create({
     ...typography.buttonLabel,
     color: colors.onPrimary,
   },
+  /** Icon only — secondary to "create", and its label was what made this row heavy. */
   manageButton: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
+    justifyContent: 'center',
+    width: minTouchTarget,
+    height: minTouchTarget,
     backgroundColor: colors.surfaceContainerLowest,
     borderRadius: radius.button,
     borderWidth: 1,
     borderColor: colors.primary,
   },
-  manageButtonText: {
-    ...typography.buttonLabel,
-    color: colors.primary,
-  },
 
+  /** Search takes the room; the two admin buttons sit at its right. */
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.md,
+  },
   searchWrapper: {
+    flex: 1,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surfaceContainerHighest,
     borderRadius: radius.button,
     paddingHorizontal: spacing.md,
-    marginBottom: spacing.md,
   },
   searchIcon: {
     marginRight: spacing.sm,
@@ -317,11 +304,13 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
 
+  filterScroll: {
+    flexGrow: 0,
+    marginBottom: spacing.lg,
+  },
   filterRow: {
     flexDirection: 'row',
     gap: spacing.sm,
-    marginBottom: spacing.lg,
-    flexWrap: 'wrap',
   },
   filterChip: {
     paddingHorizontal: spacing.md,
@@ -361,9 +350,5 @@ const styles = StyleSheet.create({
 
   list: {
     gap: spacing.md,
-  },
-
-  reflectionSection: {
-    marginTop: spacing.sectionGap,
   },
 });
