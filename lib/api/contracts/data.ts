@@ -585,12 +585,14 @@ export interface DataContract {
   /** Search profiles by display name, first name, last name, or email. Excludes excludeUserId (typically current user). */
   searchProfiles(search: string, excludeUserId: string): Promise<Profile[] | ApiError>;
 
-  // App roles (Super Admin, Admin)
+  /**
+   * Platform role. There is one — super_admin. Running a group is a separate, per-group thing:
+   * ask `isUserGroupAdmin`, and appoint with `addGroupAdmin` / `removeGroupAdmin` (00111).
+   * Super admins are seeded in SQL; there is deliberately no API to mint one.
+   */
   isSuperAdmin(userId: string): Promise<boolean | ApiError>;
   isAdmin(userId: string): Promise<boolean | ApiError>;
   getGroupsWhereUserIsAdmin(userId: string): Promise<Group[] | ApiError>;
-  assignAdmin(userId: string, assignedByUserId: string): Promise<void | ApiError>;
-  revokeAdmin(userId: string): Promise<void | ApiError>;
   /** Look up user's UUID by email via RPC. Returns null if no user found. */
   getUserIdByEmail(email: string): Promise<string | null | ApiError>;
 

@@ -1431,38 +1431,47 @@ describe('Supabase data adapter', () => {
     });
 
     describe('isUserGroupAdmin', () => {
-      const rolesClient = (role: string | null) =>
-        (() => ({
-          from: jest.fn((table: string) => {
-            if (table !== 'app_roles') {
-              throw new Error(`isUserGroupAdmin should read app_roles, not ${table}`);
-            }
-            return {
-              select: jest.fn().mockReturnThis(),
-              eq: jest.fn().mockReturnThis(),
-              maybeSingle: jest
-                .fn()
-                .mockResolvedValue({ data: role ? { role } : null, error: null }),
-            };
+      // Running a group is per group again (00111). The answer comes from the RPC, which is
+      // SECURITY DEFINER — reading app_roles directly only ever showed the caller's own row, so
+      // asking about anyone else silently returned false.
+      const rpcClient = (answer: boolean) => {
+        const rpc = jest.fn().mockResolvedValue({ data: answer, error: null });
+        const getClient = (() => ({
+          rpc,
+          from: jest.fn(() => {
+            throw new Error('isUserGroupAdmin must ask the RPC, not read tables');
           }),
         })) as unknown as GetClient;
+        return { getClient, rpc };
+      };
 
-      // Since 00095 running a group is an app admin's job: the per-group appointment it replaced
-      // is not read at all, which is what these assert by refusing any other table.
-      it('is true for a super admin', async () => {
-        const adapter = createSupabaseDataAdapter(rolesClient('super_admin'));
+      it('asks about the group it was given, not just the person', async () => {
+        const { getClient, rpc } = rpcClient(true);
+        const adapter = createSupabaseDataAdapter(getClient);
         expect(await adapter.isUserGroupAdmin('g1', 'u1')).toBe(true);
+        expect(rpc).toHaveBeenCalledWith('user_is_effective_group_admin_by_id', {
+          p_user_id: 'u1',
+          p_group_id: 'g1',
+        });
       });
 
-      it('is true for an admin', async () => {
-        const adapter = createSupabaseDataAdapter(rolesClient('admin'));
-        expect(await adapter.isUserGroupAdmin('g1', 'u1')).toBe(true);
-      });
-
-      it('is false for someone with no app role, whatever group is asked about', async () => {
-        const adapter = createSupabaseDataAdapter(rolesClient(null));
-        expect(await adapter.isUserGroupAdmin('g1', 'u1')).toBe(false);
+      it('is false when the same person is asked about a group they do not run', async () => {
+        const { getClient, rpc } = rpcClient(false);
+        const adapter = createSupabaseDataAdapter(getClient);
         expect(await adapter.isUserGroupAdmin('g2', 'u1')).toBe(false);
+        expect(rpc).toHaveBeenCalledWith('user_is_effective_group_admin_by_id', {
+          p_user_id: 'u1',
+          p_group_id: 'g2',
+        });
+      });
+
+      it('returns an ApiError when the RPC fails rather than a quiet false', async () => {
+        const rpc = jest
+          .fn()
+          .mockResolvedValue({ data: null, error: { message: 'boom', code: '42501' } });
+        const getClient = (() => ({ rpc })) as unknown as GetClient;
+        const adapter = createSupabaseDataAdapter(getClient);
+        expect(isApiError(await adapter.isUserGroupAdmin('g1', 'u1'))).toBe(true);
       });
     });
   });

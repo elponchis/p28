@@ -2368,17 +2368,19 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
 
     async isUserGroupAdmin(groupId: string, userId: string): Promise<boolean | ApiError> {
       try {
-        // groupId is ignored: since 00095 administering the app is administering every group,
-        // and the per-group appointment it replaced is no longer read. The signature stays so
-        // the screens asking "may this person run this group?" keep asking it that way.
-        void groupId;
-        const { data, error } = await getClient()
-          .from('app_roles')
-          .select('role')
-          .eq('user_id', userId)
-          .maybeSingle();
+        /**
+         * Running a group is per group again (00111): a `group_admins` row for this group, or
+         * super_admin. Asked through the RPC rather than by reading the tables, because
+         * `app_roles` only lets you see your own row — a direct read answered "no" for everyone
+         * else's roles, with no error to notice. The function is SECURITY DEFINER, so it can
+         * answer honestly about someone else.
+         */
+        const { data, error } = await getClient().rpc('user_is_effective_group_admin_by_id', {
+          p_user_id: userId,
+          p_group_id: groupId,
+        });
         if (error) return toApiError(error);
-        return data?.role === 'super_admin' || data?.role === 'admin';
+        return data === true;
       } catch (e) {
         return toApiError(e);
       }
@@ -5911,6 +5913,12 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
       }
     },
 
+    /**
+     * Platform-level administration. The app-level `admin` role is gone (00111), so this and
+     * `isSuperAdmin` now answer the same question; the name stays because the screens asking
+     * "may this person do platform things?" read better that way. Running a *group* is a
+     * different question — ask `isUserGroupAdmin`.
+     */
     async isAdmin(userId: string): Promise<boolean | ApiError> {
       try {
         const { data, error } = await getClient()
@@ -5919,7 +5927,7 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
           .eq('user_id', userId)
           .maybeSingle();
         if (error) return toApiError(error);
-        return data?.role === 'super_admin' || data?.role === 'admin';
+        return data?.role === 'super_admin';
       } catch (e) {
         return toApiError(e);
       }
@@ -5943,32 +5951,6 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
           .order('name');
         if (error) return toApiError(error);
         return (data ?? []).map(mapGroupRow);
-      } catch (e) {
-        return toApiError(e);
-      }
-    },
-
-    async assignAdmin(userId: string, assignedByUserId: string): Promise<void | ApiError> {
-      try {
-        const { error } = await getClient().from('app_roles').insert({
-          user_id: userId,
-          role: 'admin',
-          assigned_by_user_id: assignedByUserId,
-        });
-        if (error) return toApiError(error);
-      } catch (e) {
-        return toApiError(e);
-      }
-    },
-
-    async revokeAdmin(userId: string): Promise<void | ApiError> {
-      try {
-        const { error } = await getClient()
-          .from('app_roles')
-          .delete()
-          .eq('user_id', userId)
-          .eq('role', 'admin');
-        if (error) return toApiError(error);
       } catch (e) {
         return toApiError(e);
       }
