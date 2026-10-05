@@ -7,10 +7,12 @@ import { getUserFacingError } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import {
   useProfileQuery,
+  useRemoveProfileImageMutation,
   useUpdateProfileMutation,
   useUploadProfileImageMutation,
 } from '@/hooks/useApiQueries';
 import { useLocale } from '@/contexts/LocaleContext';
+import { confirm } from '@/lib/dialogs';
 import { t } from '@/lib/i18n';
 import { Avatar, Button, Input, ListItem } from '@/components/primitives';
 import { UploadProgressBar } from '@/components/patterns/UploadProgressBar';
@@ -114,6 +116,7 @@ export default function ProfileEditScreen() {
   const { data: profile } = useProfileQuery(userId);
   const updateMutation = useUpdateProfileMutation();
   const uploadMutation = useUploadProfileImageMutation();
+  const removePhotoMutation = useRemoveProfileImageMutation();
 
   const [displayName, setDisplayName] = useState('');
   const [roleTitle, setRoleTitle] = useState('');
@@ -175,6 +178,29 @@ export default function ProfileEditScreen() {
       },
       {
         onSuccess: (url) => setAvatarUrl(url),
+        onError: (err) => setError(getUserFacingError(err)),
+      }
+    );
+  };
+
+  const removePhoto = async () => {
+    if (!userId) return;
+    const confirmed = await confirm({
+      title: t('profile.removePhotoConfirmTitle'),
+      message: t('profile.removePhotoConfirmMessage'),
+      confirmLabel: t('profile.removePhoto'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+    });
+    if (!confirmed) return;
+    setError(null);
+    removePhotoMutation.mutate(
+      { userId },
+      {
+        onSuccess: () => {
+          setAvatarUrl(undefined);
+          setLocalPreviewUri(null);
+        },
         onError: (err) => setError(getUserFacingError(err)),
       }
     );
@@ -256,6 +282,18 @@ export default function ProfileEditScreen() {
             </Pressable>
           </View>
           <Text style={styles.changePhotoText}>{t('profile.changePhoto')}</Text>
+          {/* Only offered when there is something to remove; with no photo the avatar already
+              falls back to the initial, which is what "no photo" looks like. */}
+          {avatarUrl || localPreviewUri ? (
+            <Button
+              title={t('profile.removePhoto')}
+              variant="text"
+              onPress={removePhoto}
+              disabled={removePhotoMutation.isPending || uploadMutation.isPending}
+              accessibilityLabel={t('profile.removePhoto')}
+              accessibilityHint={t('profile.removePhotoHint')}
+            />
+          ) : null}
           {uploadMutation.isPending ? (
             <View style={styles.avatarProgressRow}>
               <UploadProgressBar progress={avatarUploadProgress} />

@@ -9,7 +9,7 @@ import { OpenChatsList } from '@/components/messages';
 import { Avatar } from '@/components/primitives';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotificationsBadge } from '@/hooks/useNotificationsBadge';
-import { useChatsForUserQuery } from '@/hooks/useApiQueries';
+import { useChatsForUserQuery, useProfileQuery } from '@/hooks/useApiQueries';
 import { t } from '@/lib/i18n';
 import { breakpoints, colors, fontFamily, radius, spacing } from '@/theme/tokens';
 
@@ -95,6 +95,7 @@ export function DesktopSidebar() {
   const { session } = useAuth();
   const userId = session?.user?.id;
   const { data: chats = [] } = useChatsForUserQuery(userId);
+  const { data: profile } = useProfileQuery(userId);
   const notificationsBadge = useNotificationsBadge(userId);
 
   const unreadConversationCount = useMemo(
@@ -217,8 +218,12 @@ export function DesktopSidebar() {
         >
           <Avatar
             size="sm"
-            fallbackText={session?.user?.email}
+            source={profile?.avatarUrl ? { uri: profile.avatarUrl } : null}
+            fallbackText={profile?.displayName || session?.user?.email}
             accessibilityLabel={t('tabs.profile')}
+            // The URL carries a ?v= stamp that changes on every upload; keying on it is what
+            // makes the picture here follow a change instead of staying on the cached one.
+            key={profile?.avatarUrl ?? 'fallback'}
           />
           <Text
             style={[

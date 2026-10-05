@@ -309,7 +309,7 @@ function getSupabaseRestConfig(): { url: string; anonKey: string } {
  * in the dashboard and not here makes the advice wrong, not the upload.
  */
 const BUCKET_LIMIT_MB: Record<string, number> = {
-  avatars: 5,
+  avatars: 7,
   'group-banners': 5,
   'chat-images': 50,
   'discussion-post-images': 50,
@@ -1882,6 +1882,28 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
          * so everything reading the path back keeps working.
          */
         return `${data.publicUrl}?v=${Date.now()}`;
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async removeProfileImage(userId: string): Promise<void | ApiError> {
+      try {
+        // The column first: it is what every screen reads, so clearing it is the part that must
+        // not fail. The stored file is removed after, best effort — a leftover object nobody
+        // links to is harmless, a row still pointing at a deleted file is a broken image.
+        const { error } = await getClient()
+          .from('profiles')
+          .update({ avatar_url: null, updated_at: new Date().toISOString() })
+          .eq('user_id', userId);
+        if (error) return toApiError(error);
+
+        // Which extension it was saved under depends on the picked file, so sweep all of them.
+        const paths = ['jpg', 'png', 'gif', 'webp'].map((ext) => `${userId}/avatar.${ext}`);
+        const { error: removeError } = await getClient().storage.from('avatars').remove(paths);
+        if (removeError) {
+          console.warn(`[storage] avatar file not deleted for ${userId}: ${removeError.message}`);
+        }
       } catch (e) {
         return toApiError(e);
       }

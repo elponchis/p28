@@ -104,6 +104,13 @@ export interface DataContract {
     base64Data?: string | null,
     onProgress?: OnUploadProgress
   ): Promise<string | ApiError>;
+  /**
+   * Go back to no photo at all: clears `avatar_url` and deletes the stored file.
+   *
+   * `updateProfile` cannot express this — it merges with `??`, so a null avatarUrl reads as
+   * "leave it alone" and keeps the old picture.
+   */
+  removeProfileImage(userId: string): Promise<void | ApiError>;
   /** Upload group banner image. Returns public URL. Used when creating/editing groups. */
   uploadGroupBannerImage(
     userId: string,

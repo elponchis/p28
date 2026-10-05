@@ -291,7 +291,7 @@ describe('Supabase data adapter', () => {
       expect(isApiError(result)).toBe(true);
       const err = result as ApiError;
       expect(err.code).toBe('FILE_TOO_LARGE');
-      expect(err.message).toContain('5 MB');
+      expect(err.message).toContain('7 MB');
       expect(err.message).not.toContain('statusCode');
       expect(err.message).not.toContain('EntityTooLarge');
     });
@@ -314,7 +314,46 @@ describe('Supabase data adapter', () => {
 
       const err = result as ApiError;
       expect(err.code).toBe('FILE_TOO_LARGE');
-      expect(err.message).toContain('5 MB');
+      expect(err.message).toContain('7 MB');
+    });
+
+    it('clears the column and sweeps the file when the photo is removed', async () => {
+      const update = jest
+        .fn()
+        .mockReturnValue({ eq: jest.fn().mockResolvedValue({ error: null }) });
+      const remove = jest.fn().mockResolvedValue({ error: null });
+      const getClient = (() => ({
+        from: jest.fn().mockReturnValue({ update }),
+        storage: { from: jest.fn().mockReturnValue({ remove }) },
+      })) as unknown as GetClient;
+      const adapter = createSupabaseDataAdapter(getClient);
+
+      const result = await adapter.removeProfileImage('user-1');
+
+      expect(isApiError(result)).toBe(false);
+      expect(update).toHaveBeenCalledWith(expect.objectContaining({ avatar_url: null }));
+      // Saved extension depends on what was picked, so every candidate goes.
+      expect(remove).toHaveBeenCalledWith([
+        'user-1/avatar.jpg',
+        'user-1/avatar.png',
+        'user-1/avatar.gif',
+        'user-1/avatar.webp',
+      ]);
+    });
+
+    it('still reports success when only the stored file could not be deleted', async () => {
+      // The column is what every screen reads; a leftover object nobody links to is harmless.
+      const update = jest
+        .fn()
+        .mockReturnValue({ eq: jest.fn().mockResolvedValue({ error: null }) });
+      const remove = jest.fn().mockResolvedValue({ error: { message: 'Object not found' } });
+      const getClient = (() => ({
+        from: jest.fn().mockReturnValue({ update }),
+        storage: { from: jest.fn().mockReturnValue({ remove }) },
+      })) as unknown as GetClient;
+      const adapter = createSupabaseDataAdapter(getClient);
+
+      expect(isApiError(await adapter.removeProfileImage('user-1'))).toBe(false);
     });
 
     it('does not leak the raw body for other upload failures either', async () => {

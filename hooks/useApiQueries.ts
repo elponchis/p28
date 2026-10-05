@@ -126,6 +126,17 @@ export function useUploadProfileImageMutation() {
   });
 }
 
+export function useRemoveProfileImageMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ userId }: { userId: string }) =>
+      queryFn(api.data.removeProfileImage(userId)) as Promise<void>,
+    onSuccess: (_, { userId }) => {
+      qc.invalidateQueries({ queryKey: queryKeys.profile(userId) });
+    },
+  });
+}
+
 // --- Notification preferences ---
 
 export function useNotificationPreferencesQuery(
