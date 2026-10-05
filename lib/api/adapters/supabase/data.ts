@@ -318,38 +318,66 @@ const BUCKET_LIMIT_MB: Record<string, number> = {
 };
 
 /**
+ * Why Storage actually said no.
+ *
+ * The HTTP status is not it. An oversized upload comes back as **400** with the real reason only
+ * inside the body — `{"statusCode":"413","error":"Payload too large","code":"EntityTooLarge"}`.
+ * Reading `xhr.status` alone files that under "something went wrong", which is how it reached the
+ * screen as raw JSON in the first place. So the body decides, and the HTTP status is the fallback.
+ */
+function storageReason(httpStatus: number, detail: string): number {
+  try {
+    const body = JSON.parse(detail) as { statusCode?: string | number; code?: string };
+    const inner = Number(body?.statusCode);
+    if (Number.isFinite(inner) && inner >= 400) return inner;
+    const code = String(body?.code ?? '');
+    if (code === 'EntityTooLarge') return 413;
+    if (code === 'InvalidMimeType') return 415;
+  } catch {
+    // Not JSON — fall through to the status and the text itself.
+  }
+  if (/EntityTooLarge|exceeded the maximum allowed size|Payload too large/i.test(detail))
+    return 413;
+  if (/mime type|InvalidMimeType/i.test(detail)) return 415;
+  return httpStatus;
+}
+
+/**
  * Storage's refusals, in words someone can act on.
  *
- * The response body is Storage's own JSON (`{"statusCode":"413","error":"Payload too large",…}`).
- * It is what makes a failed upload diagnosable, so it goes to the console — but it was also
- * reaching the screen verbatim, which tells the person nothing they can do. The returned message
- * names the limit instead; the raw text stays in the log.
+ * The response body is what makes a failed upload diagnosable, so it goes to the console — but it
+ * was also reaching the screen verbatim, which tells the person nothing they can do. The returned
+ * message names the limit instead; the raw text stays in the log.
  */
-function storageUploadError(status: number, detail: string, bucket: string): ApiError {
-  if (detail) console.warn(`[storage] ${bucket} upload failed (${status}): ${detail}`);
-  if (status === 413) {
+function storageUploadError(httpStatus: number, detail: string, bucket: string): ApiError {
+  if (detail) console.warn(`[storage] ${bucket} upload failed (${httpStatus}): ${detail}`);
+  const reason = storageReason(httpStatus, detail);
+  if (reason === 413) {
     const max = BUCKET_LIMIT_MB[bucket];
     return {
       message: max ? t('uploads.tooLargeWithMax', { max: String(max) }) : t('uploads.tooLarge'),
       code: 'FILE_TOO_LARGE',
     };
   }
-  if (status === 415)
+  if (reason === 415)
     return { message: t('uploads.unsupportedType'), code: 'UNSUPPORTED_FILE_TYPE' };
-  if (status === 401 || status === 403) {
+  if (reason === 401 || reason === 403) {
     return { message: t('uploads.forbidden'), code: 'UPLOAD_FORBIDDEN' };
   }
   return { message: t('uploads.failed'), code: 'UPLOAD_FAILED' };
 }
 
-/** The same mapping for the supabase-js path, which reports the status on the error object. */
+/**
+ * The same mapping for the supabase-js path. Its error object carries both: `status` is the HTTP
+ * one (400) and `statusCode` the real reason ('413'), so the message is handed on as the detail
+ * for `storageReason` to read.
+ */
 function fromStorageError(error: unknown, bucket: string): ApiError {
   const e = error as { status?: number; statusCode?: string | number; message?: string };
-  const status = Number(e?.status ?? e?.statusCode);
-  if (Number.isFinite(status) && status >= 400) {
-    return storageUploadError(status, e?.message ?? '', bucket);
-  }
-  return toApiError(error);
+  const httpStatus = Number(e?.status ?? e?.statusCode);
+  if (!Number.isFinite(httpStatus) || httpStatus < 400) return toApiError(error);
+  const detail = JSON.stringify({ statusCode: e?.statusCode, message: e?.message ?? '' });
+  return storageUploadError(httpStatus, detail, bucket);
 }
 
 /**

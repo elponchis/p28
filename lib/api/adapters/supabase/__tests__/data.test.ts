@@ -267,15 +267,15 @@ describe('Supabase data adapter', () => {
       expect(result).toHaveProperty('message');
     });
 
-    it('turns a 413 from Storage into a sentence that names the limit', async () => {
-      // What Storage actually sends back: {"statusCode":"413","error":"Payload too large",…}.
-      // That JSON was reaching the screen verbatim.
+    it('turns an oversized upload into a sentence that names the limit', async () => {
+      // Storage answers 400, and says 413 only inside the body. Reading the HTTP status alone
+      // files this under "something went wrong" — which is how the JSON reached the screen.
       const bucketMock = {
         upload: jest.fn().mockResolvedValue({
           error: {
             name: 'StorageApiError',
             message: 'The object exceeded the maximum allowed size',
-            status: 413,
+            status: 400,
             statusCode: '413',
           },
         }),
@@ -294,6 +294,27 @@ describe('Supabase data adapter', () => {
       expect(err.message).toContain('5 MB');
       expect(err.message).not.toContain('statusCode');
       expect(err.message).not.toContain('EntityTooLarge');
+    });
+
+    it('reads the reason out of the body when the status is only 400', async () => {
+      // The exact body the xhr path hands over, as seen in the browser.
+      const raw =
+        '{"statusCode":"413","error":"Payload too large",' +
+        '"message":"The object exceeded the maximum allowed size","code":"EntityTooLarge"}';
+      const bucketMock = {
+        upload: jest.fn().mockResolvedValue({ error: { status: 400, message: raw } }),
+        getPublicUrl: jest.fn(),
+      };
+      const getClient = (() => ({
+        storage: { from: jest.fn().mockReturnValue(bucketMock) },
+      })) as unknown as GetClient;
+      const adapter = createSupabaseDataAdapter(getClient);
+      const base64 = Buffer.from('fake-image-bytes').toString('base64');
+      const result = await adapter.uploadProfileImage('user-1', 'file:///photo.jpg', base64);
+
+      const err = result as ApiError;
+      expect(err.code).toBe('FILE_TOO_LARGE');
+      expect(err.message).toContain('5 MB');
     });
 
     it('does not leak the raw body for other upload failures either', async () => {
