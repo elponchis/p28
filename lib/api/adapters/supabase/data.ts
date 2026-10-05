@@ -310,7 +310,7 @@ function getSupabaseRestConfig(): { url: string; anonKey: string } {
  */
 const BUCKET_LIMIT_MB: Record<string, number> = {
   avatars: 7,
-  'group-banners': 5,
+  'group-banners': 7,
   'chat-images': 50,
   'discussion-post-images': 50,
   'assignment-submissions': 50,
