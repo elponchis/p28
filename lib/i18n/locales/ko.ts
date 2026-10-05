@@ -1207,4 +1207,12 @@ export const ko: TranslationShape = {
     draftSaved: '이 기기에 임시 저장했어요',
     moreShares: '나눔 {{count}}개 더 보기',
   },
+  uploads: {
+    tooLargeWithMax:
+      '파일이 너무 큽니다. {{max}}MB까지 올릴 수 있으니, 더 작은 파일이나 해상도를 낮춘 사진으로 올려주세요.',
+    tooLarge: '파일이 너무 큽니다. 더 작은 파일이나 해상도를 낮춘 사진으로 올려주세요.',
+    unsupportedType: '여기에는 올릴 수 없는 형식의 파일입니다.',
+    forbidden: '이 파일을 올릴 권한이 없습니다.',
+    failed: '업로드를 마치지 못했습니다. 다시 시도해 주세요.',
+  },
 };

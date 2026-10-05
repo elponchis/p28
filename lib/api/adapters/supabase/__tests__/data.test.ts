@@ -267,6 +267,55 @@ describe('Supabase data adapter', () => {
       expect(result).toHaveProperty('message');
     });
 
+    it('turns a 413 from Storage into a sentence that names the limit', async () => {
+      // What Storage actually sends back: {"statusCode":"413","error":"Payload too large",…}.
+      // That JSON was reaching the screen verbatim.
+      const bucketMock = {
+        upload: jest.fn().mockResolvedValue({
+          error: {
+            name: 'StorageApiError',
+            message: 'The object exceeded the maximum allowed size',
+            status: 413,
+            statusCode: '413',
+          },
+        }),
+        getPublicUrl: jest.fn(),
+      };
+      const getClient = (() => ({
+        storage: { from: jest.fn().mockReturnValue(bucketMock) },
+      })) as unknown as GetClient;
+      const adapter = createSupabaseDataAdapter(getClient);
+      const base64 = Buffer.from('fake-image-bytes').toString('base64');
+      const result = await adapter.uploadProfileImage('user-1', 'file:///photo.jpg', base64);
+
+      expect(isApiError(result)).toBe(true);
+      const err = result as ApiError;
+      expect(err.code).toBe('FILE_TOO_LARGE');
+      expect(err.message).toContain('5 MB');
+      expect(err.message).not.toContain('statusCode');
+      expect(err.message).not.toContain('EntityTooLarge');
+    });
+
+    it('does not leak the raw body for other upload failures either', async () => {
+      const bucketMock = {
+        upload: jest.fn().mockResolvedValue({
+          error: { message: 'new row violates row-level security policy', status: 403 },
+        }),
+        getPublicUrl: jest.fn(),
+      };
+      const getClient = (() => ({
+        storage: { from: jest.fn().mockReturnValue(bucketMock) },
+      })) as unknown as GetClient;
+      const adapter = createSupabaseDataAdapter(getClient);
+      const base64 = Buffer.from('fake-image-bytes').toString('base64');
+      const result = await adapter.uploadProfileImage('user-1', 'file:///photo.jpg', base64);
+
+      expect(isApiError(result)).toBe(true);
+      const err = result as ApiError;
+      expect(err.code).toBe('UPLOAD_FORBIDDEN');
+      expect(err.message).not.toContain('row-level security');
+    });
+
     it('uploads from base64 when provided (e.g. from image picker)', async () => {
       const bucketMock = {
         upload: jest.fn().mockResolvedValue({ error: null }),

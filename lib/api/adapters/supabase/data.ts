@@ -16,6 +16,7 @@ import {
   MAX_SUBMISSION_FILE_BYTES,
   MAX_SUBMISSION_FILES,
 } from '@/lib/api/assignmentSubmissions';
+import { t } from '@/lib/i18n';
 import { parseMeetingLinkInput } from '@/lib/meetingLink';
 import { lastMessageKind } from '@/lib/chatPreview';
 import { isKnownReaction } from '@/lib/reactions';
@@ -303,6 +304,55 @@ function getSupabaseRestConfig(): { url: string; anonKey: string } {
 }
 
 /**
+ * What each bucket accepts, mirroring the limits set on the Supabase project. Only used to say
+ * the number out loud in the message — Storage is still the one enforcing it, so a limit changed
+ * in the dashboard and not here makes the advice wrong, not the upload.
+ */
+const BUCKET_LIMIT_MB: Record<string, number> = {
+  avatars: 5,
+  'group-banners': 5,
+  'chat-images': 50,
+  'discussion-post-images': 50,
+  'assignment-submissions': 50,
+  'assignment-materials': 50,
+};
+
+/**
+ * Storage's refusals, in words someone can act on.
+ *
+ * The response body is Storage's own JSON (`{"statusCode":"413","error":"Payload too large",…}`).
+ * It is what makes a failed upload diagnosable, so it goes to the console — but it was also
+ * reaching the screen verbatim, which tells the person nothing they can do. The returned message
+ * names the limit instead; the raw text stays in the log.
+ */
+function storageUploadError(status: number, detail: string, bucket: string): ApiError {
+  if (detail) console.warn(`[storage] ${bucket} upload failed (${status}): ${detail}`);
+  if (status === 413) {
+    const max = BUCKET_LIMIT_MB[bucket];
+    return {
+      message: max ? t('uploads.tooLargeWithMax', { max: String(max) }) : t('uploads.tooLarge'),
+      code: 'FILE_TOO_LARGE',
+    };
+  }
+  if (status === 415)
+    return { message: t('uploads.unsupportedType'), code: 'UNSUPPORTED_FILE_TYPE' };
+  if (status === 401 || status === 403) {
+    return { message: t('uploads.forbidden'), code: 'UPLOAD_FORBIDDEN' };
+  }
+  return { message: t('uploads.failed'), code: 'UPLOAD_FAILED' };
+}
+
+/** The same mapping for the supabase-js path, which reports the status on the error object. */
+function fromStorageError(error: unknown, bucket: string): ApiError {
+  const e = error as { status?: number; statusCode?: string | number; message?: string };
+  const status = Number(e?.status ?? e?.statusCode);
+  if (Number.isFinite(status) && status >= 400) {
+    return storageUploadError(status, e?.message ?? '', bucket);
+  }
+  return toApiError(error);
+}
+
+/**
  * Uploads a file to Supabase Storage, optionally reporting 0..1 progress via XMLHttpRequest's
  * `upload.onprogress` (fetch, which supabase-js's storage client uses internally, does not
  * expose upload progress in React Native). Falls back to the plain supabase-js upload when no
@@ -321,7 +371,7 @@ async function uploadToStorage(
 
   if (!onProgress) {
     const { error } = await client.storage.from(bucket).upload(path, body, { upsert, contentType });
-    return error ? toApiError(error) : null;
+    return error ? fromStorageError(error, bucket) : null;
   }
 
   const { url: supabaseUrl, anonKey } = getSupabaseRestConfig();
@@ -329,7 +379,7 @@ async function uploadToStorage(
   const token = sessionData.session?.access_token;
   if (!supabaseUrl || !anonKey || !token) {
     const { error } = await client.storage.from(bucket).upload(path, body, { upsert, contentType });
-    return error ? toApiError(error) : null;
+    return error ? fromStorageError(error, bucket) : null;
   }
 
   const encodedPath = path
@@ -357,15 +407,15 @@ async function uploadToStorage(
           resolve();
         } else {
           // The body carries Storage's actual explanation (e.g. an RLS denial or a
-          // rejected mime type); without it a failed upload is undiagnosable.
+          // rejected mime type); it is kept on the error for the log, not for the screen.
           const detail = (xhr.responseText ?? '').trim().slice(0, 500);
-          reject(
-            new Error(
-              detail
-                ? `Upload failed (${xhr.status}): ${detail}`
-                : `Upload failed with status ${xhr.status}`
-            )
-          );
+          const err = new Error(`Upload failed (${xhr.status})`) as Error & {
+            status?: number;
+            detail?: string;
+          };
+          err.status = xhr.status;
+          err.detail = detail;
+          reject(err);
         }
       };
       xhr.onerror = () => reject(new Error('Network error during upload'));
@@ -373,6 +423,10 @@ async function uploadToStorage(
     });
     return null;
   } catch (e) {
+    const err = e as { status?: number; detail?: string };
+    if (typeof err?.status === 'number') {
+      return storageUploadError(err.status, err.detail ?? '', bucket);
+    }
     return toApiError(e);
   }
 }

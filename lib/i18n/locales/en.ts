@@ -1219,6 +1219,14 @@ export const en = {
     draftSaved: 'Draft saved on this device',
     moreShares: 'See {{count}} more shares',
   },
+  uploads: {
+    tooLargeWithMax:
+      'That file is too large. The limit is {{max}} MB — try a smaller one, or a lower-resolution photo.',
+    tooLarge: 'That file is too large. Try a smaller one, or a lower-resolution photo.',
+    unsupportedType: 'That kind of file cannot be uploaded here.',
+    forbidden: 'You do not have permission to upload this.',
+    failed: 'The upload did not finish. Please try again.',
+  },
 } as const;
 
 /** Shape of translation object (all values string). Use for ko/km typing. */
