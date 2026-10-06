@@ -103,6 +103,24 @@ export default function GroupLayout() {
           }}
         />
         <Stack.Screen
+          name="course/list"
+          options={{
+            title: t('courses.sectionTitle'),
+          }}
+        />
+        <Stack.Screen
+          name="assignment/list"
+          options={{
+            title: t('assignments.sectionTitle'),
+          }}
+        />
+        <Stack.Screen
+          name="discussion/list"
+          options={{
+            title: t('groups.discussions'),
+          }}
+        />
+        <Stack.Screen
           name="announcement/[id]"
           options={{
             title: t('announcements.detailTitle'),

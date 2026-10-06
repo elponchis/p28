@@ -729,6 +729,7 @@ export const km: TranslationShape = {
     retrySendHint: 'ព្យាយាមផ្ញើសារនេះម្តងទៀត',
   },
   discussions: {
+    seeAll: 'មើលទាំងអស់',
     removeReply: 'លុបការឆ្លើយតប',
     removeReplyHint: 'លុបការឆ្លើយតបនេះចេញពីការពិភាក្សា',
     removeReplyConfirmTitle: 'លុបការឆ្លើយតបនេះ?',
@@ -953,6 +954,7 @@ export const km: TranslationShape = {
       'នៅពេលអ្នកចាប់ផ្តើម សូមឱ្យពេលខ្លះអានវិធានសីលធម៌នៅក្នុងប្រវត្តិរូប ដើម្បីអោយគ្រប់គ្នាអាចចូលរួមយ៉ាងសុវត្ថិភាព។',
   },
   courses: {
+    seeAll: 'មើលទាំងអស់',
     sectionTitle: 'វគ្គសិក្សា',
     noCourses: 'មិនទាន់មានវគ្គសិក្សានៅឡើយទេ',
     noCoursesHint: 'វគ្គសិក្សាដែលបន្ថែមដោយអ្នកដឹកនាំក្រុមនឹងបង្ហាញនៅទីនេះ។',
@@ -1006,6 +1008,7 @@ export const km: TranslationShape = {
     fieldsRequired: 'សូមបញ្ចូលចំណងជើង និងតំណវីដេអូ',
   },
   assignments: {
+    seeAll: 'មើលទាំងអស់',
     sectionTitle: 'កិច្ចការ',
     openAssignmentHint: 'បើកកិច្ចការនេះ',
     dueLabel: 'កំណត់ថ្ងៃ',

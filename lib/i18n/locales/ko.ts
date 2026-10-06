@@ -725,6 +725,7 @@ export const ko: TranslationShape = {
     retrySendHint: '이 메시지를 다시 보냅니다',
   },
   discussions: {
+    seeAll: '전체 보기',
     removeReply: '댓글 삭제(관리)',
     removeReplyHint: '이 댓글을 토론에서 삭제합니다',
     removeReplyConfirmTitle: '이 댓글을 삭제할까요?',
@@ -947,6 +948,7 @@ export const ko: TranslationShape = {
       '시작하는 과정에서, 나중에 프로필에서 행동 지침을 읽어 안전하고 건강한 공동체를 함께 만들어 주세요.',
   },
   courses: {
+    seeAll: '전체 보기',
     sectionTitle: '강의',
     noCourses: '아직 강의가 없어요',
     noCoursesHint: '그룹 리더가 추가한 강의가 여기에 표시돼요.',
@@ -1000,6 +1002,7 @@ export const ko: TranslationShape = {
     fieldsRequired: '제목과 영상 URL을 입력해주세요',
   },
   assignments: {
+    seeAll: '전체 보기',
     sectionTitle: '과제',
     openAssignmentHint: '이 과제를 엽니다',
     dueLabel: '마감',

@@ -732,6 +732,7 @@ export const en = {
     retrySendHint: 'Attempts to send this message again',
   },
   discussions: {
+    seeAll: 'See all',
     removeReply: 'Remove reply',
     removeReplyHint: 'Removes this reply from the discussion',
     removeReplyConfirmTitle: 'Remove this reply?',
@@ -957,6 +958,7 @@ export const en = {
       'As you get started, please take a moment later to read the conduct guidelines in your Profile so everyone can participate safely.',
   },
   courses: {
+    seeAll: 'See all',
     sectionTitle: 'Courses',
     noCourses: 'No courses yet',
     noCoursesHint: 'Courses added by group leaders will appear here.',
@@ -1010,6 +1012,7 @@ export const en = {
     fieldsRequired: 'Title and video URL are required',
   },
   assignments: {
+    seeAll: 'See all',
     sectionTitle: 'Assignments',
     openAssignmentHint: 'Opens this assignment',
     dueLabel: 'Due',

@@ -14,13 +14,12 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import {
-  Avatar,
-  IconButton,
-  StackedAvatars,
-  type StackedAvatarMember,
-} from '@/components/primitives';
+import { StackedAvatars, type StackedAvatarMember } from '@/components/primitives';
+import { editorialShadow } from '@/components/patterns/editorialShadow';
 import { EmptyState } from '@/components/patterns/EmptyState';
+import { GroupAssignmentCard } from '@/components/patterns/GroupAssignmentCard';
+import { GroupCourseCard } from '@/components/patterns/GroupCourseCard';
+import { GroupDiscussionCard } from '@/components/patterns/GroupDiscussionCard';
 import { LatestAnnouncementRow } from '@/components/patterns/LatestAnnouncementRow';
 import { DailyDevotionCard } from '@/components/patterns/DailyDevotionCard';
 import { FadeActionSheet } from '@/components/patterns/FadeActionSheet';
@@ -51,7 +50,7 @@ import {
 } from '@/hooks/useApiQueries';
 import { getUserFacingError, isApiError } from '@/lib/api';
 import type { CreateGroupRecurringMeetingInput, GroupRecurringMeeting } from '@/lib/api';
-import { formatGroupEventDateTime, formatRelativeTime, isGroupEventPast } from '@/lib/dates';
+import { formatGroupEventDateTime } from '@/lib/dates';
 import { upcomingGroupEvents } from '@/lib/groupEventsSort';
 import { t } from '@/lib/i18n';
 import { formatRecurringMeetingSummary } from '@/lib/recurringMeetingSummary';
@@ -66,6 +65,9 @@ function getLanguageName(code: string): string {
   };
   return map[code] ?? code;
 }
+
+/** Rows each section previews before "see all" takes over — the events section's own number. */
+const SECTION_PREVIEW_COUNT = 3;
 
 export default function GroupDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -398,6 +400,18 @@ export default function GroupDetailScreen() {
     if (id) router.push(`/group/event/list?groupId=${id}`);
   }, [router, id]);
 
+  const handleSeeAllCourses = useCallback(() => {
+    if (id) router.push(`/group/course/list?groupId=${id}`);
+  }, [router, id]);
+
+  const handleSeeAllAssignments = useCallback(() => {
+    if (id) router.push(`/group/assignment/list?groupId=${id}`);
+  }, [router, id]);
+
+  const handleSeeAllDiscussions = useCallback(() => {
+    if (id) router.push(`/group/discussion/list?groupId=${id}`);
+  }, [router, id]);
+
   const handleSubmitCreateEvent = useCallback(
     (payload: {
       title: string;
@@ -492,6 +506,12 @@ export default function GroupDetailScreen() {
   const languageName = getLanguageName(group.preferredLanguage);
   const memberCountLabel = `${members.length} ${members.length === 1 ? t('groups.member') : t('groups.members')}`;
   const upcomingEvents = upcomingGroupEvents(groupEvents);
+  // The sections below preview the same number of rows the events section does; "전체 보기"
+  // carries the rest. Without a cap the group screen grows without limit and the link has
+  // nothing to show.
+  const previewCourses = courses.slice(0, SECTION_PREVIEW_COUNT);
+  const previewAssignments = assignments.slice(0, SECTION_PREVIEW_COUNT);
+  const previewDiscussions = discussions.slice(0, SECTION_PREVIEW_COUNT);
 
   return (
     <ScrollView
@@ -893,7 +913,21 @@ export default function GroupDetailScreen() {
         {courses.length > 0 || canAuthorCourses ? (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>{t('courses.sectionTitle')}</Text>
+              <Text style={[styles.sectionTitle, styles.sectionTitleFill]}>
+                {t('courses.sectionTitle')}
+              </Text>
+              {courses.length > SECTION_PREVIEW_COUNT ? (
+                <Pressable
+                  onPress={handleSeeAllCourses}
+                  style={[styles.addTopicButton, canModerateAsAdmin && styles.sectionActionSpacer]}
+                  accessibilityLabel={t('courses.seeAll')}
+                  accessibilityHint={t('courses.seeAll')}
+                >
+                  <Text style={styles.addTopicText}>{t('courses.seeAll')}</Text>
+                  <Ionicons name="chevron-forward" size={14} color={colors.secondary} />
+                </Pressable>
+              ) : null}
+
               {canAuthorCourses ? (
                 <Pressable
                   onPress={handleAddCourse}
@@ -914,59 +948,18 @@ export default function GroupDetailScreen() {
               />
             ) : (
               <View style={styles.courseList}>
-                {courses.map((course) => (
-                  <View key={course.id} style={styles.courseCard}>
-                    <Pressable
-                      onPress={() => router.push(`/group/${id}/course/${course.id}`)}
-                      style={({ pressed }) => [styles.courseCardMain, pressed && { opacity: 0.92 }]}
-                      accessibilityLabel={course.title}
-                      accessibilityHint={t('courses.openCourseHint')}
-                      accessibilityRole="button"
-                    >
-                      {course.coverImageUrl ? (
-                        <Image
-                          source={{ uri: course.coverImageUrl }}
-                          style={styles.courseCover}
-                          contentFit="cover"
-                          accessibilityIgnoresInvertColors
-                        />
-                      ) : (
-                        <View style={[styles.courseCover, styles.courseCoverPlaceholder]}>
-                          <Ionicons name="school-outline" size={28} color={colors.primary} />
-                        </View>
-                      )}
-                      <View style={styles.courseCardBody}>
-                        <Text style={styles.courseCardTitle} numberOfLines={2}>
-                          {course.title}
-                        </Text>
-                        {course.description ? (
-                          <Text style={styles.courseCardDescription} numberOfLines={2}>
-                            {course.description}
-                          </Text>
-                        ) : null}
-                      </View>
-                      <Ionicons name="chevron-forward" size={20} color={colors.onSurfaceVariant} />
-                    </Pressable>
-                    {canModerateAsAdmin ? (
-                      <View style={styles.courseCardActions}>
-                        <IconButton
-                          name="pencil-outline"
-                          size={18}
-                          onPress={() => handleEditCourse(course.id)}
-                          accessibilityLabel={t('courses.editCourse')}
-                          accessibilityHint={t('courses.editCourseHint')}
-                        />
-                        <IconButton
-                          name="trash-outline"
-                          size={18}
-                          color={colors.error}
-                          onPress={() => handleDeleteCourse(course.id, course.title)}
-                          accessibilityLabel={t('courses.deleteCourse')}
-                          accessibilityHint={t('courses.deleteCourseConfirm')}
-                        />
-                      </View>
-                    ) : null}
-                  </View>
+                {previewCourses.map((course) => (
+                  <GroupCourseCard
+                    key={course.id}
+                    course={course}
+                    onPress={() => router.push(`/group/${id}/course/${course.id}`)}
+                    onEdit={canModerateAsAdmin ? () => handleEditCourse(course.id) : undefined}
+                    onDelete={
+                      canModerateAsAdmin
+                        ? () => handleDeleteCourse(course.id, course.title)
+                        : undefined
+                    }
+                  />
                 ))}
               </View>
             )}
@@ -977,7 +970,21 @@ export default function GroupDetailScreen() {
         {assignments.length > 0 || canModerateAsAdmin ? (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>{t('assignments.sectionTitle')}</Text>
+              <Text style={[styles.sectionTitle, styles.sectionTitleFill]}>
+                {t('assignments.sectionTitle')}
+              </Text>
+              {assignments.length > SECTION_PREVIEW_COUNT ? (
+                <Pressable
+                  onPress={handleSeeAllAssignments}
+                  style={[styles.addTopicButton, canModerateAsAdmin && styles.sectionActionSpacer]}
+                  accessibilityLabel={t('assignments.seeAll')}
+                  accessibilityHint={t('assignments.seeAll')}
+                >
+                  <Text style={styles.addTopicText}>{t('assignments.seeAll')}</Text>
+                  <Ionicons name="chevron-forward" size={14} color={colors.secondary} />
+                </Pressable>
+              ) : null}
+
               {canModerateAsAdmin ? (
                 <Pressable
                   onPress={handleAddAssignment}
@@ -998,42 +1005,13 @@ export default function GroupDetailScreen() {
               />
             ) : (
               <View style={styles.assignmentList}>
-                {assignments.map((assignment) => {
-                  const isOverdue = !!assignment.dueDate && isGroupEventPast(assignment.dueDate);
-                  return (
-                    <Pressable
-                      key={assignment.id}
-                      onPress={() => router.push(`/group/${id}/assignment/${assignment.id}`)}
-                      style={({ pressed }) => [styles.assignmentCard, pressed && { opacity: 0.92 }]}
-                      accessibilityLabel={assignment.title}
-                      accessibilityHint={t('assignments.openAssignmentHint')}
-                      accessibilityRole="button"
-                    >
-                      <View style={styles.assignmentCardHeader}>
-                        <Text style={styles.assignmentCardTitle} numberOfLines={2}>
-                          {assignment.title}
-                        </Text>
-                        {isOverdue ? (
-                          <View style={styles.assignmentOverdueBadge}>
-                            <Text style={styles.assignmentOverdueBadgeText}>
-                              {t('assignments.overdueBadge')}
-                            </Text>
-                          </View>
-                        ) : null}
-                      </View>
-                      <Text style={styles.assignmentCardDue}>
-                        {assignment.dueDate
-                          ? `${t('assignments.dueLabel')} ${formatGroupEventDateTime(assignment.dueDate)}`
-                          : t('assignments.noDueDate')}
-                      </Text>
-                      {assignment.description ? (
-                        <Text style={styles.assignmentCardDescription} numberOfLines={2}>
-                          {assignment.description}
-                        </Text>
-                      ) : null}
-                    </Pressable>
-                  );
-                })}
+                {previewAssignments.map((assignment) => (
+                  <GroupAssignmentCard
+                    key={assignment.id}
+                    assignment={assignment}
+                    onPress={() => router.push(`/group/${id}/assignment/${assignment.id}`)}
+                  />
+                ))}
               </View>
             )}
           </View>
@@ -1042,7 +1020,21 @@ export default function GroupDetailScreen() {
         {/* ── Discussions section ── */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{t('groups.discussions')}</Text>
+            <Text style={[styles.sectionTitle, styles.sectionTitleFill]}>
+              {t('groups.discussions')}
+            </Text>
+            {discussions.length > SECTION_PREVIEW_COUNT ? (
+              <Pressable
+                onPress={handleSeeAllDiscussions}
+                style={[styles.addTopicButton, canModerateAsAdmin && styles.sectionActionSpacer]}
+                accessibilityLabel={t('discussions.seeAll')}
+                accessibilityHint={t('discussions.seeAll')}
+              >
+                <Text style={styles.addTopicText}>{t('discussions.seeAll')}</Text>
+                <Ionicons name="chevron-forward" size={14} color={colors.secondary} />
+              </Pressable>
+            ) : null}
+
             {isMember ? (
               <Pressable
                 onPress={handleCreateDiscussion}
@@ -1067,41 +1059,12 @@ export default function GroupDetailScreen() {
             />
           ) : (
             <View style={styles.discussionList}>
-              {discussions.map((d) => (
-                <Pressable
+              {previewDiscussions.map((d) => (
+                <GroupDiscussionCard
                   key={d.id}
+                  discussion={d}
                   onPress={() => router.push(`/group/discussion/${d.id}`)}
-                  style={({ pressed }) => [styles.discussionCard, pressed && { opacity: 0.92 }]}
-                  accessibilityLabel={`${d.title}, ${d.postCount ?? 0}`}
-                  accessibilityHint={t('groups.opensDiscussion')}
-                >
-                  <View style={styles.discussionAuthorRow}>
-                    <Avatar
-                      source={d.authorAvatarUrl ? { uri: d.authorAvatarUrl } : null}
-                      fallbackText={d.authorDisplayName}
-                      size="sm"
-                      accessibilityLabel={
-                        d.authorDisplayName
-                          ? `${d.authorDisplayName} ${t('groups.profilePicture')}`
-                          : t('groups.originalPoster')
-                      }
-                    />
-                    <Text style={styles.discussionMeta} numberOfLines={1}>
-                      {d.authorDisplayName ?? t('common.loading')}{' '}
-                      <Text style={styles.discussionMetaDot}>{'\u00B7'}</Text>{' '}
-                      {formatRelativeTime(d.createdAt)}
-                    </Text>
-                  </View>
-                  <Text style={styles.discussionBody} numberOfLines={2}>
-                    {d.body}
-                  </Text>
-                  <View style={styles.discussionFooter}>
-                    <View style={styles.discussionStat}>
-                      <Ionicons name="chatbubble-outline" size={14} color={colors.primary} />
-                      <Text style={styles.discussionStatText}>{d.postCount ?? 0}</Text>
-                    </View>
-                  </View>
-                </Pressable>
+                />
               ))}
             </View>
           )}
@@ -1189,14 +1152,6 @@ export default function GroupDetailScreen() {
 }
 
 const HERO_HEIGHT = 480;
-
-const editorialShadow = {
-  shadowColor: colors.shadow,
-  shadowOpacity: 0.06,
-  shadowRadius: 30,
-  shadowOffset: { width: 0, height: 15 },
-  ...Platform.select({ android: { elevation: 3 } }),
-};
 
 const styles = StyleSheet.create({
   container: {
