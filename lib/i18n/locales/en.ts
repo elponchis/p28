@@ -519,6 +519,8 @@ export const en = {
     publishing: 'Publishing…',
     fieldsRequired: 'Please enter a title and message.',
     latestUpdatesSectionTitle: 'Latest Updates',
+    addAnnouncement: 'Add news',
+    addAnnouncementHint: 'Opens the form for a new announcement in this group',
   },
   groupEvents: {
     sectionTitle: 'Events',

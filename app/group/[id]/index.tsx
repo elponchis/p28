@@ -713,18 +713,32 @@ export default function GroupDetailScreen() {
         {/* ── Announcements (Stitch “Latest Updates” layout) ── */}
         <View style={styles.section}>
           <View style={styles.latestUpdatesHeader}>
-            <Text style={styles.latestUpdatesTitle}>
+            {/* The same rule the sections below follow: whoever may add gets "+ Add" at the right
+                edge, empty or not. The hero keeps its megaphone — this is the one place a reader
+                is already looking when they think "there should be a new post here". */}
+            <Text style={[styles.latestUpdatesTitle, styles.sectionTitleFill]}>
               {t('announcements.latestUpdatesSectionTitle')}
             </Text>
             {announcements.length > 0 ? (
               <Pressable
                 onPress={handleSeeAllAnnouncements}
-                style={styles.addTopicButton}
+                style={[styles.addTopicButton, canModerateAsAdmin && styles.sectionActionSpacer]}
                 accessibilityLabel={t('announcements.seeAll')}
                 accessibilityHint={t('announcements.seeAll')}
               >
                 <Text style={styles.addTopicText}>{t('announcements.seeAll')}</Text>
                 <Ionicons name="chevron-forward" size={14} color={colors.secondary} />
+              </Pressable>
+            ) : null}
+            {canModerateAsAdmin ? (
+              <Pressable
+                onPress={handleCreateAnnouncement}
+                style={styles.addTopicButton}
+                accessibilityLabel={t('announcements.addAnnouncement')}
+                accessibilityHint={t('announcements.addAnnouncementHint')}
+              >
+                <Ionicons name="add-circle" size={16} color={colors.secondary} />
+                <Text style={styles.addTopicText}>{t('announcements.addAnnouncement')}</Text>
               </Pressable>
             ) : null}
           </View>
