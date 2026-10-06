@@ -104,6 +104,7 @@ export const ko: TranslationShape = {
     completeProfile: '프로필 완성하기',
     completeProfileHint: '이름, 국가, 선호 언어를 추가하면 앱 전체에서 프로필이 더 잘 보입니다.',
     completeOnboarding: '온보딩 완료',
+    completeOnboardingHint: '이름·국가·언어를 입력하는 화면을 엽니다',
     appLanguage: '앱 언어',
     appLanguageHint: '앱 인터페이스에 사용할 언어를 선택하세요',
     settings: '설정',

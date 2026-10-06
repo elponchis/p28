@@ -192,6 +192,66 @@ describe('Supabase data adapter', () => {
         expect((result as Profile).preferredLanguage).toBe('es');
       }
     });
+
+    it('writes the onboarding columns too (KAN-54)', async () => {
+      // These four were missing from the payload, so "Complete onboarding" saved nothing for an
+      // account that already existed and the prompt never went away.
+      const existingRow = {
+        user_id: 'user-1',
+        display_name: null,
+        first_name: null,
+        last_name: null,
+        birth_date: null,
+        country: null,
+        preferred_language: 'en',
+        avatar_url: null,
+        bio: null,
+        updated_at: null,
+      };
+      const upsert = jest.fn().mockReturnValue({
+        select: () => ({
+          single: () =>
+            Promise.resolve({
+              data: { ...existingRow, first_name: 'Jane', last_name: 'Doe' },
+              error: null,
+            }),
+        }),
+      });
+      let callCount = 0;
+      const fromMock = jest.fn().mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return {
+            select: () => ({
+              eq: () => ({
+                maybeSingle: () => Promise.resolve({ data: existingRow, error: null }),
+              }),
+            }),
+          };
+        }
+        return { upsert };
+      });
+      const getClient = (() => ({ from: fromMock })) as unknown as GetClient;
+      const adapter = createSupabaseDataAdapter(getClient);
+
+      await adapter.updateProfile('user-1', {
+        firstName: 'Jane',
+        lastName: 'Doe',
+        displayName: 'Jane Doe',
+        birthDate: '2000-12-31',
+        country: 'KH',
+      });
+
+      expect(upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          first_name: 'Jane',
+          last_name: 'Doe',
+          birth_date: '2000-12-31',
+          country: 'KH',
+        }),
+        expect.anything()
+      );
+    });
   });
 
   describe('createProfile', () => {

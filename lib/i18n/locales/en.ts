@@ -106,6 +106,7 @@ export const en = {
     completeProfileHint:
       'Add your name, country, and preferred language so your profile looks great across the app.',
     completeOnboarding: 'Complete onboarding',
+    completeOnboardingHint: 'Opens the form to add your name, country and language',
     appLanguage: 'App language',
     appLanguageHint: 'Choose the language for the app interface',
     settings: 'Settings',

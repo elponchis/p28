@@ -184,7 +184,13 @@ export default function ProfileScreen() {
           <View style={styles.noticeCard}>
             <Text style={styles.noticeTitle}>{t('profile.completeProfile')}</Text>
             <Text style={styles.noticeText}>{t('profile.completeProfileHint')}</Text>
-            <Pressable style={styles.editButton} onPress={() => router.push('/auth/onboarding')}>
+            <Pressable
+              style={styles.editButton}
+              onPress={() => router.push('/auth/onboarding')}
+              accessibilityRole="button"
+              accessibilityLabel={t('profile.completeOnboarding')}
+              accessibilityHint={t('profile.completeOnboardingHint')}
+            >
               <Text style={styles.editButtonText}>{t('profile.completeOnboarding')}</Text>
             </Pressable>
           </View>

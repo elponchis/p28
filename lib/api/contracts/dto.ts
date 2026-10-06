@@ -46,6 +46,12 @@ export interface Profile {
 
 export interface ProfileUpdates {
   displayName?: string;
+  firstName?: string;
+  lastName?: string;
+  /** ISO-8601 date string (YYYY-MM-DD) */
+  birthDate?: string;
+  /** Country code or name (fixed list in UI) */
+  country?: string;
   avatarUrl?: string;
   bio?: string;
   preferredLanguage?: string;
