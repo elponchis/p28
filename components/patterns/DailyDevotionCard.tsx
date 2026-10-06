@@ -198,9 +198,10 @@ export function DailyDevotionCard({
     return (
       <View style={styles.card}>
         {banner(
-          todaysVerse
-            ? `${t('devotion.title', { group: groupName })} · ${todaysVerse.reference}`
-            : t('devotion.title', { group: groupName }),
+          // The band says which passage this is. It used to lead with "Today's devotion · <group>"
+          // and the address fell off the end of the line — the one thing worth reading there
+          // (KAN-49). With no passage at all there is nothing to name, so the label stands in.
+          todaysVerse ? todaysVerse.reference : t('devotion.title', { group: groupName }),
           todaysVerse?.passage
         )}
         <View style={styles.body}>
@@ -247,10 +248,7 @@ export function DailyDevotionCard({
 
   return (
     <View style={styles.card}>
-      {banner(
-        `${t('devotion.title', { group: groupName })} · ${devotion.reference}`,
-        devotion.passage
-      )}
+      {banner(devotion.reference, devotion.passage)}
 
       {expanded ? (
         <>

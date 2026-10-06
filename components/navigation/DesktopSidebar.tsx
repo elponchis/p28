@@ -62,7 +62,8 @@ function SidebarItem({
     >
       <Ionicons
         name={isFocused ? iconFocused : iconDefault}
-        size={20}
+        // 20 read small against the 15px label beside it (KAN-52).
+        size={22}
         color={isFocused ? colors.primary : colors.onSurfaceVariant}
       />
       <Text

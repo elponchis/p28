@@ -959,7 +959,9 @@ export default function ChatDetailScreen() {
 
   return (
     <View {...parentContainerProps} style={styles.container}>
-      <View style={[styles.chatHeader, { paddingTop: insets.top }]}>
+      {/* The safe-area inset alone put the name hard against the status bar, which reads as
+          cut off (KAN-44). The bar now has the same room above as below. */}
+      <View style={[styles.chatHeader, { paddingTop: insets.top + spacing.sm }]}>
         <Pressable
           onPress={handleBack}
           style={styles.backButton}
