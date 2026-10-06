@@ -22,9 +22,10 @@ import { ReflectionPlate } from '@/components/patterns/ReflectionPlate';
 import { useLocale } from '@/contexts/LocaleContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useFadeSheetAnimation } from '@/hooks/useFadeSheetAnimation';
+import { useUpdateProfileMutation } from '@/hooks/useApiQueries';
 import { usePendingSignUp } from '@/contexts/PendingSignUpContext';
 import { auth } from '@/lib/api';
-import { getUserFacingError } from '@/lib/errors';
+import { describeError, getUserFacingError } from '@/lib/errors';
 import type { ApiError } from '@/lib/api/contracts/errors';
 import { t } from '@/lib/i18n';
 import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
@@ -409,6 +410,7 @@ function SelectField({
 
 export default function OnboardingScreen() {
   const { session } = useAuth();
+  const updateProfile = useUpdateProfileMutation();
   const { setLocale, locale } = useLocale();
   const { pendingSignUp, clearPendingSignUp } = usePendingSignUp();
   const insets = useSafeAreaInsets();
@@ -507,7 +509,30 @@ export default function OnboardingScreen() {
       return;
     }
 
-    // profiles row is created by the on_auth_user_created DB trigger from signUp() metadata above.
+    // A brand-new account gets its row from the on_auth_user_created trigger, built from the
+    // signUp() metadata above. Someone who already has an account arrives here from "Complete
+    // onboarding" instead — there is no signUp call on that path, so nothing was written and the
+    // prompt stayed up no matter how many times they filled the form (KAN-54). Save it.
+    if (!pendingSignUp) {
+      try {
+        await updateProfile.mutateAsync({
+          userId,
+          updates: {
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            displayName: `${firstName.trim()} ${lastName.trim()}`.trim(),
+            birthDate: birthDate.trim() ? birthDate.trim() : undefined,
+            country: country ?? undefined,
+            preferredLanguage: preferredLanguage ?? undefined,
+          },
+        });
+      } catch (e) {
+        setError(describeError(e));
+        setIsSubmittingSignUp(false);
+        return;
+      }
+    }
+
     setIsSubmittingSignUp(false);
     if (preferredLanguage) setLocale(preferredLanguage);
     router.replace('/(tabs)');

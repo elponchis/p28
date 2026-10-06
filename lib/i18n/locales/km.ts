@@ -105,6 +105,7 @@ export const km: TranslationShape = {
     completeProfileHint:
       'បន្ថែមឈ្មោះ ប្រទេស និងភាសាដែលអ្នកចូលចិត្ត ដើម្បីឱ្យប្រវត្តិរូបមើលល្អនៅទូទាំងកម្មវិធី។',
     completeOnboarding: 'បញ្ចប់ការណែនាំ',
+    completeOnboardingHint: 'បើកទម្រង់សម្រាប់បញ្ចូលឈ្មោះ ប្រទេស និងភាសា',
     appLanguage: 'ភាសាកម្មវិធី',
     appLanguageHint: 'ជ្រើសរើសភាសាសម្រាប់ចំណុចប្រទាក់កម្មវិធី',
     settings: 'ការកំណត់',

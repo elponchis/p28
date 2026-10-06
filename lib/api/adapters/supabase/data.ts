@@ -1706,6 +1706,12 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
         const merged: Profile = {
           userId,
           displayName: updates.displayName ?? current?.displayName,
+          // Onboarding writes these when an existing account finishes its profile; before, only
+          // the sign-up trigger could set them, so that screen saved nothing (KAN-54).
+          firstName: updates.firstName ?? current?.firstName,
+          lastName: updates.lastName ?? current?.lastName,
+          birthDate: updates.birthDate ?? current?.birthDate,
+          country: updates.country ?? current?.country,
           avatarUrl: updates.avatarUrl ?? current?.avatarUrl,
           bio: updates.bio ?? current?.bio,
           preferredLanguage: updates.preferredLanguage ?? current?.preferredLanguage,
@@ -1717,6 +1723,10 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
         const payload = {
           user_id: userId,
           display_name: merged.displayName ?? null,
+          first_name: merged.firstName ?? null,
+          last_name: merged.lastName ?? null,
+          birth_date: merged.birthDate ?? null,
+          country: merged.country ?? null,
           avatar_url: merged.avatarUrl ?? null,
           bio: merged.bio ?? null,
           preferred_language: merged.preferredLanguage ?? null,
