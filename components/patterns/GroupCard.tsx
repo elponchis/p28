@@ -168,6 +168,8 @@ function FeaturedCard({ group, isMember, typeLabel, onPress, onJoin }: InnerCard
 function StandardCard({ group, isMember, typeLabel, onPress }: Omit<InnerCardProps, 'onJoin'>) {
   return (
     <Pressable
+      // Fills its cell, so cards sharing a row of the grid end level with each other.
+      style={standardStyles.press}
       onPress={onPress}
       accessibilityLabel={`${group.name}, ${typeLabel}${isMember ? `, ${t('groups.joined')}` : ''}`}
       accessibilityHint={t('groups.opensGroupDetails')}
@@ -347,7 +349,11 @@ const featuredStyles = StyleSheet.create({
 });
 
 const standardStyles = StyleSheet.create({
+  press: {
+    flex: 1,
+  },
   card: {
+    flex: 1,
     backgroundColor: colors.surfaceContainerLowest,
     borderRadius: radius.card,
     borderCurve: 'continuous',
@@ -358,7 +364,9 @@ const standardStyles = StyleSheet.create({
     height: 160,
   },
   imagePlaceholder: {
-    backgroundColor: colors.surfaceContainer,
+    // A shade darker than the page, so a group with no cover still reads as a card with a
+    // cover area rather than an icon floating above white.
+    backgroundColor: colors.surfaceContainerHigh,
     alignItems: 'center',
     justifyContent: 'center',
   },

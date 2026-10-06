@@ -11,6 +11,7 @@ import {
 } from '@/hooks/useApiQueries';
 import { useAuth } from '@/hooks/useAuth';
 import type { Announcement } from '@/lib/api';
+import { useGridColumns } from '@/hooks/useGridColumns';
 import { t } from '@/lib/i18n';
 import { colors, fontFamily, spacing, typography } from '@/theme/tokens';
 
@@ -22,6 +23,8 @@ function statusLabel(status: Announcement['status']): string {
 export default function AnnouncementListScreen() {
   const { groupId } = useLocalSearchParams<{ groupId: string }>();
   const router = useRouter();
+  // Wide windows fit more than one card on a row (KAN-50).
+  const columns = useGridColumns(420);
   const { session } = useAuth();
   const userId = session?.user?.id;
 
@@ -46,20 +49,22 @@ export default function AnnouncementListScreen() {
     ({ item }: { item: Announcement }) => {
       const showStatusBadge = isGroupAdmin && item.status !== 'published';
       return (
-        <LatestAnnouncementRow
-          title={item.title}
-          body={item.body}
-          createdAt={item.createdAt}
-          onPress={() => {
-            router.push(`/group/announcement/${item.id}?groupId=${encodeURIComponent(groupId)}`);
-          }}
-          statusBadgeLabel={showStatusBadge ? statusLabel(item.status) : undefined}
-          meetingLink={item.meetingLink ?? undefined}
-          showMeetingLink={isMember && !!item.meetingLink?.trim()}
-        />
+        <View style={columns > 1 ? styles.cell : undefined}>
+          <LatestAnnouncementRow
+            title={item.title}
+            body={item.body}
+            createdAt={item.createdAt}
+            onPress={() => {
+              router.push(`/group/announcement/${item.id}?groupId=${encodeURIComponent(groupId)}`);
+            }}
+            statusBadgeLabel={showStatusBadge ? statusLabel(item.status) : undefined}
+            meetingLink={item.meetingLink ?? undefined}
+            showMeetingLink={isMember && !!item.meetingLink?.trim()}
+          />
+        </View>
       );
     },
-    [groupId, isGroupAdmin, isMember, router]
+    [columns, groupId, isGroupAdmin, isMember, router]
   );
 
   const renderSeparator = useCallback(
@@ -81,6 +86,9 @@ export default function AnnouncementListScreen() {
         </View>
       ) : (
         <FlatList
+          key={columns}
+          numColumns={columns}
+          columnWrapperStyle={columns > 1 ? styles.row : undefined}
           data={announcements}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
@@ -116,6 +124,13 @@ const styles = StyleSheet.create({
     color: colors.primary,
     letterSpacing: -0.1,
     marginBottom: spacing.xl,
+  },
+  row: {
+    gap: spacing.md,
+  },
+  /** Each cell shares the row evenly; without it the cards keep their natural width. */
+  cell: {
+    flex: 1,
   },
   listContent: {
     paddingBottom: spacing.xxl,

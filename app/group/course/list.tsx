@@ -5,6 +5,7 @@ import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-nativ
 import { GroupCourseCard } from '@/components/patterns/GroupCourseCard';
 import { useCoursesByGroupQuery, useGroupQuery } from '@/hooks/useApiQueries';
 import type { Course } from '@/lib/api';
+import { useGridColumns } from '@/hooks/useGridColumns';
 import { t } from '@/lib/i18n';
 import { colors, fontFamily, spacing, typography } from '@/theme/tokens';
 
@@ -17,6 +18,8 @@ import { colors, fontFamily, spacing, typography } from '@/theme/tokens';
 export default function CourseListScreen() {
   const { groupId } = useLocalSearchParams<{ groupId: string }>();
   const router = useRouter();
+  // Wide windows fit more than one card on a row (KAN-50).
+  const columns = useGridColumns(360);
 
   const { data: group } = useGroupQuery(groupId);
   const { data: courses = [], isLoading } = useCoursesByGroupQuery(groupId, {
@@ -29,12 +32,14 @@ export default function CourseListScreen() {
 
   const renderItem = useCallback(
     ({ item }: { item: Course }) => (
-      <GroupCourseCard
-        course={item}
-        onPress={() => router.push(`/group/${groupId}/course/${item.id}`)}
-      />
+      <View style={columns > 1 ? styles.cell : undefined}>
+        <GroupCourseCard
+          course={item}
+          onPress={() => router.push(`/group/${groupId}/course/${item.id}`)}
+        />
+      </View>
     ),
-    [groupId, router]
+    [columns, groupId, router]
   );
 
   const renderSeparator = useCallback(() => <View style={styles.gap} accessible={false} />, []);
@@ -51,6 +56,9 @@ export default function CourseListScreen() {
         </View>
       ) : (
         <FlatList
+          key={columns}
+          numColumns={columns}
+          columnWrapperStyle={columns > 1 ? styles.row : undefined}
           data={courses}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
@@ -84,6 +92,13 @@ const styles = StyleSheet.create({
     color: colors.primary,
     letterSpacing: -0.1,
     marginBottom: spacing.xl,
+  },
+  row: {
+    gap: spacing.md,
+  },
+  /** Each cell shares the row evenly; without it the cards keep their natural width. */
+  cell: {
+    flex: 1,
   },
   listContent: {
     paddingBottom: spacing.xxl,

@@ -5,6 +5,7 @@ import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-nativ
 import { GroupAssignmentCard } from '@/components/patterns/GroupAssignmentCard';
 import { useAssignmentsByGroupQuery, useGroupQuery } from '@/hooks/useApiQueries';
 import type { Assignment } from '@/lib/api';
+import { useGridColumns } from '@/hooks/useGridColumns';
 import { t } from '@/lib/i18n';
 import { colors, fontFamily, spacing, typography } from '@/theme/tokens';
 
@@ -12,6 +13,8 @@ import { colors, fontFamily, spacing, typography } from '@/theme/tokens';
 export default function AssignmentListScreen() {
   const { groupId } = useLocalSearchParams<{ groupId: string }>();
   const router = useRouter();
+  // Wide windows fit more than one card on a row (KAN-50).
+  const columns = useGridColumns(320);
 
   const { data: group } = useGroupQuery(groupId);
   const { data: assignments = [], isLoading } = useAssignmentsByGroupQuery(groupId, {
@@ -24,12 +27,14 @@ export default function AssignmentListScreen() {
 
   const renderItem = useCallback(
     ({ item }: { item: Assignment }) => (
-      <GroupAssignmentCard
-        assignment={item}
-        onPress={() => router.push(`/group/${groupId}/assignment/${item.id}`)}
-      />
+      <View style={columns > 1 ? styles.cell : undefined}>
+        <GroupAssignmentCard
+          assignment={item}
+          onPress={() => router.push(`/group/${groupId}/assignment/${item.id}`)}
+        />
+      </View>
     ),
-    [groupId, router]
+    [columns, groupId, router]
   );
 
   const renderSeparator = useCallback(() => <View style={styles.gap} accessible={false} />, []);
@@ -46,6 +51,9 @@ export default function AssignmentListScreen() {
         </View>
       ) : (
         <FlatList
+          key={columns}
+          numColumns={columns}
+          columnWrapperStyle={columns > 1 ? styles.row : undefined}
           data={assignments}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
@@ -79,6 +87,13 @@ const styles = StyleSheet.create({
     color: colors.primary,
     letterSpacing: -0.1,
     marginBottom: spacing.xl,
+  },
+  row: {
+    gap: spacing.md,
+  },
+  /** Each cell shares the row evenly; without it the cards keep their natural width. */
+  cell: {
+    flex: 1,
   },
   listContent: {
     paddingBottom: spacing.xxl,
