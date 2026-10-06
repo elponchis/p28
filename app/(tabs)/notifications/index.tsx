@@ -128,46 +128,52 @@ export default function NotificationsScreen() {
           {inAppItems.map((item) => {
             const { iconName, kindLabel, openHint } = inAppNotificationPresentation(item);
             return (
-              <Pressable
+              /* The row and its × are siblings, not one inside the other. Nested Pressables
+                 become nested <button>s on web, which is invalid HTML — React warns about it and
+                 the browser is free to do what it likes with the inner click. */
+              <View
                 key={item.id}
-                style={({ pressed }) => [
+                style={[
                   styles.card,
                   styles.activityCard,
                   !item.readAt && styles.activityCardUnread,
-                  pressed && styles.cardPressed,
                 ]}
-                onPress={() => handleOpenInApp(item)}
-                accessibilityLabel={`${kindLabel}: ${item.title}`}
-                accessibilityHint={openHint}
-                accessibilityRole="button"
               >
-                <View style={styles.cardIconWrap}>
-                  <Ionicons name={iconName} size={22} color={colors.primary} />
-                </View>
-                <View style={styles.cardContent}>
-                  <View style={styles.activityTitleRow}>
-                    {!item.readAt ? <View style={styles.unreadDot} /> : null}
-                    <Text
-                      style={[styles.cardTitle, !item.readAt && styles.cardTitleUnread]}
-                      numberOfLines={2}
-                    >
-                      {item.title}
-                    </Text>
+                <Pressable
+                  style={({ pressed }) => [styles.cardMain, pressed && styles.cardPressed]}
+                  onPress={() => handleOpenInApp(item)}
+                  accessibilityLabel={`${kindLabel}: ${item.title}`}
+                  accessibilityHint={openHint}
+                  accessibilityRole="button"
+                >
+                  <View style={styles.cardIconWrap}>
+                    <Ionicons name={iconName} size={22} color={colors.primary} />
                   </View>
-                  <Text style={styles.kindRow}>
-                    {kindLabel}
-                    {item.kind !== 'chat_message' && item.groupName.trim().length > 0
-                      ? ` · ${t('notifications.inGroupNamed', { name: item.groupName.trim() })}`
-                      : ''}
-                  </Text>
-                  {/* An accepted friend request is a name and nothing else — no blank line. */}
-                  {item.summary.trim().length > 0 ? (
-                    <Text style={styles.summaryText} numberOfLines={3}>
-                      {item.summary}
+                  <View style={styles.cardContent}>
+                    <View style={styles.activityTitleRow}>
+                      {!item.readAt ? <View style={styles.unreadDot} /> : null}
+                      <Text
+                        style={[styles.cardTitle, !item.readAt && styles.cardTitleUnread]}
+                        numberOfLines={2}
+                      >
+                        {item.title}
+                      </Text>
+                    </View>
+                    <Text style={styles.kindRow}>
+                      {kindLabel}
+                      {item.kind !== 'chat_message' && item.groupName.trim().length > 0
+                        ? ` · ${t('notifications.inGroupNamed', { name: item.groupName.trim() })}`
+                        : ''}
                     </Text>
-                  ) : null}
-                  <Text style={styles.timeText}>{formatRelativeTime(item.createdAt)}</Text>
-                </View>
+                    {/* An accepted friend request is a name and nothing else — no blank line. */}
+                    {item.summary.trim().length > 0 ? (
+                      <Text style={styles.summaryText} numberOfLines={3}>
+                        {item.summary}
+                      </Text>
+                    ) : null}
+                    <Text style={styles.timeText}>{formatRelativeTime(item.createdAt)}</Text>
+                  </View>
+                </Pressable>
                 <Pressable
                   onPress={() => handleDismiss(item)}
                   style={({ pressed }) => [styles.dismiss, pressed && styles.cardPressed]}
@@ -178,7 +184,7 @@ export default function NotificationsScreen() {
                 >
                   <Ionicons name="close" size={18} color={colors.ink300} />
                 </Pressable>
-              </Pressable>
+              </View>
             );
           })}
         </View>
@@ -264,6 +270,13 @@ const styles = StyleSheet.create({
   },
   activityCard: {
     alignItems: 'flex-start',
+  },
+  /** The part of the card that opens it — everything but the ×. */
+  cardMain: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
   },
   activityCardUnread: {
     backgroundColor: colors.surfaceContainer,
