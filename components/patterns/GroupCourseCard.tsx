@@ -84,6 +84,8 @@ export function GroupCourseCard({ course, onPress, onEdit, onDelete }: GroupCour
 
 const styles = StyleSheet.create({
   card: {
+    // Fills the grid cell it is placed in; on a phone the cell is the full width anyway.
+    flexGrow: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surfaceContainerLowest,

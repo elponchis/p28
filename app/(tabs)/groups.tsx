@@ -13,9 +13,11 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { EmptyState } from '@/components/patterns/EmptyState';
+import { GridFillerTile } from '@/components/patterns/GridFillerTile';
 import { GroupCard } from '@/components/patterns/GroupCard';
 
 import { useAuth } from '@/hooks/useAuth';
+import { useGridColumns } from '@/hooks/useGridColumns';
 import { useGroupsQuery, useGroupsForUserQuery, useIsAdminQuery } from '@/hooks/useApiQueries';
 import { getUserFacingError } from '@/lib/errors';
 import { GROUP_TYPES, groupTypeLabel } from '@/lib/groupTypes';
@@ -32,6 +34,12 @@ import {
 } from '@/theme/tokens';
 
 type FilterType = 'all' | 'joined' | GroupType;
+
+/**
+ * The narrowest a group card may be before the grid drops a column. Picked from the standard
+ * card: its 160px cover and two lines of name want about this much to stay legible.
+ */
+const GROUP_CARD_MIN_WIDTH = 320;
 
 /** The chips, in order. Every kind of group is offered, so a new kind is never unfilterable. */
 const FILTER_OPTIONS: readonly FilterType[] = ['all', 'joined', ...GROUP_TYPES] as const;
@@ -70,6 +78,7 @@ export default function GroupsScreen() {
     enabled: !!userId,
   });
   const { data: memberGroups = [], refetch: refetchMemberGroups } = useGroupsForUserQuery(userId);
+  const columns = useGridColumns(GROUP_CARD_MIN_WIDTH);
   // Admin comes from app_roles and nowhere else. An address was hardcoded here beside it, which
   // the database never honoured -- it only showed that account a Create group button whose insert
   // RLS then refused. A role the server disagrees with is a button that fails.
@@ -92,6 +101,9 @@ export default function GroupsScreen() {
   );
 
   const displayed = filter === 'joined' ? groups.filter((g) => memberGroupIds.has(g.id)) : groups;
+  // How many cells are left over on the last row. Zero when the row comes out even.
+  const fillerCount =
+    columns > 1 && displayed.length > 0 ? (columns - (displayed.length % columns)) % columns : 0;
 
   const filterOptions = FILTER_OPTIONS;
 
@@ -209,15 +221,32 @@ export default function GroupsScreen() {
             }
           />
         ) : (
-          <View style={styles.list}>
+          <View style={columns > 1 ? styles.grid : styles.list}>
             {displayed.map((group, index) => (
-              <GroupCard
-                key={group.id}
-                group={group}
-                isMember={memberGroupIds.has(group.id)}
-                variant={index === 0 ? 'featured' : 'standard'}
-              />
+              <View key={group.id} style={columns > 1 ? styles.gridItem : undefined}>
+                <GroupCard
+                  group={group}
+                  isMember={memberGroupIds.has(group.id)}
+                  /* The tall hero belongs to a single column. Once the page can hold two cards
+                     side by side, one group taking the whole width is the thing the grid is
+                     meant to fix (KAN-50). */
+                  variant={columns === 1 && index === 0 ? 'featured' : 'standard'}
+                />
+              </View>
             ))}
+            {/* The last row's empty cells. They keep a lone card card-sized instead of letting
+                it stretch, and for whoever may add a group they are the invitation to. */}
+            {fillerCount > 0
+              ? Array.from({ length: fillerCount }, (_, i) => (
+                  <View key={`filler-${i}`} style={styles.gridItem}>
+                    <GridFillerTile
+                      label={isAdmin && i === 0 ? t('groups.createGroup') : undefined}
+                      hint={isAdmin && i === 0 ? t('groups.createGroupHint') : undefined}
+                      onPress={isAdmin && i === 0 ? () => push('/group/create') : undefined}
+                    />
+                  </View>
+                ))
+              : null}
           </View>
         )}
       </Animated.View>
@@ -350,5 +379,17 @@ const styles = StyleSheet.create({
 
   list: {
     gap: spacing.md,
+  },
+  /** Cards flow and wrap; each one grows to share the row evenly. */
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+  },
+  gridItem: {
+    flexGrow: 1,
+    flexBasis: GROUP_CARD_MIN_WIDTH,
+    minWidth: GROUP_CARD_MIN_WIDTH,
+    maxWidth: '100%',
   },
 });

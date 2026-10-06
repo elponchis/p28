@@ -5,6 +5,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { useGroupEventsQuery, useGroupQuery, useGroupsForUserQuery } from '@/hooks/useApiQueries';
 import { useAuth } from '@/hooks/useAuth';
+import { useGridColumns } from '@/hooks/useGridColumns';
 import { t } from '@/lib/i18n';
 import { formatGroupEventDateTime, isGroupEventPast } from '@/lib/dates';
 import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
@@ -14,6 +15,8 @@ import { sortGroupEventsForList } from '@/lib/groupEventsSort';
 export default function GroupEventListScreen() {
   const { groupId } = useLocalSearchParams<{ groupId: string }>();
   const router = useRouter();
+  // Wide windows fit more than one card on a row (KAN-50).
+  const columns = useGridColumns(360);
   const { session } = useAuth();
   const userId = session?.user?.id;
   const { data: group } = useGroupQuery(groupId);
@@ -36,48 +39,50 @@ export default function GroupEventListScreen() {
       const isCancelled = item.status === 'cancelled';
       const isPast = isGroupEventPast(item.startsAt);
       return (
-        <Pressable
-          style={({ pressed }) => [
-            styles.card,
-            isPast && styles.cardPast,
-            pressed && { opacity: 0.92 },
-          ]}
-          onPress={() =>
-            router.push({
-              pathname: '/group/event/[id]',
-              params: { id: item.id, fromGroup: '1' },
-            })
-          }
-          accessibilityLabel={item.title}
-          accessibilityRole="button"
-        >
-          <View style={styles.cardHeader}>
-            <Text style={[styles.title, isPast && styles.titlePast]} numberOfLines={2}>
-              {item.title}
+        <View style={columns > 1 ? styles.cell : undefined}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.card,
+              isPast && styles.cardPast,
+              pressed && { opacity: 0.92 },
+            ]}
+            onPress={() =>
+              router.push({
+                pathname: '/group/event/[id]',
+                params: { id: item.id, fromGroup: '1' },
+              })
+            }
+            accessibilityLabel={item.title}
+            accessibilityRole="button"
+          >
+            <View style={styles.cardHeader}>
+              <Text style={[styles.title, isPast && styles.titlePast]} numberOfLines={2}>
+                {item.title}
+              </Text>
+              {isCancelled ? (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{t('groupEvents.cancelled')}</Text>
+                </View>
+              ) : null}
+            </View>
+            <Text style={[styles.meta, isPast && styles.metaPast]}>
+              {formatGroupEventDateTime(item.startsAt)}
             </Text>
-            {isCancelled ? (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{t('groupEvents.cancelled')}</Text>
-              </View>
+            {item.location?.trim() ? (
+              <Text style={[styles.location, isPast && styles.metaPast]} numberOfLines={2}>
+                {item.location.trim()}
+              </Text>
             ) : null}
-          </View>
-          <Text style={[styles.meta, isPast && styles.metaPast]}>
-            {formatGroupEventDateTime(item.startsAt)}
-          </Text>
-          {item.location?.trim() ? (
-            <Text style={[styles.location, isPast && styles.metaPast]} numberOfLines={2}>
-              {item.location.trim()}
-            </Text>
-          ) : null}
-          {item.requiresRsvp && !isCancelled ? (
-            <Text style={[styles.rsvp, isPast && styles.rsvpPast]}>
-              {t('groupEvents.goingCount', { count: item.goingCount ?? 0 })}
-            </Text>
-          ) : null}
-        </Pressable>
+            {item.requiresRsvp && !isCancelled ? (
+              <Text style={[styles.rsvp, isPast && styles.rsvpPast]}>
+                {t('groupEvents.goingCount', { count: item.goingCount ?? 0 })}
+              </Text>
+            ) : null}
+          </Pressable>
+        </View>
       );
     },
-    [router]
+    [columns, router]
   );
 
   if (!groupId) {
@@ -92,6 +97,9 @@ export default function GroupEventListScreen() {
         <ActivityIndicator style={styles.loader} color={colors.primary} />
       ) : (
         <FlatList
+          key={columns}
+          numColumns={columns}
+          columnWrapperStyle={columns > 1 ? styles.row : undefined}
           data={sortedEvents}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
@@ -126,6 +134,13 @@ const styles = StyleSheet.create({
     ...typography.title,
     color: colors.textPrimary,
     marginBottom: spacing.md,
+  },
+  row: {
+    gap: spacing.md,
+  },
+  /** Each cell shares the row evenly; without it the cards keep their natural width. */
+  cell: {
+    flex: 1,
   },
   listContent: {
     paddingBottom: spacing.xxl,

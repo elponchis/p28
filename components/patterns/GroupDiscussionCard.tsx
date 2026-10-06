@@ -57,6 +57,8 @@ export function GroupDiscussionCard({ discussion: d, onPress }: GroupDiscussionC
 
 const styles = StyleSheet.create({
   card: {
+    // Fills the grid cell it is placed in; on a phone the cell is the full width anyway.
+    flexGrow: 1,
     backgroundColor: colors.surfaceContainerLowest,
     borderRadius: radius.card,
     padding: spacing.lg,

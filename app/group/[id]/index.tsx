@@ -17,6 +17,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { StackedAvatars, type StackedAvatarMember } from '@/components/primitives';
 import { editorialShadow } from '@/components/patterns/editorialShadow';
 import { EmptyState } from '@/components/patterns/EmptyState';
+import { GridFillerTile } from '@/components/patterns/GridFillerTile';
 import { GroupAssignmentCard } from '@/components/patterns/GroupAssignmentCard';
 import { GroupCourseCard } from '@/components/patterns/GroupCourseCard';
 import { GroupDiscussionCard } from '@/components/patterns/GroupDiscussionCard';
@@ -26,6 +27,7 @@ import { FadeActionSheet } from '@/components/patterns/FadeActionSheet';
 import { GroupEventFormSheet } from '@/components/patterns/GroupEventFormSheet';
 import { GroupRecurringMeetingFormSheet } from '@/components/patterns/GroupRecurringMeetingFormSheet';
 import { useAuth } from '@/hooks/useAuth';
+import { useGridColumns } from '@/hooks/useGridColumns';
 import {
   useAnnouncementsQuery,
   useAssignmentsByGroupQuery,
@@ -49,7 +51,11 @@ import {
   useUpdateGroupRecurringMeetingMutation,
 } from '@/hooks/useApiQueries';
 import { getUserFacingError, isApiError } from '@/lib/api';
-import type { CreateGroupRecurringMeetingInput, GroupRecurringMeeting } from '@/lib/api';
+import type {
+  CreateGroupRecurringMeetingInput,
+  GroupEvent,
+  GroupRecurringMeeting,
+} from '@/lib/api';
 import { formatGroupEventDateTime } from '@/lib/dates';
 import { upcomingGroupEvents } from '@/lib/groupEventsSort';
 import { t } from '@/lib/i18n';
@@ -68,6 +74,9 @@ function getLanguageName(code: string): string {
 
 /** Rows each section previews before "see all" takes over — the events section's own number. */
 const SECTION_PREVIEW_COUNT = 3;
+
+/** The narrowest a section's card may be before the row drops a column (KAN-50). */
+const SECTION_CARD_MIN_WIDTH = 300;
 
 export default function GroupDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -118,6 +127,10 @@ export default function GroupDetailScreen() {
     enabled: !!id && !!userId,
   });
   const { data: isSuperAdmin = false } = useIsSuperAdminQuery(userId, { enabled: !!userId });
+  // On a wide window each section lays its cards across the row instead of down a column
+  // (KAN-50). One column keeps exactly what a phone had.
+  const sectionColumns = useGridColumns(SECTION_CARD_MIN_WIDTH);
+  const grid = sectionColumns > 1;
   const { data: isAppAdmin } = useIsAdminQuery(userId, { enabled: !!userId });
   const createEventMutation = useCreateGroupEventMutation();
   const createRecurringMutation = useCreateGroupRecurringMeetingMutation();
@@ -465,17 +478,11 @@ export default function GroupDetailScreen() {
   }, [groupAdmins, members]);
 
   const publishedAnnouncements = announcements.filter((a) => a.status === 'published');
-  const latestPublished =
-    publishedAnnouncements.length > 0
-      ? publishedAnnouncements.reduce((acc, cur) =>
-          new Date(cur.createdAt) > new Date(acc.createdAt) ? cur : acc
-        )
-      : undefined;
-
-  const handleOpenLatestAnnouncementDetail = useCallback(() => {
-    if (!id || !latestPublished) return;
-    router.push(`/group/announcement/${latestPublished.id}?groupId=${encodeURIComponent(id)}`);
-  }, [router, id, latestPublished]);
+  // Newest first, then the same preview count the other sections use.
+  const previewAnnouncements = [...publishedAnnouncements]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, SECTION_PREVIEW_COUNT);
+  const latestPublished = previewAnnouncements[0];
 
   if (!id) {
     router.back();
@@ -505,6 +512,83 @@ export default function GroupDetailScreen() {
   const typeLabel = group.type === 'forum' ? t('groups.forum') : t('groups.ministry');
   const languageName = getLanguageName(group.preferredLanguage);
   const memberCountLabel = `${members.length} ${members.length === 1 ? t('groups.member') : t('groups.members')}`;
+  // On a wide window each section lays its cards across the row instead of down a column
+  // (KAN-50). One column keeps exactly what a phone had.
+  /**
+   * The empty cells at the end of a section's row. They only stop a lone card from stretching
+   * across the whole width — the invitation to add lives in the section header, so putting a
+   * second one here would say the same thing twice.
+   */
+  const sectionFillers = (count: number) => {
+    if (!grid || count === 0) return null;
+    const missing = (sectionColumns - (count % sectionColumns)) % sectionColumns;
+    if (missing === 0) return null;
+    return Array.from({ length: missing }, (_, i) => (
+      <View key={`filler-${i}`} style={styles.sectionGridCell}>
+        <GridFillerTile />
+      </View>
+    ));
+  };
+
+  /** One event card, drawn the same whether it sits in the phone carousel or the grid. */
+  const renderEventCard = (ev: GroupEvent) => {
+    const openEvent = () =>
+      router.push({
+        pathname: '/group/event/[id]',
+        params: { id: ev.id, fromGroup: '1' },
+      });
+    const ctaLabel = ev.requiresRsvp ? t('groupEvents.rsvpNow') : t('groupEvents.viewDetailsCta');
+    const a11yHint = ev.requiresRsvp ? t('groupEvents.rsvpNowHint') : t('home.opensEventDetail');
+    return (
+      <Pressable
+        key={ev.id}
+        onPress={openEvent}
+        style={({ pressed }) => [
+          styles.eventCard,
+          { width: recurringCarouselCardWidth },
+          pressed && { opacity: 0.92 },
+        ]}
+        accessibilityLabel={`${ev.title}, ${formatGroupEventDateTime(ev.startsAt)}`}
+        accessibilityHint={a11yHint}
+        accessibilityRole="button"
+      >
+        <View style={styles.eventCardContent}>
+          <Text style={styles.eventCardTitle}>{ev.title}</Text>
+          <Text style={styles.eventCardMeta}>{formatGroupEventDateTime(ev.startsAt)}</Text>
+          {ev.requiresRsvp ? (
+            <Text style={styles.eventRsvpLine}>
+              {t('groupEvents.goingCount', {
+                count: ev.goingCount ?? 0,
+              })}
+              {typeof ev.maybeCount === 'number' && ev.maybeCount > 0
+                ? ` · ${t('groupEvents.maybeCount', { count: ev.maybeCount })}`
+                : ''}
+            </Text>
+          ) : null}
+        </View>
+        <View
+          style={[
+            styles.eventCardCta,
+            ev.requiresRsvp ? styles.eventCardCtaRsvp : styles.eventCardCtaMuted,
+          ]}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
+          <Text
+            style={ev.requiresRsvp ? styles.eventCardCtaTextRsvp : styles.eventCardCtaTextMuted}
+          >
+            {ctaLabel}
+          </Text>
+          <Ionicons
+            name={ev.requiresRsvp ? 'calendar-outline' : 'chevron-forward'}
+            size={18}
+            color={ev.requiresRsvp ? colors.onSecondaryContainer : colors.primary}
+          />
+        </View>
+      </Pressable>
+    );
+  };
+
   const upcomingEvents = upcomingGroupEvents(groupEvents);
   // The sections below preview the same number of rows the events section does; "전체 보기"
   // carries the rest. The link shows whenever the section has anything at all — the same rule
@@ -763,16 +847,28 @@ export default function GroupDetailScreen() {
               </Pressable>
             ) : null}
           </View>
-          {latestPublished ? (
-            <View style={styles.latestUpdatesList}>
-              <LatestAnnouncementRow
-                title={latestPublished.title}
-                body={latestPublished.body}
-                createdAt={latestPublished.createdAt}
-                onPress={handleOpenLatestAnnouncementDetail}
-                meetingLink={latestPublished.meetingLink ?? undefined}
-                showMeetingLink={isMember && !!latestPublished.meetingLink?.trim()}
-              />
+          {previewAnnouncements.length > 0 ? (
+            <View
+              style={
+                grid ? [styles.latestUpdatesList, styles.sectionGrid] : styles.latestUpdatesList
+              }
+            >
+              {previewAnnouncements.map((a) => (
+                <View key={a.id} style={grid ? styles.sectionGridCell : undefined}>
+                  <LatestAnnouncementRow
+                    title={a.title}
+                    body={a.body}
+                    createdAt={a.createdAt}
+                    onPress={() =>
+                      id &&
+                      router.push(`/group/announcement/${a.id}?groupId=${encodeURIComponent(id)}`)
+                    }
+                    meetingLink={a.meetingLink ?? undefined}
+                    showMeetingLink={isMember && !!a.meetingLink?.trim()}
+                  />
+                </View>
+              ))}
+              {sectionFillers(previewAnnouncements.length)}
             </View>
           ) : null}
           {!latestPublished ? (
@@ -826,6 +922,18 @@ export default function GroupDetailScreen() {
                 />
               );
             }
+            if (grid) {
+              return (
+                <View style={styles.sectionGrid} accessibilityLabel={t('groupEvents.sectionTitle')}>
+                  {upcomingEvents.map((ev) => (
+                    <View key={ev.id} style={styles.sectionGridCell}>
+                      {renderEventCard(ev)}
+                    </View>
+                  ))}
+                  {sectionFillers(upcomingEvents.length)}
+                </View>
+              );
+            }
             return (
               <View style={[styles.recurringCarouselBleed, { width: windowWidth }]}>
                 <ScrollView
@@ -837,73 +945,9 @@ export default function GroupDetailScreen() {
                   contentContainerStyle={styles.recurringListHorizontal}
                   accessibilityLabel={t('groupEvents.sectionTitle')}
                 >
-                  {upcomingEvents.map((ev) => {
-                    const openEvent = () =>
-                      router.push({
-                        pathname: '/group/event/[id]',
-                        params: { id: ev.id, fromGroup: '1' },
-                      });
-                    const ctaLabel = ev.requiresRsvp
-                      ? t('groupEvents.rsvpNow')
-                      : t('groupEvents.viewDetailsCta');
-                    const a11yHint = ev.requiresRsvp
-                      ? t('groupEvents.rsvpNowHint')
-                      : t('home.opensEventDetail');
-                    return (
-                      <Pressable
-                        key={ev.id}
-                        onPress={openEvent}
-                        style={({ pressed }) => [
-                          styles.eventCard,
-                          { width: recurringCarouselCardWidth },
-                          pressed && { opacity: 0.92 },
-                        ]}
-                        accessibilityLabel={`${ev.title}, ${formatGroupEventDateTime(ev.startsAt)}`}
-                        accessibilityHint={a11yHint}
-                        accessibilityRole="button"
-                      >
-                        <View style={styles.eventCardContent}>
-                          <Text style={styles.eventCardTitle}>{ev.title}</Text>
-                          <Text style={styles.eventCardMeta}>
-                            {formatGroupEventDateTime(ev.startsAt)}
-                          </Text>
-                          {ev.requiresRsvp ? (
-                            <Text style={styles.eventRsvpLine}>
-                              {t('groupEvents.goingCount', {
-                                count: ev.goingCount ?? 0,
-                              })}
-                              {typeof ev.maybeCount === 'number' && ev.maybeCount > 0
-                                ? ` · ${t('groupEvents.maybeCount', { count: ev.maybeCount })}`
-                                : ''}
-                            </Text>
-                          ) : null}
-                        </View>
-                        <View
-                          style={[
-                            styles.eventCardCta,
-                            ev.requiresRsvp ? styles.eventCardCtaRsvp : styles.eventCardCtaMuted,
-                          ]}
-                          accessibilityElementsHidden
-                          importantForAccessibility="no-hide-descendants"
-                        >
-                          <Text
-                            style={
-                              ev.requiresRsvp
-                                ? styles.eventCardCtaTextRsvp
-                                : styles.eventCardCtaTextMuted
-                            }
-                          >
-                            {ctaLabel}
-                          </Text>
-                          <Ionicons
-                            name={ev.requiresRsvp ? 'calendar-outline' : 'chevron-forward'}
-                            size={18}
-                            color={ev.requiresRsvp ? colors.onSecondaryContainer : colors.primary}
-                          />
-                        </View>
-                      </Pressable>
-                    );
-                  })}
+                  {upcomingEvents.map((ev) => (
+                    <View key={ev.id}>{renderEventCard(ev)}</View>
+                  ))}
                 </ScrollView>
               </View>
             );
@@ -948,20 +992,22 @@ export default function GroupDetailScreen() {
                 subtitle={t('courses.noCoursesHint')}
               />
             ) : (
-              <View style={styles.courseList}>
+              <View style={grid ? [styles.courseList, styles.sectionGrid] : styles.courseList}>
                 {previewCourses.map((course) => (
-                  <GroupCourseCard
-                    key={course.id}
-                    course={course}
-                    onPress={() => router.push(`/group/${id}/course/${course.id}`)}
-                    onEdit={canModerateAsAdmin ? () => handleEditCourse(course.id) : undefined}
-                    onDelete={
-                      canModerateAsAdmin
-                        ? () => handleDeleteCourse(course.id, course.title)
-                        : undefined
-                    }
-                  />
+                  <View key={course.id} style={grid ? styles.sectionGridCell : undefined}>
+                    <GroupCourseCard
+                      course={course}
+                      onPress={() => router.push(`/group/${id}/course/${course.id}`)}
+                      onEdit={canModerateAsAdmin ? () => handleEditCourse(course.id) : undefined}
+                      onDelete={
+                        canModerateAsAdmin
+                          ? () => handleDeleteCourse(course.id, course.title)
+                          : undefined
+                      }
+                    />
+                  </View>
                 ))}
+                {sectionFillers(previewCourses.length)}
               </View>
             )}
           </View>
@@ -1005,14 +1051,18 @@ export default function GroupDetailScreen() {
                 subtitle={t('assignments.noAssignmentsHint')}
               />
             ) : (
-              <View style={styles.assignmentList}>
+              <View
+                style={grid ? [styles.assignmentList, styles.sectionGrid] : styles.assignmentList}
+              >
                 {previewAssignments.map((assignment) => (
-                  <GroupAssignmentCard
-                    key={assignment.id}
-                    assignment={assignment}
-                    onPress={() => router.push(`/group/${id}/assignment/${assignment.id}`)}
-                  />
+                  <View key={assignment.id} style={grid ? styles.sectionGridCell : undefined}>
+                    <GroupAssignmentCard
+                      assignment={assignment}
+                      onPress={() => router.push(`/group/${id}/assignment/${assignment.id}`)}
+                    />
+                  </View>
                 ))}
+                {sectionFillers(previewAssignments.length)}
               </View>
             )}
           </View>
@@ -1059,14 +1109,18 @@ export default function GroupDetailScreen() {
               subtitle={t('discussions.noDiscussionsHint')}
             />
           ) : (
-            <View style={styles.discussionList}>
+            <View
+              style={grid ? [styles.discussionList, styles.sectionGrid] : styles.discussionList}
+            >
               {previewDiscussions.map((d) => (
-                <GroupDiscussionCard
-                  key={d.id}
-                  discussion={d}
-                  onPress={() => router.push(`/group/discussion/${d.id}`)}
-                />
+                <View key={d.id} style={grid ? styles.sectionGridCell : undefined}>
+                  <GroupDiscussionCard
+                    discussion={d}
+                    onPress={() => router.push(`/group/discussion/${d.id}`)}
+                  />
+                </View>
               ))}
+              {sectionFillers(previewDiscussions.length)}
             </View>
           )}
         </View>
@@ -1653,6 +1707,19 @@ const styles = StyleSheet.create({
   loadingWrap: {
     paddingVertical: spacing.xl,
     alignItems: 'center',
+  },
+  /** A section's cards across the row; each cell grows to share it evenly. */
+  sectionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'stretch',
+    gap: spacing.md,
+  },
+  sectionGridCell: {
+    flexGrow: 1,
+    flexBasis: SECTION_CARD_MIN_WIDTH,
+    minWidth: SECTION_CARD_MIN_WIDTH,
+    maxWidth: '100%',
   },
   courseList: {
     gap: spacing.md,
