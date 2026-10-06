@@ -13,6 +13,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { EmptyState } from '@/components/patterns/EmptyState';
+import { GridFillerTile } from '@/components/patterns/GridFillerTile';
 import { GroupCard } from '@/components/patterns/GroupCard';
 
 import { useAuth } from '@/hooks/useAuth';
@@ -100,6 +101,9 @@ export default function GroupsScreen() {
   );
 
   const displayed = filter === 'joined' ? groups.filter((g) => memberGroupIds.has(g.id)) : groups;
+  // How many cells are left over on the last row. Zero when the row comes out even.
+  const fillerCount =
+    columns > 1 && displayed.length > 0 ? (columns - (displayed.length % columns)) % columns : 0;
 
   const filterOptions = FILTER_OPTIONS;
 
@@ -230,6 +234,19 @@ export default function GroupsScreen() {
                 />
               </View>
             ))}
+            {/* The last row's empty cells. They keep a lone card card-sized instead of letting
+                it stretch, and for whoever may add a group they are the invitation to. */}
+            {fillerCount > 0
+              ? Array.from({ length: fillerCount }, (_, i) => (
+                  <View key={`filler-${i}`} style={styles.gridItem}>
+                    <GridFillerTile
+                      label={isAdmin && i === 0 ? t('groups.createGroup') : undefined}
+                      hint={isAdmin && i === 0 ? t('groups.createGroupHint') : undefined}
+                      onPress={isAdmin && i === 0 ? () => push('/group/create') : undefined}
+                    />
+                  </View>
+                ))
+              : null}
           </View>
         )}
       </Animated.View>
