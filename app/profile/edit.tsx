@@ -183,12 +183,12 @@ export default function ProfileEditScreen() {
     );
   };
 
-  const removePhoto = async () => {
+  const switchToDefaultPhoto = async () => {
     if (!userId) return;
     const confirmed = await confirm({
-      title: t('profile.removePhotoConfirmTitle'),
-      message: t('profile.removePhotoConfirmMessage'),
-      confirmLabel: t('profile.removePhoto'),
+      title: t('profile.useDefaultPhotoConfirmTitle'),
+      message: t('profile.useDefaultPhotoConfirmMessage'),
+      confirmLabel: t('profile.useDefaultPhoto'),
       cancelLabel: t('common.cancel'),
       destructive: true,
     });
@@ -282,16 +282,16 @@ export default function ProfileEditScreen() {
             </Pressable>
           </View>
           <Text style={styles.changePhotoText}>{t('profile.changePhoto')}</Text>
-          {/* Only offered when there is something to remove; with no photo the avatar already
-              falls back to the initial, which is what "no photo" looks like. */}
+          {/* Only offered when there is a photo: with none, the avatar already shows the
+              initial, which is the default profile this would switch back to. */}
           {avatarUrl || localPreviewUri ? (
             <Button
-              title={t('profile.removePhoto')}
+              title={t('profile.useDefaultPhoto')}
               variant="text"
-              onPress={removePhoto}
+              onPress={switchToDefaultPhoto}
               disabled={removePhotoMutation.isPending || uploadMutation.isPending}
-              accessibilityLabel={t('profile.removePhoto')}
-              accessibilityHint={t('profile.removePhotoHint')}
+              accessibilityLabel={t('profile.useDefaultPhoto')}
+              accessibilityHint={t('profile.useDefaultPhotoHint')}
             />
           ) : null}
           {uploadMutation.isPending ? (

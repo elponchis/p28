@@ -112,11 +112,11 @@ export const en = {
     settingsHint: 'Opens notification preferences and app language',
     changePhoto: 'Change profile photo',
     changePhotoHint: 'Opens photo library to choose a new profile picture',
-    removePhoto: 'Remove photo',
-    removePhotoHint: 'Goes back to showing your initial instead of a picture',
-    removePhotoConfirmTitle: 'Remove your profile photo?',
-    removePhotoConfirmMessage:
-      'Your initial will be shown instead. You can add a photo again any time.',
+    useDefaultPhoto: 'Use the default profile',
+    useDefaultPhotoHint: 'Goes back to showing your initial instead of a picture',
+    useDefaultPhotoConfirmTitle: 'Go back to the default profile?',
+    useDefaultPhotoConfirmMessage:
+      'Your initial will be shown instead of the photo. You can add one again any time.',
     saveHint: 'Saves profile changes',
     saveHintDisabled: 'Save is disabled until you make changes',
     saving: 'Saving…',
