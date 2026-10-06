@@ -517,6 +517,8 @@ export const km: TranslationShape = {
     publishing: 'កំពុងបោះផ្សាយ…',
     fieldsRequired: 'សូមបញ្ចូលចំណងជើង និងសារ។',
     latestUpdatesSectionTitle: 'ព័ត៌មានថ្មីៗ',
+    addAnnouncement: 'បន្ថែមដំណឹង',
+    addAnnouncementHint: 'បើកទម្រង់សម្រាប់សេចក្ដីប្រកាសថ្មីក្នុងក្រុមនេះ',
   },
   groupEvents: {
     sectionTitle: 'ព្រឹត្តិការណ៍',

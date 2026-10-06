@@ -513,6 +513,8 @@ export const ko: TranslationShape = {
     publishing: '게시 중…',
     fieldsRequired: '제목과 내용을 입력해 주세요.',
     latestUpdatesSectionTitle: '최신 소식',
+    addAnnouncement: '소식 추가',
+    addAnnouncementHint: '이 그룹에 새 소식을 쓰는 화면을 엽니다',
   },
   groupEvents: {
     sectionTitle: '이벤트',
