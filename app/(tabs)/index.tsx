@@ -356,7 +356,14 @@ export default function HomeScreen() {
                 </Text>
               </View>
 
-              {userId && !superAdminRoleLoading && isSuperAdmin ? (
+              {/* Only while there is nothing to post beside. With an announcement up, the
+                  button crowded the card and pushed the greeting out of line (KAN-38); the page
+                  then looks exactly like everyone else's, and the card's own edit and delete are
+                  how a super admin changes what is there. */}
+              {userId &&
+              !superAdminRoleLoading &&
+              isSuperAdmin &&
+              globalAnnouncements.length === 0 ? (
                 <Pressable
                   onPress={() => {
                     setGlobalFormError(null);

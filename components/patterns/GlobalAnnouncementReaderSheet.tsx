@@ -1,12 +1,11 @@
 import React from 'react';
 import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useFadeSheetAnimation } from '@/hooks/useFadeSheetAnimation';
 import type { GlobalAnnouncement } from '@/lib/api';
 import { t } from '@/lib/i18n';
-import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
+import { cardBase, colors, fontFamily, spacing, typography } from '@/theme/tokens';
 
 export interface GlobalAnnouncementReaderSheetProps {
   /** The announcement to read; null keeps the sheet closed. */
@@ -14,13 +13,18 @@ export interface GlobalAnnouncementReaderSheetProps {
   onRequestClose: () => void;
 }
 
-/** The whole of a platform-wide announcement, which the card only shows a line of. */
+/**
+ * The whole of a platform-wide announcement, which the card only shows a line of.
+ *
+ * A dialog in the middle rather than a sheet from the bottom: on a desktop window the sheet
+ * arrived at the far edge of a tall screen, so reading a few lines meant looking away from where
+ * the card was.
+ */
 export function GlobalAnnouncementReaderSheet({
   announcement,
   onRequestClose,
 }: GlobalAnnouncementReaderSheetProps) {
-  const insets = useSafeAreaInsets();
-  const { sheetSlideAnim, sheetFadeAnim } = useFadeSheetAnimation(!!announcement);
+  const { sheetFadeAnim } = useFadeSheetAnimation(!!announcement);
 
   return (
     <Modal
@@ -37,9 +41,8 @@ export function GlobalAnnouncementReaderSheet({
             pointerEvents="none"
           />
         </Pressable>
-        <Animated.View style={[styles.sheet, { transform: [{ translateY: sheetSlideAnim }] }]}>
-          <View style={[styles.sheetInner, { paddingBottom: insets.bottom + spacing.xl }]}>
-            <View style={styles.handle} />
+        <Animated.View style={[styles.dialog, { opacity: sheetFadeAnim }]}>
+          <View>
             <View style={styles.headerRow}>
               <Text style={styles.eyebrow}>{t('home.globalAnnouncementLabel')}</Text>
               <Pressable
@@ -70,28 +73,21 @@ export function GlobalAnnouncementReaderSheet({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'flex-end',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.screenHorizontal,
   },
   backdrop: {
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
-  sheet: {
-    maxHeight: '85%',
-    backgroundColor: colors.surfaceContainerLowest,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-  },
-  sheetInner: {
-    paddingHorizontal: spacing.screenHorizontal,
-  },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: radius.sm,
-    backgroundColor: colors.outlineVariant,
-    alignSelf: 'center',
-    marginTop: spacing.sm,
-    marginBottom: spacing.md,
+  dialog: {
+    ...cardBase,
+    width: '100%',
+    maxWidth: 480,
+    maxHeight: '80%',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
   },
   headerRow: {
     flexDirection: 'row',
