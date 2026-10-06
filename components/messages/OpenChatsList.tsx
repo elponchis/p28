@@ -158,7 +158,9 @@ const styles = StyleSheet.create({
   openChatsHeaderLabel: {
     ...typography.caption,
     flex: 1,
-    fontSize: 12,
+    // The nav labels standing right above this ("홈", "그룹", …) are 14; at 12 the section
+    // header read as fine print beside them (KAN-52).
+    fontSize: 14,
     color: colors.onSurfaceVariant,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
