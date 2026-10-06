@@ -478,17 +478,11 @@ export default function GroupDetailScreen() {
   }, [groupAdmins, members]);
 
   const publishedAnnouncements = announcements.filter((a) => a.status === 'published');
-  const latestPublished =
-    publishedAnnouncements.length > 0
-      ? publishedAnnouncements.reduce((acc, cur) =>
-          new Date(cur.createdAt) > new Date(acc.createdAt) ? cur : acc
-        )
-      : undefined;
-
-  const handleOpenLatestAnnouncementDetail = useCallback(() => {
-    if (!id || !latestPublished) return;
-    router.push(`/group/announcement/${latestPublished.id}?groupId=${encodeURIComponent(id)}`);
-  }, [router, id, latestPublished]);
+  // Newest first, then the same preview count the other sections use.
+  const previewAnnouncements = [...publishedAnnouncements]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, SECTION_PREVIEW_COUNT);
+  const latestPublished = previewAnnouncements[0];
 
   if (!id) {
     router.back();
@@ -521,20 +515,17 @@ export default function GroupDetailScreen() {
   // On a wide window each section lays its cards across the row instead of down a column
   // (KAN-50). One column keeps exactly what a phone had.
   /**
-   * The empty cells at the end of a section's row: they stop a lone card from stretching, and
-   * the first of them invites the next item when the viewer may add one.
+   * The empty cells at the end of a section's row. They only stop a lone card from stretching
+   * across the whole width — the invitation to add lives in the section header, so putting a
+   * second one here would say the same thing twice.
    */
-  const sectionFillers = (count: number, label?: string, hint?: string, onPress?: () => void) => {
+  const sectionFillers = (count: number) => {
     if (!grid || count === 0) return null;
     const missing = (sectionColumns - (count % sectionColumns)) % sectionColumns;
     if (missing === 0) return null;
     return Array.from({ length: missing }, (_, i) => (
       <View key={`filler-${i}`} style={styles.sectionGridCell}>
-        <GridFillerTile
-          label={i === 0 ? label : undefined}
-          hint={i === 0 ? hint : undefined}
-          onPress={i === 0 ? onPress : undefined}
-        />
+        <GridFillerTile />
       </View>
     ));
   };
@@ -856,16 +847,28 @@ export default function GroupDetailScreen() {
               </Pressable>
             ) : null}
           </View>
-          {latestPublished ? (
-            <View style={styles.latestUpdatesList}>
-              <LatestAnnouncementRow
-                title={latestPublished.title}
-                body={latestPublished.body}
-                createdAt={latestPublished.createdAt}
-                onPress={handleOpenLatestAnnouncementDetail}
-                meetingLink={latestPublished.meetingLink ?? undefined}
-                showMeetingLink={isMember && !!latestPublished.meetingLink?.trim()}
-              />
+          {previewAnnouncements.length > 0 ? (
+            <View
+              style={
+                grid ? [styles.latestUpdatesList, styles.sectionGrid] : styles.latestUpdatesList
+              }
+            >
+              {previewAnnouncements.map((a) => (
+                <View key={a.id} style={grid ? styles.sectionGridCell : undefined}>
+                  <LatestAnnouncementRow
+                    title={a.title}
+                    body={a.body}
+                    createdAt={a.createdAt}
+                    onPress={() =>
+                      id &&
+                      router.push(`/group/announcement/${a.id}?groupId=${encodeURIComponent(id)}`)
+                    }
+                    meetingLink={a.meetingLink ?? undefined}
+                    showMeetingLink={isMember && !!a.meetingLink?.trim()}
+                  />
+                </View>
+              ))}
+              {sectionFillers(previewAnnouncements.length)}
             </View>
           ) : null}
           {!latestPublished ? (
@@ -927,12 +930,7 @@ export default function GroupDetailScreen() {
                       {renderEventCard(ev)}
                     </View>
                   ))}
-                  {sectionFillers(
-                    upcomingEvents.length,
-                    canModerateAsAdmin ? t('groupEvents.addEvent') : undefined,
-                    canModerateAsAdmin ? t('groupEvents.addEventHint') : undefined,
-                    canModerateAsAdmin ? handleOpenCreateEvent : undefined
-                  )}
+                  {sectionFillers(upcomingEvents.length)}
                 </View>
               );
             }
@@ -1009,12 +1007,7 @@ export default function GroupDetailScreen() {
                     />
                   </View>
                 ))}
-                {sectionFillers(
-                  previewCourses.length,
-                  canAuthorCourses ? t('courses.addCourse') : undefined,
-                  canAuthorCourses ? t('courses.addCourseHint') : undefined,
-                  canAuthorCourses ? handleAddCourse : undefined
-                )}
+                {sectionFillers(previewCourses.length)}
               </View>
             )}
           </View>
@@ -1069,12 +1062,7 @@ export default function GroupDetailScreen() {
                     />
                   </View>
                 ))}
-                {sectionFillers(
-                  previewAssignments.length,
-                  canModerateAsAdmin ? t('assignments.addAssignment') : undefined,
-                  canModerateAsAdmin ? t('assignments.addAssignmentHint') : undefined,
-                  canModerateAsAdmin ? handleAddAssignment : undefined
-                )}
+                {sectionFillers(previewAssignments.length)}
               </View>
             )}
           </View>
@@ -1132,12 +1120,7 @@ export default function GroupDetailScreen() {
                   />
                 </View>
               ))}
-              {sectionFillers(
-                previewDiscussions.length,
-                isMember ? t('discussions.addDiscussion') : undefined,
-                isMember ? t('discussions.addDiscussionHint') : undefined,
-                isMember ? handleCreateDiscussion : undefined
-              )}
+              {sectionFillers(previewDiscussions.length)}
             </View>
           )}
         </View>
