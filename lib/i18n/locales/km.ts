@@ -369,7 +369,7 @@ export const km: TranslationShape = {
     filterJoined: 'ក្រុមរបស់ខ្ញុំ',
     filterForums: 'វេទិកា',
     filterMinistries: 'សេវាកម្ម',
-    createGroup: 'បង្កើតក្រុម',
+    createGroup: 'បន្ថែមក្រុម',
     forum: 'វេទិកា',
     ministry: 'សេវាកម្ម',
     trainingSchool: 'សាលាបណ្តុះបណ្តាល',
