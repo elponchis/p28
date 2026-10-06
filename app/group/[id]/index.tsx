@@ -507,8 +507,9 @@ export default function GroupDetailScreen() {
   const memberCountLabel = `${members.length} ${members.length === 1 ? t('groups.member') : t('groups.members')}`;
   const upcomingEvents = upcomingGroupEvents(groupEvents);
   // The sections below preview the same number of rows the events section does; "전체 보기"
-  // carries the rest. Without a cap the group screen grows without limit and the link has
-  // nothing to show.
+  // carries the rest. The link shows whenever the section has anything at all — the same rule
+  // events and announcements follow. Hiding it below the cap sounded tidy and meant nobody ever
+  // saw it: the real groups hold one course and three assignments.
   const previewCourses = courses.slice(0, SECTION_PREVIEW_COUNT);
   const previewAssignments = assignments.slice(0, SECTION_PREVIEW_COUNT);
   const previewDiscussions = discussions.slice(0, SECTION_PREVIEW_COUNT);
@@ -916,7 +917,7 @@ export default function GroupDetailScreen() {
               <Text style={[styles.sectionTitle, styles.sectionTitleFill]}>
                 {t('courses.sectionTitle')}
               </Text>
-              {courses.length > SECTION_PREVIEW_COUNT ? (
+              {courses.length > 0 ? (
                 <Pressable
                   onPress={handleSeeAllCourses}
                   style={[styles.addTopicButton, canModerateAsAdmin && styles.sectionActionSpacer]}
@@ -973,7 +974,7 @@ export default function GroupDetailScreen() {
               <Text style={[styles.sectionTitle, styles.sectionTitleFill]}>
                 {t('assignments.sectionTitle')}
               </Text>
-              {assignments.length > SECTION_PREVIEW_COUNT ? (
+              {assignments.length > 0 ? (
                 <Pressable
                   onPress={handleSeeAllAssignments}
                   style={[styles.addTopicButton, canModerateAsAdmin && styles.sectionActionSpacer]}
@@ -1023,7 +1024,7 @@ export default function GroupDetailScreen() {
             <Text style={[styles.sectionTitle, styles.sectionTitleFill]}>
               {t('groups.discussions')}
             </Text>
-            {discussions.length > SECTION_PREVIEW_COUNT ? (
+            {discussions.length > 0 ? (
               <Pressable
                 onPress={handleSeeAllDiscussions}
                 style={[styles.addTopicButton, canModerateAsAdmin && styles.sectionActionSpacer]}
