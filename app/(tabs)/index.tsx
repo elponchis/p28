@@ -632,10 +632,7 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    // The global announcement card is pinned to the bottom of this column (marginTop: 'auto'),
-    // so the greeting sat alone at the very top with a hole under it. Dropping the greeting
-    // closes the hole without moving the card, which lines up with the week card opposite.
-    paddingTop: spacing.xxl,
+    paddingTop: spacing.lg,
   },
   /** Size comes from `useWelcomeFontSize`; a fixed lineHeight here would not shrink with it. */
   welcomeText: {
