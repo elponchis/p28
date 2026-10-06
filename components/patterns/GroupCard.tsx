@@ -293,7 +293,9 @@ const featuredStyles = StyleSheet.create({
     gap: spacing.sm,
   },
   title: {
-    fontFamily: fontFamily.serif,
+    // Same reason as the group screen's hero title (KAN-36): over a photograph the regular
+    // serif reads thin.
+    fontFamily: fontFamily.serifBold,
     fontSize: 27,
     fontWeight: '400',
     lineHeight: 36,

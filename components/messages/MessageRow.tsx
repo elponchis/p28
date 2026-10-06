@@ -503,12 +503,15 @@ const styles = StyleSheet.create({
   },
   messageWrapper: {
     position: 'relative',
-    marginBottom: 0,
+    // Bubbles used to sit flush against each other, which reads as one block of text rather
+    // than separate messages (KAN-51). A hair of room, not a paragraph break.
+    marginBottom: spacing.xxs,
     overflow: 'hidden',
     paddingBottom: 0,
   },
   messageWrapperPeerChange: {
-    marginTop: spacing.xxs,
+    // A change of speaker is a bigger break than the next message from the same person.
+    marginTop: spacing.xs,
   },
   messageSliding: { position: 'relative' },
 

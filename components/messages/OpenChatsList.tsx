@@ -178,8 +178,9 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   openChatLabel: {
+    // typography.caption is 13; this was overriding it down to 12. A person's name is what you
+    // scan this list for, so it keeps the role's own size (KAN-52).
     ...typography.caption,
-    fontSize: 12,
     color: colors.onSurfaceVariant,
   },
   openChatLabelActive: {

@@ -148,7 +148,12 @@ export default function GroupDetailScreen() {
         ? () => (
             <Pressable
               onPress={() => id && router.push(`/group/edit?groupId=${id}`)}
-              style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, padding: 8 })}
+              // Extra room on the right so the ⋯ is not flush with the screen edge (KAN-35).
+              style={({ pressed }) => ({
+                opacity: pressed ? 0.6 : 1,
+                padding: spacing.xs,
+                paddingRight: spacing.md,
+              })}
               accessibilityLabel={t('groups.editGroup')}
               accessibilityHint={t('groups.editGroupHint')}
               accessibilityRole="button"
@@ -1225,7 +1230,9 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
   },
   heroTitle: {
-    fontFamily: fontFamily.serif,
+    // The bold cut of the same serif. Over a photograph the regular weight reads thin and the
+    // group's own name is the first thing the screen should say (KAN-36).
+    fontFamily: fontFamily.serifBold,
     fontSize: 32,
     fontWeight: '400',
     color: '#ffffff',

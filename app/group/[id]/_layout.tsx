@@ -1,9 +1,10 @@
 import { Stack } from 'expo-router';
+import { View } from 'react-native';
 
 import { StackHeaderBack } from '@/components/patterns/StackHeaderBack';
 import { useLocale } from '@/contexts/LocaleContext';
 import { t } from '@/lib/i18n';
-import { colors, typography } from '@/theme/tokens';
+import { colors, spacing, typography } from '@/theme/tokens';
 
 export default function GroupDetailStackLayout() {
   useLocale();
@@ -31,12 +32,15 @@ export default function GroupDetailStackLayout() {
           headerLeft: () => (
             // The header floats over the group's hero image and stays put as the page scrolls,
             // so the white chevron ends up over pale content and vanishes. The scrim travels
-            // with it.
-            <StackHeaderBack
-              iconColor="#ffffff"
-              onScrim
-              accessibilityHint={t('groups.backToGroupsHint')}
-            />
+            // with it. The disc also sat hard against the screen edge on a phone, which on a
+            // full-bleed hero reads as cut off — hence the gutter (KAN-35).
+            <View style={{ paddingLeft: spacing.xs }}>
+              <StackHeaderBack
+                iconColor="#ffffff"
+                onScrim
+                accessibilityHint={t('groups.backToGroupsHint')}
+              />
+            </View>
           ),
         }}
       />
