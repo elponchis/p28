@@ -22,7 +22,8 @@ export function GlobalAnnouncementCard({
   onDelete,
   onOpen,
 }: GlobalAnnouncementCardProps) {
-  // The card is a fixed height on purpose: home should not grow with whatever was posted.
+  // Still a fixed height on purpose — two lines, not however many were written: home
+  // should not grow with whatever was posted.
   const truncated = isAnnouncementTruncated(title, description);
   return (
     <View
@@ -80,7 +81,7 @@ export function GlobalAnnouncementCard({
         <Text style={styles.title} numberOfLines={1}>
           {title}
         </Text>
-        <Text style={styles.description} numberOfLines={1}>
+        <Text style={styles.description} numberOfLines={2}>
           {description}
         </Text>
       </View>
@@ -94,7 +95,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceContainerLowest,
     borderCurve: 'continuous',
     overflow: 'hidden',
-    paddingVertical: spacing.lg,
+    // Taller than it was: the card is pinned to the bottom of its column, so the extra height
+    // grows upward into the empty strip under the greeting.
+    paddingVertical: spacing.xl,
     paddingHorizontal: spacing.md,
     position: 'relative',
   },
