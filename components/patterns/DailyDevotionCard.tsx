@@ -34,7 +34,8 @@ import { useLocale } from '@/contexts/LocaleContext';
 import { VERSE_ATTRIBUTION, verseForDay } from '@/lib/dailyVerse';
 import { confirm, notify } from '@/lib/dialogs';
 import { t } from '@/lib/i18n';
-import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
+import { passagePreview } from '@/lib/passagePreview';
+import { colors, fontFamily, minTouchTarget, radius, spacing, typography } from '@/theme/tokens';
 
 export interface DailyDevotionCardProps {
   groupId: string;
@@ -71,6 +72,9 @@ export function DailyDevotionCard({
   } = useCurrentGroupDevotionQuery(groupId, today);
   const { data: shares = [] } = useDevotionSharesQuery(devotion?.id, userId);
   const { locale } = useLocale();
+  // A leader usually sets several verses, and all of them at once filled a desktop window
+  // (KAN-53). The plate opens on its first verse; the rest is one tap away.
+  const [passageExpanded, setPassageExpanded] = useState(false);
   const { data: dailyVerses = [] } = useDailyVersesQuery(locale);
   const todaysVerse = useMemo(() => verseForDay(dailyVerses), [dailyVerses]);
   const createShare = useCreateDevotionShareMutation();
@@ -133,6 +137,34 @@ export function DailyDevotionCard({
     );
   };
 
+  const renderPassage = (passage: string) => {
+    const { preview, hasMore } = passagePreview(passage);
+    const shown = passageExpanded || !hasMore ? passage : preview;
+    return (
+      <>
+        <Text style={styles.bannerPassage}>{shown}</Text>
+        {hasMore ? (
+          <Pressable
+            onPress={() => setPassageExpanded((v) => !v)}
+            style={({ pressed }) => [styles.passageToggle, pressed && { opacity: 0.8 }]}
+            accessibilityRole="button"
+            accessibilityLabel={
+              passageExpanded ? t('devotion.collapsePassage') : t('devotion.expandPassage')
+            }
+            accessibilityHint={
+              passageExpanded ? t('devotion.collapsePassageHint') : t('devotion.expandPassageHint')
+            }
+            hitSlop={8}
+          >
+            <Text style={styles.passageToggleText}>
+              {passageExpanded ? t('devotion.collapsePassage') : '⋯'}
+            </Text>
+          </Pressable>
+        ) : null}
+      </>
+    );
+  };
+
   // The passage is what the card is for, so it gets a navy band of its own at the top.
   const banner = (label: string, passage?: string) => (
     <View style={styles.banner}>
@@ -166,7 +198,7 @@ export function DailyDevotionCard({
           </View>
         ) : null}
       </View>
-      {passage ? <Text style={styles.bannerPassage}>{passage}</Text> : null}
+      {passage ? renderPassage(passage) : null}
     </View>
   );
 
@@ -716,6 +748,22 @@ const styles = StyleSheet.create({
     fontSize: 19,
     lineHeight: 30,
     color: colors.onPrimary,
+  },
+  /** The ⋯ that opens the rest of the passage, and the 접기 that closes it again. */
+  passageToggle: {
+    alignSelf: 'flex-start',
+    paddingVertical: spacing.xxs,
+    paddingHorizontal: spacing.xs,
+    marginTop: spacing.xxs,
+    borderRadius: radius.chip,
+    minHeight: minTouchTarget,
+    justifyContent: 'center',
+  },
+  passageToggleText: {
+    ...typography.caption,
+    fontFamily: fontFamily.sansSemiBold,
+    color: colors.onPrimaryContainer,
+    letterSpacing: 1,
   },
   leaderActions: {
     flexDirection: 'row',

@@ -1166,6 +1166,10 @@ export const km: TranslationShape = {
     resultWrittenPending: 'ចម្លើយសរសេរត្រូវបានដាក់ពិន្ទុដោយគ្រូរបស់អ្នក។',
   },
   devotion: {
+    expandPassage: 'បង្ហាញខគម្ពីរដែលនៅសល់',
+    expandPassageHint: 'បើកខបន្ទាប់ពីខទីមួយ',
+    collapsePassage: 'បិទ',
+    collapsePassageHint: 'ទុកតែខទីមួយឱ្យបង្ហាញ',
     title: 'ការរំពឹងគិតថ្ងៃនេះ · {{group}}',
     shareButton: 'ចែករំលែកការរំពឹងគិត',
     shareButtonHint: 'បើកសំណួរ និងអ្វីដែលក្រុមបានចែករំលែក',

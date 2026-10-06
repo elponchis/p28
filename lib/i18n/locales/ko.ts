@@ -1158,6 +1158,10 @@ export const ko: TranslationShape = {
     resultWrittenPending: '서술형 답안은 선생님이 직접 채점해요.',
   },
   devotion: {
+    expandPassage: '말씀 더 보기',
+    expandPassageHint: '첫 절 뒤의 나머지 절을 펼칩니다',
+    collapsePassage: '접기',
+    collapsePassageHint: '첫 절만 남기고 접습니다',
     title: '오늘의 묵상 · {{group}}',
     shareButton: '묵상 나누기',
     shareButtonHint: '질문과 그룹원들의 나눔을 펼칩니다',

@@ -1170,6 +1170,10 @@ export const en = {
     resultWrittenPending: 'Written answers are graded by your instructor.',
   },
   devotion: {
+    expandPassage: 'Show the rest of the passage',
+    expandPassageHint: 'Opens the verses after the first one',
+    collapsePassage: 'Collapse',
+    collapsePassageHint: 'Leaves the first verse showing',
     title: 'Today’s devotion · {{group}}',
     shareButton: 'Share your reflection',
     shareButtonHint: 'Opens the prompts and what the group has shared',
