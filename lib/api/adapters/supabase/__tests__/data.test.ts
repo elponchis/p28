@@ -135,6 +135,61 @@ describe('Supabase data adapter', () => {
     });
   });
 
+  describe('announcement take-down, edit and re-publish', () => {
+    const clientWithRpc = (rpc: jest.Mock) => (() => ({ rpc })) as unknown as GetClient;
+
+    it('takes an announcement down through the RPC', async () => {
+      const rpc = jest.fn().mockResolvedValue({ error: null });
+      const adapter = createSupabaseDataAdapter(clientWithRpc(rpc));
+      expect(isApiError(await adapter.cancelAnnouncement('a-1'))).toBe(false);
+      expect(rpc).toHaveBeenCalledWith('cancel_announcement', { p_announcement_id: 'a-1' });
+    });
+
+    it('sends an empty meeting link as an empty string, never null', async () => {
+      // meeting_link is NOT NULL DEFAULT '' (00045). Sending null failed with 23502, so an
+      // announcement without a link could not be edited at all.
+      const rpc = jest.fn().mockResolvedValue({ error: null });
+      const adapter = createSupabaseDataAdapter(clientWithRpc(rpc));
+      await adapter.updateAnnouncement('a-1', { title: '제목', body: '본문', meetingLink: '' });
+      expect(rpc).toHaveBeenCalledWith(
+        'update_announcement',
+        expect.objectContaining({ p_meeting_link: '' })
+      );
+    });
+
+    it('refuses an edit with no title or body before it reaches the server', async () => {
+      const rpc = jest.fn();
+      const adapter = createSupabaseDataAdapter(clientWithRpc(rpc));
+      const result = await adapter.updateAnnouncement('a-1', {
+        title: '  ',
+        body: '본문',
+        meetingLink: '',
+      });
+      expect(isApiError(result)).toBe(true);
+      expect((result as ApiError).code).toBe('VALIDATION_ERROR');
+      expect(rpc).not.toHaveBeenCalled();
+    });
+
+    it('refuses an edit whose meeting link is not a link', async () => {
+      const rpc = jest.fn();
+      const adapter = createSupabaseDataAdapter(clientWithRpc(rpc));
+      const result = await adapter.updateAnnouncement('a-1', {
+        title: '제목',
+        body: '본문',
+        meetingLink: 'not a link at all',
+      });
+      expect(isApiError(result)).toBe(true);
+      expect(rpc).not.toHaveBeenCalled();
+    });
+
+    it('puts it back up through the RPC', async () => {
+      const rpc = jest.fn().mockResolvedValue({ error: null });
+      const adapter = createSupabaseDataAdapter(clientWithRpc(rpc));
+      expect(isApiError(await adapter.republishAnnouncement('a-1'))).toBe(false);
+      expect(rpc).toHaveBeenCalledWith('republish_announcement', { p_announcement_id: 'a-1' });
+    });
+  });
+
   describe('updateProfile', () => {
     it('returns Profile on success', async () => {
       const existingRow = {

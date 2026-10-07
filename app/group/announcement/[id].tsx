@@ -7,6 +7,8 @@ import { Image } from 'expo-image';
 
 import {
   useAnnouncementQuery,
+  useCancelAnnouncementMutation,
+  useRepublishAnnouncementMutation,
   useUserIsGroupAdminQuery,
   useGroupQuery,
   useMarkInAppNotificationsReadMutation,
@@ -14,8 +16,10 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { getUserFacingError, isApiError, type Announcement } from '@/lib/api';
 import { formatRelativeTime } from '@/lib/dates';
+import { confirm, notify } from '@/lib/dialogs';
+import { describeError } from '@/lib/api';
 import { t } from '@/lib/i18n';
-import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
+import { colors, fontFamily, minTouchTarget, radius, spacing, typography } from '@/theme/tokens';
 
 function statusLabel(status: Announcement['status']): string {
   if (status === 'cancelled') return t('announcements.cancelled');
@@ -45,6 +49,41 @@ export default function AnnouncementDetailScreen() {
     enabled: !!groupId && !!userId,
   });
   const { mutate: markInAppNotificationsRead } = useMarkInAppNotificationsReadMutation();
+  const cancelAnnouncement = useCancelAnnouncementMutation();
+  const republishAnnouncement = useRepublishAnnouncementMutation();
+
+  // Whoever wrote it, and whoever runs the group. The RPCs check the same thing server-side.
+  const canManage = !!userId && (announcement?.createdByUserId === userId || isGroupAdmin);
+  const isCancelled = announcement?.status === 'cancelled';
+
+  const handleTakeDown = useCallback(async () => {
+    if (!announcementId) return;
+    const confirmed = await confirm({
+      title: t('announcements.takeDown'),
+      message: t('announcements.takeDownConfirm'),
+      confirmLabel: t('announcements.takeDown'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+    });
+    if (!confirmed) return;
+    cancelAnnouncement.mutate(
+      { announcementId },
+      { onError: (e) => void notify({ title: t('common.error'), message: describeError(e) }) }
+    );
+  }, [announcementId, cancelAnnouncement]);
+
+  const handleRepublish = useCallback(() => {
+    if (!announcementId) return;
+    republishAnnouncement.mutate(
+      { announcementId },
+      { onError: (e) => void notify({ title: t('common.error'), message: describeError(e) }) }
+    );
+  }, [announcementId, republishAnnouncement]);
+
+  const handleEdit = useCallback(() => {
+    if (!announcementId) return;
+    router.push(`/group/announcement/edit?announcementId=${encodeURIComponent(announcementId)}`);
+  }, [router, announcementId]);
 
   useEffect(() => {
     if (!userId || !announcementId) return;
@@ -140,6 +179,56 @@ export default function AnnouncementDetailScreen() {
           </Pressable>
         ) : null}
       </View>
+
+      {canManage ? (
+        <View style={styles.manageRow}>
+          {/* Down, rewrite, back up. Nothing here deletes: the push and the notifications that
+              already went out point at this row. */}
+          <Pressable
+            onPress={handleEdit}
+            style={({ pressed }) => [styles.manageButton, pressed && { opacity: 0.85 }]}
+            accessibilityRole="button"
+            accessibilityLabel={t('announcements.editAnnouncement')}
+            accessibilityHint={t('announcements.editAnnouncementHint')}
+          >
+            <Ionicons name="create-outline" size={18} color={colors.primary} />
+            <Text style={styles.manageLabel}>{t('announcements.editAnnouncement')}</Text>
+          </Pressable>
+          {isCancelled ? (
+            <Pressable
+              onPress={handleRepublish}
+              disabled={republishAnnouncement.isPending}
+              style={({ pressed }) => [
+                styles.manageButton,
+                styles.managePrimary,
+                pressed && { opacity: 0.85 },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={t('announcements.republish')}
+              accessibilityHint={t('announcements.republishHint')}
+            >
+              <Ionicons name="megaphone-outline" size={18} color={colors.onPrimary} />
+              <Text style={[styles.manageLabel, styles.managePrimaryLabel]}>
+                {t('announcements.republish')}
+              </Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              onPress={() => void handleTakeDown()}
+              disabled={cancelAnnouncement.isPending}
+              style={({ pressed }) => [styles.manageButton, pressed && { opacity: 0.85 }]}
+              accessibilityRole="button"
+              accessibilityLabel={t('announcements.takeDown')}
+              accessibilityHint={t('announcements.takeDownHint')}
+            >
+              <Ionicons name="eye-off-outline" size={18} color={colors.error} />
+              <Text style={[styles.manageLabel, styles.manageDanger]}>
+                {t('announcements.takeDown')}
+              </Text>
+            </Pressable>
+          )}
+        </View>
+      ) : null}
     </ScrollView>
   );
 }
@@ -152,6 +241,37 @@ const editorialShadow = {
 };
 
 const styles = StyleSheet.create({
+  manageRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  manageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    minHeight: minTouchTarget,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.button,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
+    backgroundColor: colors.surface,
+  },
+  managePrimary: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  manageLabel: {
+    ...typography.labelLg,
+    color: colors.primary,
+  },
+  managePrimaryLabel: {
+    color: colors.onPrimary,
+  },
+  manageDanger: {
+    color: colors.error,
+  },
   scroll: {
     flex: 1,
     backgroundColor: colors.background,

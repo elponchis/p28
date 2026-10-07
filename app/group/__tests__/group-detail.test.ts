@@ -83,8 +83,11 @@ describe('GroupDetailScreen discussion contract', () => {
     expect(groupDetailSource).toMatch(/\/group\/devotion-settings\?groupId=/);
   });
 
-  it('navigates latest announcement card to announcement detail', () => {
-    expect(groupDetailSource).toMatch(/handleOpenLatestAnnouncementDetail/);
-    expect(groupDetailSource).toMatch(/\/group\/announcement\/\$\{latestPublished\.id\}/);
+  it('navigates each latest-news card to its own announcement', () => {
+    // The section shows the newest few rather than only the latest one, so the route has to be
+    // built from the row being drawn — not from a single handler closed over one announcement.
+    expect(groupDetailSource).toMatch(/previewAnnouncements\.map\(/);
+    expect(groupDetailSource).toMatch(/\/group\/announcement\/\$\{a\.id\}/);
+    expect(groupDetailSource).not.toMatch(/handleOpenLatestAnnouncementDetail/);
   });
 });

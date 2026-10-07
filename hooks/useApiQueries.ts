@@ -769,6 +769,61 @@ export function useCreateAnnouncementMutation() {
   });
 }
 
+/**
+ * Taking an announcement down, rewriting it, putting it back up.
+ *
+ * All three invalidate the same views a new post does — the group's list, the per-group latest
+ * used by home, and the one announcement itself — because each of those can now show a
+ * different thing than it did a moment ago.
+ */
+function invalidateAnnouncementViews(qc: ReturnType<typeof useQueryClient>, id: string) {
+  qc.invalidateQueries({ queryKey: queryKeys.announcement(id) });
+  qc.invalidateQueries({
+    predicate: (q) =>
+      Array.isArray(q.queryKey) &&
+      (q.queryKey[0] === 'announcements' ||
+        q.queryKey[0] === 'latestPublishedAnnouncementsPerJoinedGroup'),
+  });
+}
+
+export function useCancelAnnouncementMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ announcementId }: { announcementId: string }) =>
+      queryFn(api.data.cancelAnnouncement(announcementId)),
+    onSuccess: (_d, { announcementId }) => invalidateAnnouncementViews(qc, announcementId),
+  });
+}
+
+export function useUpdateAnnouncementMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      announcementId,
+      input,
+    }: {
+      announcementId: string;
+      input: import('@/lib/api').CreateAnnouncementInput;
+    }) => queryFn(api.data.updateAnnouncement(announcementId, input)),
+    onSuccess: (_d, { announcementId }) => invalidateAnnouncementViews(qc, announcementId),
+  });
+}
+
+export function useRepublishAnnouncementMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ announcementId }: { announcementId: string }) => {
+      await queryFn(api.data.republishAnnouncement(announcementId));
+      // Back up means it is news again, so the same push the first posting sent goes out.
+      const push = await api.data.publishAnnouncement(announcementId);
+      if (isApiError(push) && __DEV__) {
+        console.warn('[announcements] publishAnnouncement after republish', push.message);
+      }
+    },
+    onSuccess: (_d, { announcementId }) => invalidateAnnouncementViews(qc, announcementId),
+  });
+}
+
 export function useGroupEventsQuery(
   groupId: string | undefined,
   options?: { enabled?: boolean; discover?: boolean }

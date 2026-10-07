@@ -266,6 +266,19 @@ export interface DataContract {
   ): Promise<Announcement | ApiError>;
   /** Invokes Edge Function to send push notifications for a published announcement (idempotent). */
   publishAnnouncement(announcementId: string): Promise<void | ApiError>;
+  /**
+   * Takes a posted announcement down: status becomes `cancelled` and it stops counting as a
+   * group's news. The row stays, because the push and the in-app notifications that went out
+   * already point at it. Author or group admin (migration 00113).
+   */
+  cancelAnnouncement(announcementId: string): Promise<void | ApiError>;
+  /** Rewrites a posted or taken-down announcement in place. Author or group admin. */
+  updateAnnouncement(
+    announcementId: string,
+    input: CreateAnnouncementInput
+  ): Promise<void | ApiError>;
+  /** Puts a taken-down announcement back up, dated now so it reads as today's news. */
+  republishAnnouncement(announcementId: string): Promise<void | ApiError>;
 
   /** The reader's own notes, newest first. Their rows only (RLS). */
   listPersonalVerseNotes(

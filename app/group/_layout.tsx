@@ -97,6 +97,12 @@ export default function GroupLayout() {
           }}
         />
         <Stack.Screen
+          name="announcement/edit"
+          options={{
+            title: t('announcements.editAnnouncement'),
+          }}
+        />
+        <Stack.Screen
           name="announcement/list"
           options={{
             title: t('announcements.listTitle'),

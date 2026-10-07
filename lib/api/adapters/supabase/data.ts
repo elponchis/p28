@@ -2820,6 +2820,62 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
       });
     },
 
+    async cancelAnnouncement(announcementId: string): Promise<void | ApiError> {
+      try {
+        const { error } = await getClient().rpc('cancel_announcement', {
+          p_announcement_id: announcementId,
+        });
+        if (error) return toApiError(error);
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async updateAnnouncement(
+      announcementId: string,
+      input: CreateAnnouncementInput
+    ): Promise<void | ApiError> {
+      try {
+        const title = input.title.trim();
+        const body = input.body.trim();
+        if (!title || !body) {
+          return { message: 'Title and message are required', code: 'VALIDATION_ERROR' };
+        }
+        // Same check the create path runs, so an edit cannot sneak past what a new post refuses.
+        const meetingLinkParsed = parseMeetingLinkInput(input.meetingLink ?? '');
+        if (!meetingLinkParsed.ok) {
+          return {
+            message:
+              meetingLinkParsed.reason === 'too_long'
+                ? 'Meeting link is too long'
+                : 'Enter a valid meeting link (http or https)',
+            code: 'VALIDATION_ERROR',
+          };
+        }
+        const { error } = await getClient().rpc('update_announcement', {
+          p_announcement_id: announcementId,
+          p_title: title,
+          p_body: body,
+          // The column is NOT NULL DEFAULT '': no link means an empty string, never null.
+          p_meeting_link: meetingLinkParsed.value ?? '',
+        });
+        if (error) return toApiError(error);
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async republishAnnouncement(announcementId: string): Promise<void | ApiError> {
+      try {
+        const { error } = await getClient().rpc('republish_announcement', {
+          p_announcement_id: announcementId,
+        });
+        if (error) return toApiError(error);
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
     async notifyGroupEventCreated(eventId: string): Promise<void | ApiError> {
       const r = await invokeEdgeWithUserJwt(getClient, 'send-group-event-created', {
         eventId,
