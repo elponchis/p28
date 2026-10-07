@@ -6,6 +6,7 @@ import { GroupAssignmentCard } from '@/components/patterns/GroupAssignmentCard';
 import { useAssignmentsByGroupQuery, useGroupQuery } from '@/hooks/useApiQueries';
 import type { Assignment } from '@/lib/api';
 import { useGridColumns } from '@/hooks/useGridColumns';
+import { padToGrid } from '@/lib/padToGrid';
 import { t } from '@/lib/i18n';
 import { colors, fontFamily, spacing, typography } from '@/theme/tokens';
 
@@ -14,7 +15,7 @@ export default function AssignmentListScreen() {
   const { groupId } = useLocalSearchParams<{ groupId: string }>();
   const router = useRouter();
   // Wide windows fit more than one card on a row (KAN-50).
-  const columns = useGridColumns(320);
+  const columns = useGridColumns(230);
 
   const { data: group } = useGroupQuery(groupId);
   const { data: assignments = [], isLoading } = useAssignmentsByGroupQuery(groupId, {
@@ -26,12 +27,14 @@ export default function AssignmentListScreen() {
   }, [groupId, router]);
 
   const renderItem = useCallback(
-    ({ item }: { item: Assignment }) => (
+    ({ item }: { item: Assignment | null }) => (
       <View style={columns > 1 ? styles.cell : undefined}>
-        <GroupAssignmentCard
-          assignment={item}
-          onPress={() => router.push(`/group/${groupId}/assignment/${item.id}`)}
-        />
+        {item === null ? null : (
+          <GroupAssignmentCard
+            assignment={item}
+            onPress={() => router.push(`/group/${groupId}/assignment/${item.id}`)}
+          />
+        )}
       </View>
     ),
     [columns, groupId, router]
@@ -54,8 +57,8 @@ export default function AssignmentListScreen() {
           key={columns}
           numColumns={columns}
           columnWrapperStyle={columns > 1 ? styles.row : undefined}
-          data={assignments}
-          keyExtractor={(item) => item.id}
+          data={padToGrid(assignments, columns)}
+          keyExtractor={(item, index) => item?.id ?? `pad-${index}`}
           renderItem={renderItem}
           ItemSeparatorComponent={renderSeparator}
           contentContainerStyle={styles.listContent}

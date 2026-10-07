@@ -6,6 +6,7 @@ import { GroupDiscussionCard } from '@/components/patterns/GroupDiscussionCard';
 import { useDiscussionsQuery, useGroupQuery } from '@/hooks/useApiQueries';
 import type { Discussion } from '@/lib/api';
 import { useGridColumns } from '@/hooks/useGridColumns';
+import { padToGrid } from '@/lib/padToGrid';
 import { t } from '@/lib/i18n';
 import { colors, fontFamily, spacing, typography } from '@/theme/tokens';
 
@@ -14,7 +15,7 @@ export default function DiscussionListScreen() {
   const { groupId } = useLocalSearchParams<{ groupId: string }>();
   const router = useRouter();
   // Wide windows fit more than one card on a row (KAN-50).
-  const columns = useGridColumns(360);
+  const columns = useGridColumns(230);
 
   const { data: group } = useGroupQuery(groupId);
   const { data: discussions = [], isLoading } = useDiscussionsQuery({
@@ -27,12 +28,14 @@ export default function DiscussionListScreen() {
   }, [groupId, router]);
 
   const renderItem = useCallback(
-    ({ item }: { item: Discussion }) => (
+    ({ item }: { item: Discussion | null }) => (
       <View style={columns > 1 ? styles.cell : undefined}>
-        <GroupDiscussionCard
-          discussion={item}
-          onPress={() => router.push(`/group/discussion/${item.id}`)}
-        />
+        {item === null ? null : (
+          <GroupDiscussionCard
+            discussion={item}
+            onPress={() => router.push(`/group/discussion/${item.id}`)}
+          />
+        )}
       </View>
     ),
     [columns, router]
@@ -55,8 +58,8 @@ export default function DiscussionListScreen() {
           key={columns}
           numColumns={columns}
           columnWrapperStyle={columns > 1 ? styles.row : undefined}
-          data={discussions}
-          keyExtractor={(item) => item.id}
+          data={padToGrid(discussions, columns)}
+          keyExtractor={(item, index) => item?.id ?? `pad-${index}`}
           renderItem={renderItem}
           ItemSeparatorComponent={renderSeparator}
           contentContainerStyle={styles.listContent}

@@ -6,6 +6,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useGroupEventsQuery, useGroupQuery, useGroupsForUserQuery } from '@/hooks/useApiQueries';
 import { useAuth } from '@/hooks/useAuth';
 import { useGridColumns } from '@/hooks/useGridColumns';
+import { padToGrid } from '@/lib/padToGrid';
 import { t } from '@/lib/i18n';
 import { formatGroupEventDateTime, isGroupEventPast } from '@/lib/dates';
 import { colors, fontFamily, radius, spacing, typography } from '@/theme/tokens';
@@ -16,7 +17,7 @@ export default function GroupEventListScreen() {
   const { groupId } = useLocalSearchParams<{ groupId: string }>();
   const router = useRouter();
   // Wide windows fit more than one card on a row (KAN-50).
-  const columns = useGridColumns(360);
+  const columns = useGridColumns(230);
   const { session } = useAuth();
   const userId = session?.user?.id;
   const { data: group } = useGroupQuery(groupId);
@@ -35,7 +36,9 @@ export default function GroupEventListScreen() {
   }, [groupId, router]);
 
   const renderItem = useCallback(
-    ({ item }: { item: GroupEvent }) => {
+    ({ item }: { item: GroupEvent | null }) => {
+      // A null is a cell that only holds the shape, so the last row keeps its card size.
+      if (item === null) return <View style={columns > 1 ? styles.cell : undefined} />;
       const isCancelled = item.status === 'cancelled';
       const isPast = isGroupEventPast(item.startsAt);
       return (
@@ -100,8 +103,8 @@ export default function GroupEventListScreen() {
           key={columns}
           numColumns={columns}
           columnWrapperStyle={columns > 1 ? styles.row : undefined}
-          data={sortedEvents}
-          keyExtractor={(item) => item.id}
+          data={padToGrid(sortedEvents, columns)}
+          keyExtractor={(item, index) => item?.id ?? `pad-${index}`}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={

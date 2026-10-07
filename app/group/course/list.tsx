@@ -6,6 +6,7 @@ import { GroupCourseCard } from '@/components/patterns/GroupCourseCard';
 import { useCoursesByGroupQuery, useGroupQuery } from '@/hooks/useApiQueries';
 import type { Course } from '@/lib/api';
 import { useGridColumns } from '@/hooks/useGridColumns';
+import { padToGrid } from '@/lib/padToGrid';
 import { t } from '@/lib/i18n';
 import { colors, fontFamily, spacing, typography } from '@/theme/tokens';
 
@@ -19,7 +20,7 @@ export default function CourseListScreen() {
   const { groupId } = useLocalSearchParams<{ groupId: string }>();
   const router = useRouter();
   // Wide windows fit more than one card on a row (KAN-50).
-  const columns = useGridColumns(360);
+  const columns = useGridColumns(230);
 
   const { data: group } = useGroupQuery(groupId);
   const { data: courses = [], isLoading } = useCoursesByGroupQuery(groupId, {
@@ -31,12 +32,14 @@ export default function CourseListScreen() {
   }, [groupId, router]);
 
   const renderItem = useCallback(
-    ({ item }: { item: Course }) => (
+    ({ item }: { item: Course | null }) => (
       <View style={columns > 1 ? styles.cell : undefined}>
-        <GroupCourseCard
-          course={item}
-          onPress={() => router.push(`/group/${groupId}/course/${item.id}`)}
-        />
+        {item === null ? null : (
+          <GroupCourseCard
+            course={item}
+            onPress={() => router.push(`/group/${groupId}/course/${item.id}`)}
+          />
+        )}
       </View>
     ),
     [columns, groupId, router]
@@ -59,8 +62,8 @@ export default function CourseListScreen() {
           key={columns}
           numColumns={columns}
           columnWrapperStyle={columns > 1 ? styles.row : undefined}
-          data={courses}
-          keyExtractor={(item) => item.id}
+          data={padToGrid(courses, columns)}
+          keyExtractor={(item, index) => item?.id ?? `pad-${index}`}
           renderItem={renderItem}
           ItemSeparatorComponent={renderSeparator}
           contentContainerStyle={styles.listContent}

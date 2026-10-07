@@ -12,6 +12,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import type { Announcement } from '@/lib/api';
 import { useGridColumns } from '@/hooks/useGridColumns';
+import { padToGrid } from '@/lib/padToGrid';
 import { t } from '@/lib/i18n';
 import { colors, fontFamily, spacing, typography } from '@/theme/tokens';
 
@@ -24,7 +25,7 @@ export default function AnnouncementListScreen() {
   const { groupId } = useLocalSearchParams<{ groupId: string }>();
   const router = useRouter();
   // Wide windows fit more than one card on a row (KAN-50).
-  const columns = useGridColumns(420);
+  const columns = useGridColumns(230);
   const { session } = useAuth();
   const userId = session?.user?.id;
 
@@ -46,7 +47,9 @@ export default function AnnouncementListScreen() {
   }, [groupId, router]);
 
   const renderItem = useCallback(
-    ({ item }: { item: Announcement }) => {
+    ({ item }: { item: Announcement | null }) => {
+      // A null is a cell that only holds the shape, so the last row keeps its card size.
+      if (item === null) return <View style={columns > 1 ? styles.cell : undefined} />;
       const showStatusBadge = isGroupAdmin && item.status !== 'published';
       return (
         <View style={columns > 1 ? styles.cell : undefined}>
@@ -89,8 +92,8 @@ export default function AnnouncementListScreen() {
           key={columns}
           numColumns={columns}
           columnWrapperStyle={columns > 1 ? styles.row : undefined}
-          data={announcements}
-          keyExtractor={(item) => item.id}
+          data={padToGrid(announcements, columns)}
+          keyExtractor={(item, index) => item?.id ?? `pad-${index}`}
           renderItem={renderItem}
           ItemSeparatorComponent={renderSeparator}
           contentContainerStyle={styles.listContent}
