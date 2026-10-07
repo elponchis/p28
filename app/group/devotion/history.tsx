@@ -6,6 +6,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useGridColumns } from '@/hooks/useGridColumns';
 import { useGroupDevotionsQuery, useGroupQuery } from '@/hooks/useApiQueries';
 import type { GroupDevotionSummary } from '@/lib/api';
+import { padToGrid } from '@/lib/padToGrid';
 import { t } from '@/lib/i18n';
 import { colors, fontFamily, minTouchTarget, radius, spacing, typography } from '@/theme/tokens';
 
@@ -19,7 +20,8 @@ import { colors, fontFamily, minTouchTarget, radius, spacing, typography } from 
 export default function DevotionHistoryScreen() {
   const { groupId } = useLocalSearchParams<{ groupId: string }>();
   const router = useRouter();
-  const columns = useGridColumns(360);
+  // The same 230 the rest of the cards use, so a row holds four here too.
+  const columns = useGridColumns(230);
 
   const { data: group } = useGroupQuery(groupId);
   const { data: devotions = [], isLoading } = useGroupDevotionsQuery(groupId, {
@@ -31,24 +33,26 @@ export default function DevotionHistoryScreen() {
   }, [groupId, router]);
 
   const renderItem = useCallback(
-    ({ item }: { item: GroupDevotionSummary }) => (
+    ({ item }: { item: GroupDevotionSummary | null }) => (
       <View style={columns > 1 ? styles.cell : undefined}>
-        <Pressable
-          onPress={() => router.push(`/group/devotion/${item.id}`)}
-          style={({ pressed }) => [styles.card, pressed && { opacity: 0.92 }]}
-          accessibilityRole="button"
-          accessibilityLabel={`${item.devotionDate} ${item.reference}`}
-          accessibilityHint={t('devotion.openPastDevotionHint')}
-        >
-          <Text style={styles.date}>{item.devotionDate}</Text>
-          <Text style={styles.reference} numberOfLines={2}>
-            {item.reference}
-          </Text>
-          <View style={styles.footer}>
-            <Ionicons name="chatbubble-outline" size={14} color={colors.primary} />
-            <Text style={styles.count}>{item.shareCount}</Text>
-          </View>
-        </Pressable>
+        {item === null ? null : (
+          <Pressable
+            onPress={() => router.push(`/group/devotion/${item.id}`)}
+            style={({ pressed }) => [styles.card, pressed && { opacity: 0.92 }]}
+            accessibilityRole="button"
+            accessibilityLabel={`${item.devotionDate} ${item.reference}`}
+            accessibilityHint={t('devotion.openPastDevotionHint')}
+          >
+            <Text style={styles.date}>{item.devotionDate}</Text>
+            <Text style={styles.reference} numberOfLines={2}>
+              {item.reference}
+            </Text>
+            <View style={styles.footer}>
+              <Ionicons name="chatbubble-outline" size={14} color={colors.primary} />
+              <Text style={styles.count}>{item.shareCount}</Text>
+            </View>
+          </Pressable>
+        )}
       </View>
     ),
     [columns, router]
@@ -71,8 +75,8 @@ export default function DevotionHistoryScreen() {
           key={columns}
           numColumns={columns}
           columnWrapperStyle={columns > 1 ? styles.row : undefined}
-          data={devotions}
-          keyExtractor={(item) => item.id}
+          data={padToGrid(devotions, columns)}
+          keyExtractor={(item, index) => item?.id ?? `pad-${index}`}
           renderItem={renderItem}
           ItemSeparatorComponent={renderSeparator}
           contentContainerStyle={styles.listContent}
