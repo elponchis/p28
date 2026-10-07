@@ -75,8 +75,11 @@ function getLanguageName(code: string): string {
 /** Rows each section previews before "see all" takes over — the events section's own number. */
 const SECTION_PREVIEW_COUNT = 3;
 
-/** The narrowest a section's card may be before the row drops a column (KAN-50). */
-const SECTION_CARD_MIN_WIDTH = 300;
+/**
+ * The narrowest a section's card may be before the row drops a column (KAN-50). The same 230 the
+ * groups grid uses, so a row holds four in both places.
+ */
+const SECTION_CARD_MIN_WIDTH = 230;
 
 export default function GroupDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

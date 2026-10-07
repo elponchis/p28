@@ -36,10 +36,13 @@ import {
 type FilterType = 'all' | 'joined' | GroupType;
 
 /**
- * The narrowest a group card may be before the grid drops a column. Picked from the standard
- * card: its 160px cover and two lines of name want about this much to stay legible.
+ * The narrowest a group card may be before the grid drops a column.
+ *
+ * 230 is what puts four across a 1280px window — the row the page was asked for. Below that the
+ * cover and the name start to crowd, and useGridColumns caps the row at four however wide the
+ * window gets.
  */
-const GROUP_CARD_MIN_WIDTH = 320;
+const GROUP_CARD_MIN_WIDTH = 230;
 
 /** The chips, in order. Every kind of group is offered, so a new kind is never unfilterable. */
 const FILTER_OPTIONS: readonly FilterType[] = ['all', 'joined', ...GROUP_TYPES] as const;
