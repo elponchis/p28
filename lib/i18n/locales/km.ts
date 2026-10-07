@@ -1174,6 +1174,11 @@ export const km: TranslationShape = {
     resultWrittenPending: 'ចម្លើយសរសេរត្រូវបានដាក់ពិន្ទុដោយគ្រូរបស់អ្នក។',
   },
   devotion: {
+    pastDevotions: 'ការរំពឹងគិតកន្លងមក',
+    pastDevotionsLink: 'ការរំពឹងគិតកន្លងមក',
+    pastDevotionsHint: 'បើកខគម្ពីរទាំងអស់ដែលក្រុមនេះបានអាន',
+    openPastDevotionHint: 'បើកថ្ងៃនោះ និងអ្វីដែលក្រុមបានចែករំលែក',
+    noPastDevotions: 'មិនទាន់មានការរំពឹងគិតមុននេះទេ។',
     expandPassage: 'បង្ហាញខគម្ពីរដែលនៅសល់',
     expandPassageHint: 'បើកខបន្ទាប់ពីខទីមួយ',
     collapsePassage: 'បិទ',

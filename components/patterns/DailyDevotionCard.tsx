@@ -173,6 +173,16 @@ export function DailyDevotionCard({
         <Text style={styles.bannerLabel} numberOfLines={1}>
           {label}
         </Text>
+        <Pressable
+          onPress={() => router.push(`/group/devotion/history?groupId=${groupId}`)}
+          style={styles.iconButton}
+          accessibilityRole="button"
+          accessibilityLabel={t('devotion.pastDevotionsLink')}
+          accessibilityHint={t('devotion.pastDevotionsHint')}
+          hitSlop={6}
+        >
+          <Ionicons name="time-outline" size={17} color={colors.onPrimaryContainer} />
+        </Pressable>
         {canManage && devotion ? (
           <View style={styles.leaderActions}>
             <Pressable

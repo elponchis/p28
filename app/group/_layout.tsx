@@ -54,6 +54,18 @@ export default function GroupLayout() {
           }}
         />
         <Stack.Screen
+          name="devotion/history"
+          options={{
+            title: t('devotion.pastDevotions'),
+          }}
+        />
+        <Stack.Screen
+          name="devotion/[id]"
+          options={{
+            title: '',
+          }}
+        />
+        <Stack.Screen
           name="devotion-settings"
           options={{
             title: t('devotion.settingsTitle'),

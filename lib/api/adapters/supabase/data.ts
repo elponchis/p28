@@ -102,6 +102,7 @@ import type {
   UpsertSubmissionInput,
   DevotionQuestion,
   GroupDevotion,
+  GroupDevotionSummary,
   SaveGroupDevotionInput,
   DevotionShare,
   CreateDevotionShareInput,
@@ -6492,6 +6493,45 @@ export function createSupabaseDataAdapter(getClient: () => SupabaseClient): Data
           .lte('devotion_date', onOrBefore)
           .order('devotion_date', { ascending: false })
           .limit(1)
+          .maybeSingle();
+        if (error) return toApiError(error);
+        return data ? mapGroupDevotionRow(data as GroupDevotionRow) : null;
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async listGroupDevotions(
+      groupId: string,
+      options?: { limit?: number }
+    ): Promise<GroupDevotionSummary[] | ApiError> {
+      try {
+        // The embedded count rides along with the row, so the archive is one request rather
+        // than one per day.
+        const { data, error } = await getClient()
+          .from('group_devotions')
+          .select(`${GROUP_DEVOTION_COLUMNS}, devotion_shares(count)`)
+          .eq('group_id', groupId)
+          .order('devotion_date', { ascending: false })
+          .limit(options?.limit ?? 60);
+        if (error) return toApiError(error);
+        return (
+          (data ?? []) as (GroupDevotionRow & { devotion_shares?: { count: number }[] })[]
+        ).map((row) => ({
+          ...mapGroupDevotionRow(row),
+          shareCount: row.devotion_shares?.[0]?.count ?? 0,
+        }));
+      } catch (e) {
+        return toApiError(e);
+      }
+    },
+
+    async getGroupDevotionById(devotionId: string): Promise<GroupDevotion | null | ApiError> {
+      try {
+        const { data, error } = await getClient()
+          .from('group_devotions')
+          .select(GROUP_DEVOTION_COLUMNS)
+          .eq('id', devotionId)
           .maybeSingle();
         if (error) return toApiError(error);
         return data ? mapGroupDevotionRow(data as GroupDevotionRow) : null;

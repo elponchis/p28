@@ -113,6 +113,7 @@ export type {
   MessageAttachmentKind,
   DevotionQuestion,
   GroupDevotion,
+  GroupDevotionSummary,
   SaveGroupDevotionInput,
   DevotionShare,
   CreateDevotionShareInput,

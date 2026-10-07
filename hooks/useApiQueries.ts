@@ -2739,6 +2739,36 @@ export function useUploadAssignmentMaterialMutation() {
 // 오늘의 묵상 (daily devotion)
 // ---------------------------------------------------------------------------
 
+/** The group's past passages, newest first — the archive behind "지난 묵상". */
+export function useGroupDevotionsQuery(
+  groupId: string | undefined,
+  options?: { enabled?: boolean; limit?: number }
+) {
+  return useQuery({
+    queryKey: ['groupDevotions', groupId ?? '', options?.limit ?? 60] as const,
+    queryFn: () =>
+      queryFn(api.data.listGroupDevotions(groupId!, { limit: options?.limit })) as Promise<
+        import('@/lib/api').GroupDevotionSummary[]
+      >,
+    enabled: !!groupId && (options?.enabled ?? true),
+  });
+}
+
+/** One past devotion, for the day's own screen. */
+export function useGroupDevotionByIdQuery(
+  devotionId: string | undefined,
+  options?: { enabled?: boolean }
+) {
+  return useQuery({
+    queryKey: ['groupDevotion', devotionId ?? ''] as const,
+    queryFn: () =>
+      queryFn(api.data.getGroupDevotionById(devotionId!)) as Promise<
+        import('@/lib/api').GroupDevotion | null
+      >,
+    enabled: !!devotionId && (options?.enabled ?? true),
+  });
+}
+
 export function useCurrentGroupDevotionQuery(
   groupId: string | undefined,
   onOrBefore: string,

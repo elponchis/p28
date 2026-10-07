@@ -1005,6 +1005,11 @@ export interface GroupDevotion {
   updatedAt: string;
 }
 
+/** A past devotion as the archive lists it: the row plus how much the group shared that day. */
+export interface GroupDevotionSummary extends GroupDevotion {
+  shareCount: number;
+}
+
 export interface SaveGroupDevotionInput {
   devotionDate: string;
   reference: string;

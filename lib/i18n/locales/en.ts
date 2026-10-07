@@ -1178,6 +1178,11 @@ export const en = {
     resultWrittenPending: 'Written answers are graded by your instructor.',
   },
   devotion: {
+    pastDevotions: 'Past devotions',
+    pastDevotionsLink: 'Past devotions',
+    pastDevotionsHint: 'Opens every passage this group has read',
+    openPastDevotionHint: 'Opens that day and what the group shared',
+    noPastDevotions: 'No earlier passages yet.',
     expandPassage: 'Show the rest of the passage',
     expandPassageHint: 'Opens the verses after the first one',
     collapsePassage: 'Collapse',

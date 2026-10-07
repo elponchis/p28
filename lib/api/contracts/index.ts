@@ -95,6 +95,7 @@ export type {
   Session,
   DevotionQuestion,
   GroupDevotion,
+  GroupDevotionSummary,
   SaveGroupDevotionInput,
   DevotionShare,
   CreateDevotionShareInput,

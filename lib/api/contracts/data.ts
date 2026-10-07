@@ -70,6 +70,7 @@ import type {
   InAppNotification,
   MarkInAppNotificationsReadInput,
   GroupDevotion,
+  GroupDevotionSummary,
   SaveGroupDevotionInput,
   DevotionShare,
   CreateDevotionShareInput,
@@ -622,6 +623,19 @@ export interface DataContract {
     groupId: string,
     onOrBefore: string
   ): Promise<GroupDevotion | null | ApiError>;
+  /**
+   * The group's past passages, newest first, each with that day's share count.
+   *
+   * The card on the group screen only ever shows one day; this is how a member reaches the days
+   * before it. Nothing is deleted when a leader sets the next day's passage — it was only
+   * unreachable.
+   */
+  listGroupDevotions(
+    groupId: string,
+    options?: { limit?: number }
+  ): Promise<GroupDevotionSummary[] | ApiError>;
+  /** One past devotion by its id, for the day's own screen. */
+  getGroupDevotionById(devotionId: string): Promise<GroupDevotion | null | ApiError>;
   /** Set (or replace) the group's passage for `input.devotionDate`. Group leaders only. */
   saveGroupDevotion(
     groupId: string,
